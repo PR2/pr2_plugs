@@ -1,0 +1,11 @@
+# Goal
+string camera_name
+geometry_msgs/PoseStamped prior
+# Origin is on left (FALSE) for left forearm looking at plug on base,
+# on right (TRUE) for right forearm looking at plug in gripper.
+bool origin_on_right
+---
+# Result
+geometry_msgs/PoseStamped plug_pose
+---
+# Feedback

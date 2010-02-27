@@ -1,0 +1,20 @@
+<package>
+  <description brief="outlet_pose_estimation">
+
+     outlet_pose_estimation
+
+  </description>
+  <author>Patrick Mihelich</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/outlet_pose_estimation</url>
+
+  <depend package="roscpp"/>
+  <depend package="opencv2"/>
+  <depend package="visual_pose_estimation"/>
+
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -loutlet_detection -loutlet_pose_estimation"/>
+  </export>
+
+</package>

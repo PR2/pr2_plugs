@@ -1,0 +1,10 @@
+<launch>
+   
+  <!-- vision detect plug action -->
+  <include file="$(find pr2_plugs_actions)/launch/detect_plug.launch"/>
+  <!-- vision detect outlet action -->
+  <include file="$(find pr2_plugs_actions)/launch/detect_outlet.launch"/>
+
+  <test test-name="vision_detect_outlet_and_plug_test" pkg="pr2_plugs_actions" type="vision_detect_outlet_and_plug_test"/>
+
+</launch>

@@ -1,0 +1,11 @@
+#goal definition
+geometry_msgs/Vector3 travel
+geometry_msgs/Vector3 offset
+duration period
+duration move_duration
+float64 abort_threshold   #If we move more than this, we'll assume we weren't in the outlet and abort
+---
+#result definition
+
+---
+#feedback

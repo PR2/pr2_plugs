@@ -1,0 +1,19 @@
+<launch>
+  <!--include file="$(find pr2_machine)/$(env ROBOT).machine" /-->
+
+  <!-- Plug calibration -->
+  <include ns="vision_plug_detection" file="$(find pr2_plugs_actions)/launch/pr2_plug_description.xml"/>
+
+  <!-- The plug finding action -->
+  <node pkg="pr2_plugs_actions" type="vision_detect_plug" name="vision_plug_detection" output="screen">
+    <param name="subpixel_corners" type="bool" value="true"/>
+
+    <!-- Output tf frames -->
+    <!--
+    <param name="frame_id" type="string" value="/plug_frame_l$(optenv TF_SUFFIX)"/>
+    <param name="checkerboard_frame_id" type="string" value="/checkerboard_frame_l$(optenv TF_SUFFIX)"/>
+    -->
+
+  </node>
+
+</launch>

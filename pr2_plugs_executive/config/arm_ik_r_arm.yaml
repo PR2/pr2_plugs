@@ -1,0 +1,14 @@
+arm: r
+arm_controller: r_arm_plugs_controller
+free_angle: 2
+search_discretization: 2
+ik_timeout: 5.0
+max_velocity: 0.4
+pose_suggestion:
+  shoulder_pan: 1.05
+  shoulder_lift: 0.72
+  upper_arm_roll: 2.59
+  elbow_flex: -1.78
+  forearm_roll: -2.07
+  wrist_flex: -1.57
+  wrist_roll: -0.56

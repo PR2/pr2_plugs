@@ -1,0 +1,22 @@
+<launch>
+  <!-- Plug checkerboard -->
+  <param name="square_size" type="double" value="0.006"/>
+  <param name="board_width" type="int" value="4"/>
+  <param name="board_height" type="int" value="5"/>
+  
+  <!-- Plug in board calibration
+  plug_position_* is the position of the plug frame origin in the checkerboard frame.
+  plug_orientation_* is a quaternion rotating the plug frame to the checkerboard frame.
+  With the plug positioned for entering the outlet, the checkerboard frame is:
+    X: Down
+    Y: Forward (towards the outlet)
+    Z: Into the plug
+  -->
+  <param name="plug_position_x" type="double" value="0.017"/>
+  <param name="plug_position_y" type="double" value="0.03775"/>
+  <param name="plug_position_z" type="double" value="0.0245"/>
+  <param name="plug_orientation_x" type="double" value="-0.5"/>
+  <param name="plug_orientation_y" type="double" value="-0.5"/>
+  <param name="plug_orientation_z" type="double" value="0.5"/>
+  <param name="plug_orientation_w" type="double" value="0.5"/>
+</launch>

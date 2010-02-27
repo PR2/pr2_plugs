@@ -1,0 +1,22 @@
+<launch>
+
+  <node pkg="stereo_wall_detection" type="wall_extractor" name="stereo_wall_detection" output="screen" respawn="true">
+    <param name="search_radius"        value="0.03" />
+
+    <!-- Use downsampling if the data is too dense and the nearest neighborhood searches for normal estimation take too long -->
+    <param name="downsample_max_dist"     value="3.0" />
+    <param name="downsample_leaf_width_x" value="0.015" />
+    <param name="downsample_leaf_width_y" value="0.015" />
+    <param name="downsample_leaf_width_z" value="0.015" />
+    <!-- Use the original data for normal estimation -->
+    <param name="normals_high_fidelity"   value="0" />
+
+    <!-- Planar fitting parameters -->
+    <param name="sac_distance_threshold" value="0.03" />
+    <param name="sac_use_normals" value="1" />
+    <param name="sac_normal_distance_weight" value="0.05" />
+    <!-- don't use normals to find inliers -->
+    <param name="sac_normal_inlier_distance_weight" value="0.0" />
+
+  </node>
+</launch>
