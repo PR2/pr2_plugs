@@ -81,7 +81,7 @@ TEST(ActionServerTest, fetch_plug)
   actionlib::SimpleActionClient<pr2_plugs_msgs::FetchPlugAction> ac("fetch_plug"); 
 
 
-  EXPECT_TRUE(ac.waitForServer(ros::Duration(10.0)));
+  EXPECT_TRUE(ac.waitForServer(ros::Duration(20.0)));
   ros::shutdown();
   spin_thread.join();
   
@@ -99,7 +99,7 @@ TEST(ActionServerTest, stow_plug)
   actionlib::SimpleActionClient<pr2_plugs_msgs::StowPlugAction> ac("stow_plug");
 
 
-  EXPECT_TRUE(ac.waitForServer(ros::Duration(10.0)));
+  EXPECT_TRUE(ac.waitForServer(ros::Duration(20.0)));
   ros::shutdown();
   spin_thread.join();
 
