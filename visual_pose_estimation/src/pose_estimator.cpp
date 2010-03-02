@@ -1,13 +1,16 @@
 #include "visual_pose_estimation/pose_estimator.h"
+#include "visual_pose_estimation/planar.h"
 
 namespace visual_pose_estimation {
 
 PoseEstimator::PoseEstimator()
+  : use_planar_solve_(false)
 {
 }
 
 PoseEstimator::PoseEstimator(const cv::Mat& object_points)
-  : object_points_(object_points)
+  : object_points_(object_points),
+    use_planar_solve_(false)
 {
 }
 
@@ -29,18 +32,6 @@ tf::Pose PoseEstimator::solveWithPrior(const std::vector<cv::Point2f>& image_poi
                                        const tf::Pose& prior) const
 {
   tf::Pose pose = prior;
-  solveImpl(image_points, model, pose, true);
-  return pose;
-}
-
-tf::Pose PoseEstimator::solveWithPrior(const std::vector<cv::Point2f>& image_points,
-                                       const image_geometry::PinholeCameraModel& model,
-                                       const tf::Stamped<tf::Pose>& prior,
-                                       const tf::Transformer& transformer) const
-{
-  //transformer.waitForTransform(model.tfFrame(), prior.frame_id_, prior.stamp_, ros::Duration(0.5));
-  tf::Stamped<tf::Pose> pose;
-  transformer.transformPose(model.tfFrame(), prior, pose);
   solveImpl(image_points, model, pose, true);
   return pose;
 }
@@ -74,7 +65,11 @@ void PoseEstimator::solveImpl(const std::vector<cv::Point2f>& image_points,
   }
 
   // Find/refine object pose
-  cv::solvePnP(object_points_, image_pts_cv, model.intrinsicMatrix(), D, R3, T3, have_prior);
+  if (use_planar_solve_)
+    cv::solvePlanarPnP(object_points_, image_pts_cv, model.intrinsicMatrix(), D, R3, T3, have_prior);
+  else
+    cv::solvePnP(object_points_, image_pts_cv, model.intrinsicMatrix(), D, R3, T3, have_prior);
+  
   ROS_DEBUG("Refined pose: T(%.3f, %.3f, %.3f), R(%.3f, %.3f, %.3f)",
             T3(0,0), T3(1,0), T3(2,0), R3(0,0), R3(1,0), R3(2,0));
   pose.getOrigin().setValue(T3(0,0), T3(1,0), T3(2,0));
