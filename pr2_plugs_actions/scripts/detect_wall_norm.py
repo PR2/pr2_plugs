@@ -50,7 +50,7 @@ from stereo_wall_detection.srv import *
 class DetectWallNormServer:
   def __init__(self, name):
     self.name = name
-    self.sim = rospy.get_param('sim', False)
+    self.sim = rospy.get_param('~sim', False)
     
     self.head_client = actionlib.SimpleActionClient('head_traj_controller/point_head_action', PointHeadAction)
     self.head_client.wait_for_server()
