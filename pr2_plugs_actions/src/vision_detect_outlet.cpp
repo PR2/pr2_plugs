@@ -47,7 +47,7 @@ public:
     : it_(nh_),
       as_(nh_, name),
       action_name_(name),
-      tf_listener_(ros::Duration(60.0))
+      update_transformed_prior_(true)
   {
     // Load configuration
     if (!initFromParameters(detector_, pose_estimator_)) {
@@ -73,12 +73,13 @@ public:
     GoalPtr goal = as_.acceptNewGoal();
     /// @todo Still need to check isPreemptRequested?
     tf::poseStampedMsgToTF(goal->prior, prior_);
+    update_transformed_prior_ = true;
 
     // Subscribe to the streams from the requested camera
     std::string image_topic = goal->camera_name + "/image_rect_color";
     sub_ = it_.subscribeCamera(image_topic, 1, &DetectOutletAction::detectCb, this);
 
-    // Arbort if no one is publishing images 
+    // Abort if no one is publishing images 
     ros::Duration timeout = ros::Duration(0);
     ros::Time start = ros::Time::now();
     while(timeout<ros::Duration(5.0))
@@ -92,14 +93,13 @@ public:
     as_.setAborted();
     ROS_INFO("%s: Aborted, there are no publishers on %s topic", action_name_.c_str(), goal->camera_name.c_str());    
     sub_.shutdown();
-
   }
 
   void preemptCb()
   {
     ROS_INFO("%s: Preempted", action_name_.c_str());
     as_.setPreempted();
-    //sub_.shutdown();
+    sub_.shutdown();
   }
 
   void detectCb(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
@@ -125,17 +125,24 @@ public:
       return;
     }
 
-    // Estimate its pose
+    // Get the prior in the camera frame. Currently we transform the prior once, on the first
+    // image received for a new goal, and assume that the camera frame does not move wrt to
+    // the original frame of the prior while that goal is active.
     cam_model_.fromCameraInfo(info_msg);
-    tf::Stamped<tf::Pose> prior_in_camera;
-    try {
-      tf_listener_.transformPose(cam_model_.tfFrame(), prior_, prior_in_camera);
+    if (update_transformed_prior_) {
+      try {
+        /// @todo waitForTransform?
+        tf_listener_.transformPose(cam_model_.tfFrame(), prior_, prior_in_camera_);
+        update_transformed_prior_ = false;
+      }
+      catch (tf::TransformException& ex) {
+        ROS_WARN("%s: TF exception\n%s", action_name_.c_str(), ex.what());
+        return;
+      }
     }
-    catch (tf::TransformException& ex) {
-      ROS_WARN("%s: TF exception\n%s", action_name_.c_str(), ex.what());
-      return;
-    }
-    tf::Pose pose = pose_estimator_.solveWithPrior(image_points, cam_model_, prior_in_camera);
+
+    // Estimate the outlet pose
+    tf::Pose pose = pose_estimator_.solveWithPrior(image_points, cam_model_, prior_in_camera_);
 
     // Report success
     pr2_plugs_msgs::VisionOutletDetectionResult result;
@@ -145,10 +152,8 @@ public:
     as_.setSucceeded(result);
 
     // Publish visualization messages
-#if 1
     tf_broadcaster_.sendTransform(tf::StampedTransform(prior_, prior_.stamp_,
                                                        prior_.frame_id_, "outlet_prior_frame"));
-#endif
     tf_broadcaster_.sendTransform(tf::StampedTransform(pose, image_msg->header.stamp,
                                                        cam_model_.tfFrame(), "outlet_frame"));
     publishDisplayImage(image, image_points, true);
@@ -192,6 +197,8 @@ protected:
   outlet_pose_estimation::Detector detector_;
   visual_pose_estimation::PoseEstimator pose_estimator_;
   tf::Stamped<tf::Pose> prior_;
+  tf::Stamped<tf::Pose> prior_in_camera_;
+  bool update_transformed_prior_;
 };
 
 int main(int argc, char** argv)
