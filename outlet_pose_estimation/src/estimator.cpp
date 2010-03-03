@@ -18,7 +18,10 @@ visual_pose_estimation::PoseEstimator createOutletEstimator(const outlet_templat
     hole_points(i, 0) = cv::Vec3f(pt.z * 1e-3f, pt.x * 1e-3f, pt.y * 1e-3f);
   }
 
-  return visual_pose_estimation::PoseEstimator(hole_points);
+  visual_pose_estimation::PoseEstimator estimator(hole_points);
+  estimator.setPlanar(true);
+  
+  return estimator;
 }
 
 } //namespace outlet_pose_estimation
