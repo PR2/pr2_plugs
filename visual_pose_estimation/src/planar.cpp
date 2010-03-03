@@ -1,4 +1,5 @@
 #include <visual_pose_estimation/planar.h>
+#include <limits>
 
 namespace cv{
 
