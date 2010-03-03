@@ -48,8 +48,8 @@ def detect_plug_client():
     client.wait_for_server()
     print 'action server up'
     #goal = plug_on_base_goal()
-    #goal = plug_on_side_goal()
-    goal = plug_in_gripper_goal()
+    goal = plug_on_side_goal()
+    #goal = plug_in_gripper_goal()
 
     client.send_goal(goal)
     print 'goal sent'

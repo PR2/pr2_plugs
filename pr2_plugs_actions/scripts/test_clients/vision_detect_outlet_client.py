@@ -22,7 +22,7 @@ def facing_outlet_goal():
     goal.wall_normal = geometry_msgs.msg.Vector3Stamped()
     goal.wall_normal.header.stamp = time
     goal.wall_normal.header.frame_id = 'base_link'
-    goal.wall_normal.vector.x = 0.0
+    goal.wall_normal.vector.x = 1.0
     goal.wall_normal.vector.y = 0.0
     goal.wall_normal.vector.z = 0.0
 
@@ -43,7 +43,7 @@ def side_outlet_goal():
     goal.wall_normal.header.stamp = time
     goal.wall_normal.header.frame_id = 'base_link'
     goal.wall_normal.vector.x = 0.0
-    goal.wall_normal.vector.y = 0.0
+    goal.wall_normal.vector.y = -1.0
     goal.wall_normal.vector.z = 0.0
 
     return goal

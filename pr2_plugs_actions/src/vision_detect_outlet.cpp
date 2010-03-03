@@ -73,6 +73,7 @@ public:
     GoalPtr goal = as_.acceptNewGoal();
     /// @todo Still need to check isPreemptRequested?
     tf::poseStampedMsgToTF(goal->prior, prior_);
+    tf::vector3StampedMsgToTF(goal->wall_normal, wall_normal_);
     update_transformed_prior_ = true;
 
     // Subscribe to the streams from the requested camera
@@ -130,15 +131,44 @@ public:
     // the original frame of the prior while that goal is active.
     cam_model_.fromCameraInfo(info_msg);
     if (update_transformed_prior_) {
+      // Transform the prior and wall normal into the camera coordinate frame.
+      tf::Stamped<tf::Vector3> wall_normal_in_camera;
       try {
         /// @todo waitForTransform?
         tf_listener_.transformPose(cam_model_.tfFrame(), prior_, prior_in_camera_);
-        update_transformed_prior_ = false;
+        tf_listener_.transformVector(cam_model_.tfFrame(), wall_normal_, wall_normal_in_camera);
       }
       catch (tf::TransformException& ex) {
         ROS_WARN("%s: TF exception\n%s", action_name_.c_str(), ex.what());
         return;
       }
+
+      // Now we tweak the orientation of the original prior to align with the wall normal.
+      // First pull out a couple prior basis vectors of interest.
+      btVector3 prior_x_basis = prior_in_camera_.getBasis().getColumn(0);
+      btVector3 prior_z_basis = prior_in_camera_.getBasis().getColumn(2);
+      // New forward vector is set to the wall normal.
+      btVector3 adjusted_x_basis = wall_normal_in_camera.normalized();
+      // The wall normal should not differ wildly from the prior X (forward) basis vector.
+      static const double ANGLE_THRESHOLD = 0.175; // ~10 degrees
+      double angle = adjusted_x_basis.angle(prior_x_basis);
+      if (angle > ANGLE_THRESHOLD) {
+        ROS_ERROR("Wall normal differs from prior orientation by %f radians, threshold is %f. Aborting.",
+                  angle, ANGLE_THRESHOLD);
+        as_.setAborted();
+        sub_.shutdown();
+        return;
+      }
+      // New left vector calculated as cross product of the original up vector and the wall normal.
+      btVector3 adjusted_y_basis = prior_z_basis.cross(adjusted_x_basis).normalized();
+      // New up vector calculated from the other two basis vectors.
+      btVector3 adjusted_z_basis = adjusted_x_basis.cross(adjusted_y_basis);
+      // Fill in the new basis vectors as columns.
+      prior_in_camera_.getBasis().setValue(adjusted_x_basis.x(), adjusted_y_basis.x(), adjusted_z_basis.x(),
+                                           adjusted_x_basis.y(), adjusted_y_basis.y(), adjusted_z_basis.y(),
+                                           adjusted_x_basis.z(), adjusted_y_basis.z(), adjusted_z_basis.z());
+
+      update_transformed_prior_ = false;
     }
 
     // Estimate the outlet pose
@@ -154,6 +184,9 @@ public:
     // Publish visualization messages
     tf_broadcaster_.sendTransform(tf::StampedTransform(prior_, prior_.stamp_,
                                                        prior_.frame_id_, "outlet_prior_frame"));
+    tf_broadcaster_.sendTransform(tf::StampedTransform(prior_in_camera_, prior_in_camera_.stamp_,
+                                                       prior_in_camera_.frame_id_,
+                                                       "outlet_adjusted_prior_frame"));
     tf_broadcaster_.sendTransform(tf::StampedTransform(pose, image_msg->header.stamp,
                                                        cam_model_.tfFrame(), "outlet_frame"));
     publishDisplayImage(image, image_points, true);
@@ -198,6 +231,7 @@ protected:
   visual_pose_estimation::PoseEstimator pose_estimator_;
   tf::Stamped<tf::Pose> prior_;
   tf::Stamped<tf::Pose> prior_in_camera_;
+  tf::Stamped<tf::Vector3> wall_normal_;
   bool update_transformed_prior_;
 };
 
