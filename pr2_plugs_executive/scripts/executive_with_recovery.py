@@ -52,35 +52,36 @@ def ExecutionException(Exception):
   def __init__(self):
     pass
 
-def Executive():
+class Executive():
   def __init__(self):
     # construct tf listener
     self.transformer = tf.TransformListener(True, rospy.Duration(60.0))  
 
     # Declare list of actions for easy construction
-    self.action_specs = [
-        ('tuck_arms',TuckArmsAction),
-        ('detect_outlet',DetectOutletAction),
-        ('fetch_plug',FetchPlugAction),
-        ('detect_plug',DetectPlugInGripperAction),
-        ('wiggle_plug',WigglePlugAction),
-        ('stow_plug',StowPlugAction),
-        ('plugin',PluginAction)]
+    self.actions = {
+        'tuck_arms':TuckArmsAction,
+        'detect_outlet':DetectOutletAction,
+        'fetch_plug':FetchPlugAction,
+        'detect_plug':DetectPlugInGripperAction,
+        'wiggle_plug':WigglePlugAction,
+        'stow_plug':StowPlugAction,
+        'plugin':PluginAction }
+
+    self.action_clients = dict()
 
     # Construct action clients
-    rospy.loginfo("Starting actions clients.")
-    self.actions = dict()
-    for (name,action_spec) in self.action_specs:
+    rospy.loginfo("Starting action clients.")
+    for name, action_spec in self.actions.iteritems():
       # Create an action client
       ac = actionlib.SimpleActionClient(name,action_spec)
-      # Store the action client in a dictionary for iteration
-      self.actions[name,ac]
+      # Store the action client in the actionclient dictionary for iteration
+      self.action_clients[name] = ac
       # Set this action client as a member of this class for convenience
       assert not hasattr(self, name)
       setattr(self, name, ac)
 
     # Wait for all the action clients to start
-    for (name,ac) in actions:
+    for name, ac in self.action_clients.iteritems():
       rospy.loginfo("Plugs executive waiting for server for "+name)
       ac.wait_for_server()
     rospy.loginfo("All actions started.")
