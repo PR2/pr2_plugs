@@ -218,8 +218,8 @@ class PlanarFit
       geometry_msgs::Point32 centroid;
       cloud_geometry::nearest::computeCentroid (cloud_down_, inliers, centroid);
 
-      ROS_INFO ("Planar model with %d / %d inliers, coefficients: [%g, %g, %g, %g] found in %g seconds.", (int)inliers.size (), (int)cloud_down_.points.size (),
-          coeff[0], coeff[1], coeff[2], coeff[3], (ros::Time::now () - ts).toSec ());
+      //ROS_INFO ("Planar model with %d / %d inliers, coefficients: [%g, %g, %g, %g] found in %g seconds.", (int)inliers.size (), (int)cloud_down_.points.size (),
+      //    coeff[0], coeff[1], coeff[2], coeff[3], (ros::Time::now () - ts).toSec ());
 
       resp.wall_point.header = cloud_msg_->header;
       resp.wall_point.point.x = centroid.x;
@@ -230,7 +230,8 @@ class PlanarFit
       Eigen::Quaternion<float> q (aa);
 
       publishNormal (centroid, q, cloud_msg_->header, 0.1);
-      ROS_INFO("Found wall normal: %f %f %f", centroid.x, centroid.y, centroid.z);
+      ROS_INFO("Found wall at %f %f %f with normal: %f %f %f in frame %s",
+	       centroid.x, centroid.y, centroid.z, coeff[0], coeff[1], coeff[2], cloud_msg_->header.frame_id.c_str());
 
       cloud_msg_.reset ();
       return (true);
