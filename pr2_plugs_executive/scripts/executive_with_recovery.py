@@ -102,7 +102,7 @@ class Executive():
     except rospy.ServiceException, e:
       rospy.logerr('Could not transform between %s and %s' % (frame_id,pose.header.frame_id))
       raise e
-    return self.transformer.transformPose('base_link', pose)
+    return self.transformer.transformPose(frame_id, pose)
 
 def main():
   rospy.init_node("plugs_executive")
