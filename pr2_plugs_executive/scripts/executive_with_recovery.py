@@ -108,6 +108,7 @@ class Executive():
     if result != GoalStatus.SUCCEEDED:
       rospy.logerr("Goal for "+name+" did not succeed!")
       raise ActionException(client,name,result)
+    return client.get_result()
 
   def wait_and_transform(self,frame_id,pose):
     try:
@@ -136,24 +137,20 @@ def main():
 
   # Untuck the arms
   untuck_goal = TuckArmsGoal(untuck=True,left=False,right=True)
-  untucked = False
   exc.tuck_arms_and_wait(untuck_goal)
 
   # Detect the outlet 
   detect_outlet_goal = DetectOutletGoal()
-  exc.detect_outlet_and_wait(detect_outlet_goal)
-  outlet_pose = exc.detect_outlet.get_result().outlet_pose
+  outlet_pose = exc.detect_outlet_and_wait(detect_outlet_goal).outlet_pose
   base_to_outlet = exc.wait_and_transform("base_link",outlet_pose)
 
   # Fetch plug
-  exc.fetch_plug_and_wait(FetchPlugGoal())
-  plug_pose = exc.fetch_plug.get_result().plug_pose
+  plug_pose = exc.fetch_plug_and_wait(FetchPlugGoal()).plug_pose
   base_to_plug = wait_and_transform("base_link",plug_pose)
 
   # Detect the plug in gripper
   detect_plug_goal = DetectPlugInGripperGoal()
-  exc.detect_plug_and_wait(detect_plug_goal)
-  plug_pose = exc.detect_plug.get_result().plug_pose
+  plug_pose = exc.detect_plug_and_wait(detect_plug_goal).plug_pose
   gripper_to_plug = wait_and_transform('r_gripper_tool_frame', plug_pose)
 
   # Plug in
