@@ -40,6 +40,7 @@ import os
 import sys
 import time
 import threading
+from copy import *
 import tf
 
 from pr2_plugs_msgs.msg import *
@@ -49,9 +50,11 @@ from std_srvs.srv import *
 
 import actionlib
 
-def ExecutionException(Exception):
-  def __init__(self):
-    pass
+class ActionException(Exception):
+  def __init__(self,client,name,result):
+    self.client = client
+    self.name = name
+    self.result = result
 
 class Executive():
   def __init__(self,actions):
@@ -85,8 +88,8 @@ class Executive():
       # property of the action and not of the goal
       assert not hasattr(self, name+"_and_wait")
       setattr(self, name+"_and_wait",
-          lambda goal,client=ac, log_str=name,timeout=action_timeout:
-          self.send_goal_and_wait(client,log_str,goal,timeout))
+          lambda goal,timeout=action_timeout,_ac=ac,_name=name:
+          self.send_goal_and_wait(_ac,_name,goal,timeout))
 
     # Wait for all the action clients to start (If we do this in parallel it happens a lot faster)
     action_wait_threads = []
@@ -98,10 +101,13 @@ class Executive():
     rospy.loginfo("All action servers ready.")
 
   # Wrapper to allow for rapid goal passing
-  def send_goal_and_wait(self,action_client,log_str,goal,timeout):
-    rospy.loginfo("Sending blocking goal to "+log_str+" action for "+str(timeout)+" seconds...");
-    rospy.logdebug("Goal for "+log_str+":\n"+str(goal))
-    return action_client.send_goal_and_wait(goal,rospy.Duration(timeout),self.preempt_timeout)
+  def send_goal_and_wait(self,client,name,goal,timeout):
+    rospy.loginfo("Sending blocking goal to "+name+" action for "+str(timeout)+" seconds...");
+    rospy.logdebug("Goal for "+name+":\n"+str(goal))
+    result = client.send_goal_and_wait(goal,rospy.Duration(timeout),self.preempt_timeout)
+    if result != GoalStatus.SUCCEEDED:
+      rospy.logerr("Goal for "+name+" did not succeed!")
+      raise ActionException(client,name,result)
 
   def wait_and_transform(self,frame_id,pose):
     try:
@@ -131,29 +137,22 @@ def main():
   # Untuck the arms
   untuck_goal = TuckArmsGoal(untuck=True,left=False,right=True)
   untucked = False
-  while not untucked:
-    untucked = (exc.tuck_arms_and_wait(untuck_goal) == GoalStatus.SUCCEEDED)
+  exc.tuck_arms_and_wait(untuck_goal)
 
   # Detect the outlet 
   detect_outlet_goal = DetectOutletGoal()
-  if exc.detect_outlet_and_wait(detect_outlet_goal) != GoalStatus.SUCCEEDED:
-    rospy.logerr("Failed to detect the outlet!")
-    return
+  exc.detect_outlet_and_wait(detect_outlet_goal)
   outlet_pose = exc.detect_outlet.get_result().outlet_pose
   base_to_outlet = exc.wait_and_transform("base_link",outlet_pose)
 
   # Fetch plug
-  if exc.fetch_plug_and_wait(FetchPlugGoal()) != GoalStatus.SUCCEEDED:
-    rospy.logerr("Failed to fetch plug!")
-    return
+  exc.fetch_plug_and_wait(FetchPlugGoal())
   plug_pose = exc.fetch_plug.get_result().plug_pose
   base_to_plug = wait_and_transform("base_link",plug_pose)
 
   # Detect the plug in gripper
   detect_plug_goal = DetectPlugInGripperGoal()
-  if exc.detect_plug_and_wait(detect_plug_goal) != GoalStatus.SUCCEEDED:
-    rospy.logerr("Failed to detect plug in gripper!")
-    return
+  exc.detect_plug_and_wait(detect_plug_goal)
   plug_pose = exc.detect_plug.get_result().plug_pose
   gripper_to_plug = wait_and_transform('r_gripper_tool_frame', plug_pose)
 
@@ -161,17 +160,13 @@ def main():
   plugin_goal = PluginGoal()
   plugin_goal.gripper_to_plug = gripper_to_plug
   plugin_goal.base_to_outlet = base_to_outlet
-  if exc.plugin_and_wait(plugin_goal) != GoalStatus.SUCCEEDED:
-    rospy.logerr("Failed to plug in!")
-    return
+  exc.plugin_and_wait(plugin_goal)
 
   # Stow plug
   stow_plug_goal = StowPlugGoal()
   stow_plug_goal.gripper_to_plug = gripper_to_plug
   stow_plug_goal.base_to_plug = base_to_plug
-  if exc.stow_plug_and_wait(stow_plug_goal) != GoalStatus.SUCCEEDED:
-    rospy.logerr("Failed to stow plug!")
-    return
+  exc.stow_plug_and_wait(stow_plug_goal)
 
   # Tuck the arms
   tuck_goal = TuckArmsGoal(unutck=False,left=False,right=True)
@@ -186,18 +181,14 @@ def main():
   wiggle_goal.period = rospy.Duration(2.0)
   wiggle_goal.move_duration = rospy.Duration(10.0)
   wiggle_goal.abort_threshold = 0.02
-  if exc.wiggle_plug_and_wait(wiggle_goal) != GoalStatus.SUCCEEDED:
-    rospy.logerr("Failed to wiggle plug in!")
-    return
+  exc.wiggle_plug_and_wait(wiggle_goal) 
 
   # Wiggle out
   wiggle_goal.travel.x = -0.08
   wiggle_goal.offset.y = 0.01
   wiggle_goal.period = rospy.Duration(2.0)
   wiggle_goal.move_duration = rospy.Duration(10.0)
-  if exc.wiggle_plug_and_wait(wiggle_goal) != GoalStatus.SUCCEEDED:
-    rospy.logerr("Failed to wiggle plug out!")
-    return
+  exc.wiggle_plug_and_wait(wiggle_goal)
 
   rospy.loginfo("Plugged in and uplugged!")
 
