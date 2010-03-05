@@ -66,7 +66,11 @@ class Executive():
 
     # Construct action clients
     rospy.loginfo("Starting action clients.")
-    for name, action_spec in self.actions.iteritems():
+    for name, action_params in self.actions.iteritems():
+      # Grab action parameters
+      action_spec = action_params[0]
+      action_timeout = action_params[1]
+
       # Create an action client
       ac = actionlib.SimpleActionClient(name,action_spec)
       # Store the action client in the actionclient dictionary for iteration
@@ -81,20 +85,22 @@ class Executive():
       # property of the action and not of the goal
       assert not hasattr(self, name+"_and_wait")
       setattr(self, name+"_and_wait",
-          lambda goal,timeout=self.actions[name][1]:
-            rospy.loginfo("Sending blocking goal to "+name+" action...")
-            return ac.send_goal_and_wait(goal,rospy.Duration(timeout),self.preempt_timeout)
-          )
+          lambda goal,client=ac, log_str=name,timeout=action_timeout:
+          self.send_goal_and_wait(client,log_str,goal,timeout))
 
     # Wait for all the action clients to start (If we do this in parallel it happens a lot faster)
     action_wait_threads = []
     for name, ac in self.action_clients.iteritems():
-      rospy.loginfo("Waiting for \""+name+"\" action server...")
+      rospy.loginfo("Waiting for "+name+" action server...")
       action_wait_threads.append(threading.Thread(target=ac.wait_for_server))
       action_wait_threads[-1].start()
     [thread.join() for thread in action_wait_threads]
     rospy.loginfo("All action servers ready.")
 
+  # Wrapper to allow for rapid goal passing
+  def send_goal_and_wait(self,action_client,log_str,goal,timeout):
+    rospy.loginfo("Sending blocking goal to "+log_str+" action for "+str(timeout)+" seconds...");
+    return action_client.send_goal_and_wait(goal,rospy.Duration(timeout),self.preempt_timeout)
 
   def wait_and_transform(self,frame_id,pose):
     try:
@@ -112,7 +118,7 @@ def main():
       'detect_wall_norm':(DetectWallNormAction, 30.0),
       'detect_outlet':(DetectOutletAction, 90.0),
       'fetch_plug':(FetchPlugAction, 60.0),
-      'detect_plug':(DetectPlugInGripperAction, 30.0),
+      'detect_plug':(DetectPlugInGripperAction, 40.0),
       'wiggle_plug':(WigglePlugAction, 30.0),
       'stow_plug':(StowPlugAction, 45.0),
       'plugin':(PluginAction, 60.0)
