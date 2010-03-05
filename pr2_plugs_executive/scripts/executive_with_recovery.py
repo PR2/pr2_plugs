@@ -36,11 +36,8 @@ roslib.load_manifest('pr2_plugs_executive')
 
 import rospy
 
-import os
-import sys
-import time
+import os,sys,time
 import threading
-from copy import *
 import tf
 
 from pr2_plugs_msgs.msg import *
@@ -168,8 +165,6 @@ def main():
   # Tuck the arms
   tuck_goal = TuckArmsGoal(unutck=False,left=False,right=True)
   exc.tuck_arms_and_wait(tuck_goal)
-
-  return
 
   # Wiggle in
   wiggle_goal = WigglePlugGoal()
