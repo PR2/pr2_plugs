@@ -100,6 +100,7 @@ class Executive():
   # Wrapper to allow for rapid goal passing
   def send_goal_and_wait(self,action_client,log_str,goal,timeout):
     rospy.loginfo("Sending blocking goal to "+log_str+" action for "+str(timeout)+" seconds...");
+    rospy.logdebug("Goal for "+log_str+":\n"+str(goal))
     return action_client.send_goal_and_wait(goal,rospy.Duration(timeout),self.preempt_timeout)
 
   def wait_and_transform(self,frame_id,pose):
