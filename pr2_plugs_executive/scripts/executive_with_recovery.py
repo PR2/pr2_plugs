@@ -39,6 +39,7 @@ import rospy
 import os
 import sys
 import time
+import threading
 import tf
 
 from pr2_plugs_msgs.msg import *
@@ -53,20 +54,14 @@ def ExecutionException(Exception):
     pass
 
 class Executive():
-  def __init__(self):
+  def __init__(self,actions):
     # construct tf listener
     self.transformer = tf.TransformListener(True, rospy.Duration(60.0))  
 
-    # Declare list of actions for easy construction
-    self.actions = {
-        'tuck_arms':TuckArmsAction,
-        'detect_outlet':DetectOutletAction,
-        'fetch_plug':FetchPlugAction,
-        'detect_plug':DetectPlugInGripperAction,
-        'wiggle_plug':WigglePlugAction,
-        'stow_plug':StowPlugAction,
-        'plugin':PluginAction }
+    self.preempt_timeout = rospy.Duration(5.0)
 
+    # Declare list of actions for easy construction
+    self.actions = actions
     self.action_clients = dict()
 
     # Construct action clients
@@ -76,15 +71,29 @@ class Executive():
       ac = actionlib.SimpleActionClient(name,action_spec)
       # Store the action client in the actionclient dictionary for iteration
       self.action_clients[name] = ac
+
       # Set this action client as a member of this class for convenience
       assert not hasattr(self, name)
-      setattr(self, name, ac)
+      setattr(self, name+"_client", ac)
 
-    # Wait for all the action clients to start
+      # Construct functions that call the actions with default timeouts.
+      # This is convienent for actions with an invariant timeout, since it's a
+      # property of the action and not of the goal
+      assert not hasattr(self, name+"_and_wait")
+      setattr(self, name+"_and_wait",
+          lambda goal,timeout=self.actions[name][1]:
+            rospy.loginfo("Sending blocking goal to "+name+" action...")
+            ac.send_goal_and_wait(goal,rospy.Duration(timeout),self.preempt_timeout)
+          )
+
+    # Wait for all the action clients to start (If we do this in parallel it happens a lot faster)
+    action_wait_threads = []
     for name, ac in self.action_clients.iteritems():
-      rospy.loginfo("Plugs executive waiting for server for "+name)
-      ac.wait_for_server()
-    rospy.loginfo("All actions started.")
+      rospy.loginfo("Waiting for \""+name+"\" action server...")
+      action_wait_threads.append(threading.Thread(target=ac.wait_for_server))
+      action_wait_threads[-1].start()
+    [thread.join() for thread in action_wait_threads]
+    rospy.loginfo("All action servers ready.")
 
 
   def wait_and_transform(self,frame_id,pose):
@@ -98,30 +107,36 @@ class Executive():
 def main():
   rospy.init_node("plugs_executive")
 
-  preempt_timeout = rospy.Duration(5.0)
+  actions = {
+      'tuck_arms':(TuckArmsAction, 30.0),
+      'detect_wall_norm':(DetectWallNormAction, 30.0),
+      'detect_outlet':(DetectOutletAction, 90.0),
+      'fetch_plug':(FetchPlugAction, 60.0),
+      'detect_plug':(DetectPlugInGripperAction, 30.0),
+      'wiggle_plug':(WigglePlugAction, 30.0),
+      'stow_plug':(StowPlugAction, 45.0),
+      'plugin':(PluginAction, 60.0)
+      }
 
   # Construct executive
-  exc = Executive()
+  exc = Executive(actions)
 
   # Untuck the arms
   untuck_goal = TuckArmsGoal(untuck=True,left=False,right=True)
   untucked = False
   while not untucked:
-    rospy.loginfo("Untucking right arm...")
-    untucked = (exc.tuck_arms.send_goal_and_wait(untuck_goal, rospy.Duration(30.0), preempt_timeout) == GoalStatus.SUCCEEDED)
+    untucked = (exc.tuck_arms_and_wait(untuck_goal) == GoalStatus.SUCCEEDED)
 
   # Detect the outlet 
   detect_outlet_goal = DetectOutletGoal()
-  rospy.loginfo("Detecting the outlet ...")
-  if exc.detect_outlet.send_goal_and_wait(detect_outlet_goal, rospy.Duration(90.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+  if exc.detect_outlet_and_wait(detect_outlet_goal) != GoalStatus.SUCCEEDED:
     rospy.logerr("Failed to detect the outlet!")
     return
   outlet_pose = exc.detect_outlet.get_result().outlet_pose
   base_to_outlet = exc.wait_and_transform("base_link",outlet_pose)
 
   # Fetch plug
-  rospy.loginfo('Fetching plug...')
-  if exc.fetch_plug.send_goal_and_wait(FetchPlugGoal(), rospy.Duration(60.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+  if exc.fetch_plug_and_wait(FetchPlugGoal()) != GoalStatus.SUCCEEDED:
     rospy.logerr("Failed to fetch plug!")
     return
   plug_pose = exc.fetch_plug.get_result().plug_pose
@@ -129,8 +144,7 @@ def main():
 
   # Detect the plug in gripper
   detect_plug_goal = DetectPlugInGripperGoal()
-  rospy.loginfo('Detecting plug in gripper...')
-  if exc.detect_plug.send_goal_and_wait(detect_plug_goal, rospy.Duration(30.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+  if exc.detect_plug_and_wait(detect_plug_goal) != GoalStatus.SUCCEEDED:
     rospy.logerr("Failed to detect plug in gripper!")
     return
   plug_pose = exc.detect_plug.get_result().plug_pose
@@ -140,54 +154,45 @@ def main():
   plugin_goal = PluginGoal()
   plugin_goal.gripper_to_plug = gripper_to_plug
   plugin_goal.base_to_outlet = base_to_outlet
-  rospy.loginfo('Plugging in...')
-  if exc.plugin.send_goal_and_wait(plugin_goal, rospy.Duration(60.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+  if exc.plugin_and_wait(plugin_goal) != GoalStatus.SUCCEEDED:
     rospy.logerr("Failed to plug in!")
     return
 
   # Stow plug
-  rospy.loginfo('Stowing plug...')
   stow_plug_goal = StowPlugGoal()
   stow_plug_goal.gripper_to_plug = gripper_to_plug
   stow_plug_goal.base_to_plug = base_to_plug
-  if exc.stow_plug.send_goal_and_wait(stow_plug_goal, rospy.Duration(45.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+  if exc.stow_plug_and_wait(stow_plug_goal) != GoalStatus.SUCCEEDED:
     rospy.logerr("Failed to stow plug!")
     return
 
   # Tuck the arms
-  tuck_goal = TuckArmsGoal()
-  tuck_goal.untuck=False
-  tuck_goal.left=False
-  tuck_goal.right=True
-
-  rospy.loginfo("Tucking arms...")
-  exc.tuck_arms.send_goal_and_wait(tuck_goal, rospy.Duration(30.0), preempt_timeout)
+  tuck_goal = TuckArmsGoal(unutck=False,left=False,right=True)
+  exc.tuck_arms_and_wait(tuck_goal)
 
   return
 
   # Wiggle in
-  rospy.loginfo('Wiggling in...')
   wiggle_goal = WigglePlugGoal()
   wiggle_goal.travel.x = 0.05
   wiggle_goal.offset.y = 0.01
   wiggle_goal.period = rospy.Duration(2.0)
   wiggle_goal.move_duration = rospy.Duration(10.0)
   wiggle_goal.abort_threshold = 0.02
-  if exc.wiggle_plug.send_goal_and_wait(wiggle_goal, rospy.Duration(30.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+  if exc.wiggle_plug_and_wait(wiggle_goal) != GoalStatus.SUCCEEDED:
     rospy.logerr("Failed to wiggle plug in!")
     return
 
   # Wiggle out
-  rospy.loginfo('Wiggling out...')
   wiggle_goal.travel.x = -0.08
   wiggle_goal.offset.y = 0.01
   wiggle_goal.period = rospy.Duration(2.0)
   wiggle_goal.move_duration = rospy.Duration(10.0)
-  if exc.wiggle_plug.send_goal_and_wait(wiggle_goal, rospy.Duration(30.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+  if exc.wiggle_plug_and_wait(wiggle_goal) != GoalStatus.SUCCEEDED:
     rospy.logerr("Failed to wiggle plug out!")
     return
 
-  rospy.loginfo("Plugged in!")
+  rospy.loginfo("Plugged in and uplugged!")
 
 
 if __name__ == "__main__":

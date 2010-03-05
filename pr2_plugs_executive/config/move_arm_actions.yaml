@@ -4,7 +4,15 @@ generate_move_arm_actions:
     l_elbow_flex_joint, l_forearm_roll_joint, l_wrist_flex_joint, l_wrist_roll_joint]
   r_arm_joints: [r_shoulder_pan_joint, r_shoulder_lift_joint, r_upper_arm_roll_joint,
     r_elbow_flex_joint, r_forearm_roll_joint, r_wrist_flex_joint, r_wrist_roll_joint]
-  move_from_outlet:
+  move_arm_from_outlet:
+    arm: r
+    arm_controller: r_arm_plugs_controller
+    waypoints:
+    - [-1.6325496986562438, 0.42041905886268954, -3.7495767079225772, -1.7512209326039887,
+    -0.2744859978760224, -1.2718747470670448, -3.5170595144941732]
+    - [-1.6325496986562438, 0.42041905886268954, -3.7495767079225772, -1.7512209326039887,
+    -0.2744859978760224, -1.2718747470670448, -3.5170595144941732]
+  move_arm_to_detect_outlet:
     arm: r
     arm_controller: r_arm_plugs_controller
     waypoints:
@@ -12,15 +20,7 @@ generate_move_arm_actions:
       -0.2744859978760224, -1.2718747470670448, -3.5170595144941732]
     - [-1.6325496986562438, 0.42041905886268954, -3.7495767079225772, -1.7512209326039887,
       -0.2744859978760224, -1.2718747470670448, -3.5170595144941732]
-  move_to_detect_outlet:
-    arm: r
-    arm_controller: r_arm_plugs_controller
-    waypoints:
-    - [-1.6325496986562438, 0.42041905886268954, -3.7495767079225772, -1.7512209326039887,
-      -0.2744859978760224, -1.2718747470670448, -3.5170595144941732]
-    - [-1.6325496986562438, 0.42041905886268954, -3.7495767079225772, -1.7512209326039887,
-      -0.2744859978760224, -1.2718747470670448, -3.5170595144941732]
-  move_to_detect_plug:
+  move_arm_to_detect_plug:
     arm: r
     arm_controller: r_arm_plugs_controller
     waypoints:
