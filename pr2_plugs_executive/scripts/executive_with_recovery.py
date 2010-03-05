@@ -143,12 +143,12 @@ def main():
 
   # Fetch plug
   plug_pose = exc.fetch_plug_and_wait(FetchPlugGoal()).plug_pose
-  base_to_plug = wait_and_transform("base_link",plug_pose)
+  base_to_plug = exc.wait_and_transform("base_link",plug_pose)
 
   # Detect the plug in gripper
   detect_plug_goal = DetectPlugInGripperGoal()
   plug_pose = exc.detect_plug_and_wait(detect_plug_goal).plug_pose
-  gripper_to_plug = wait_and_transform('r_gripper_tool_frame', plug_pose)
+  gripper_to_plug = exc.wait_and_transform('r_gripper_tool_frame', plug_pose)
 
   # Plug in
   plugin_goal = PluginGoal()
