@@ -83,7 +83,7 @@ class Executive():
       setattr(self, name+"_and_wait",
           lambda goal,timeout=self.actions[name][1]:
             rospy.loginfo("Sending blocking goal to "+name+" action...")
-            ac.send_goal_and_wait(goal,rospy.Duration(timeout),self.preempt_timeout)
+            return ac.send_goal_and_wait(goal,rospy.Duration(timeout),self.preempt_timeout)
           )
 
     # Wait for all the action clients to start (If we do this in parallel it happens a lot faster)
