@@ -41,10 +41,14 @@ def side_outlet_goal():
     # set wall_normal
     goal.wall_normal = geometry_msgs.msg.Vector3Stamped()
     goal.wall_normal.header.stamp = time
-    goal.wall_normal.header.frame_id = 'base_link'
-    goal.wall_normal.vector.x = 0.0
-    goal.wall_normal.vector.y = -1.0
-    goal.wall_normal.vector.z = 0.0
+    #goal.wall_normal.header.frame_id = 'base_link'
+    #goal.wall_normal.vector.x = 0.0
+    #goal.wall_normal.vector.y = -1.0
+    #goal.wall_normal.vector.z = 0.0
+    goal.wall_normal.header.frame_id = 'narrow_stereo_optical_frame'
+    goal.wall_normal.vector.x = -0.184
+    goal.wall_normal.vector.y = -0.668
+    goal.wall_normal.vector.z = 0.721
 
     return goal
 

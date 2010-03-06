@@ -149,6 +149,9 @@ public:
       btVector3 prior_z_basis = prior_in_camera_.getBasis().getColumn(2);
       // New forward vector is set to the wall normal.
       btVector3 adjusted_x_basis = wall_normal_in_camera.normalized();
+      // We assume normal is into the wall, so positive Z in the camera frame.
+      if (adjusted_x_basis.z() < 0)
+        adjusted_x_basis = -adjusted_x_basis;
       // The wall normal should not differ wildly from the prior X (forward) basis vector.
       static const double ANGLE_THRESHOLD = 0.175; // ~10 degrees
       double angle = adjusted_x_basis.angle(prior_x_basis);
