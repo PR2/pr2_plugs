@@ -8,6 +8,7 @@ from pr2_plugs_msgs.msg import *
 from pr2_controllers_msgs.msg import *
 from actionlib_msgs.msg import *
 from trajectory_msgs.msg import JointTrajectoryPoint
+from joint_trajectory_action_tools.tools import *
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
 from math import pi
 
@@ -19,10 +20,7 @@ def execute_cb(goal):
 
   # move to joint space position
   rospy.loginfo("Move in joint space...")
-  joint_space_goal.trajectory.header.stamp = rospy.Time.now()
-  joint_space_goal.trajectory.joint_names = ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint', 'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
-  joint_space_goal.trajectory.points = [JointTrajectoryPoint([-1.1923984671080066, 0.73545055250367874, -3.7393139990349042, -1.5455017517279956, -2.0403840212157824, -1.8022484830811007, -3.1887412034226328], [], [], rospy.Duration(3.0))]
-  if joint_space_client.send_goal_and_wait(joint_space_goal, rospy.Duration(10.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/detect_plug_on_base'), rospy.Duration(10.0), preempt_timeout) != GoalStatus.SUCCEEDED:
     rospy.logerr('Move in joint space failed')
     server.set_aborted()
     return
