@@ -37,7 +37,7 @@ def execute_cb(goal):
   #  joint_space_goal.trajectory.joint_names = ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint', 'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
   #  joint_space_goal.trajectory.points = [JointTrajectoryPoint([-1.0677069146030997, 0.71083342988028253, -2.1979834079675578, -1.7286367016281583, -4.6274214438187489, -0.48602332590819297, -3.2226035743801464], [], [], rospy.Duration(5.0)),
   #                                        JointTrajectoryPoint([-1.8962756484688157, 0.70431962080123955, -2.8628145180971059, -0.67036280141457039, -3.7639958239946822, -0.127640351047833, -2.9658574368724415], [], [], rospy.Duration(10.0))]
-  if  joint_space_client.send_goal_and_wait(get_action_goal('move_to_outlet'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+  if  joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/move_to_outlet'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
     rospy.logerr('Move in joint space failed')
     server.set_aborted()
     return
