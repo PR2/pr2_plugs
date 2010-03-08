@@ -102,7 +102,6 @@ def main():
 
   # Detect the outlet 
   outlet_pose = exc.detect_outlet_and_wait(detect_outlet_goal).outlet_pose
-  base_to_outlet = wait_and_transform("base_link",outlet_pose)
 
   # Plug in
   # Fetch alug
