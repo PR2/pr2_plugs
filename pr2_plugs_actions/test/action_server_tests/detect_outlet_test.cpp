@@ -73,7 +73,7 @@ TEST(ActionServerTest, detect_outlet)
   actionlib::SimpleActionClient<pr2_plugs_msgs::DetectOutletAction> ac("detect_outlet"); 
 
 
-  EXPECT_TRUE(ac.waitForServer(ros::Duration(5.0)));
+  EXPECT_TRUE(ac.waitForServer(ros::Duration(15.0)));
   ros::shutdown();
   spin_thread.join();
   

@@ -73,7 +73,7 @@ TEST(ActionServerTest, detect_wall_norm)
   actionlib::SimpleActionClient<pr2_plugs_msgs::DetectWallNormAction> ac("detect_wall_norm"); 
 
 
-  EXPECT_TRUE(ac.waitForServer(ros::Duration(10.0)));
+  EXPECT_TRUE(ac.waitForServer(ros::Duration(15.0)));
   ros::shutdown();
   spin_thread.join();
   

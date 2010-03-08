@@ -65,7 +65,7 @@ TEST(ActionServerTest, detect_plug)
   actionlib::SimpleActionClient<pr2_plugs_msgs::DetectPlugInGripperAction> ac("detect_plug"); 
 
   boost::thread spin_thread(&spinThread);
-  EXPECT_TRUE(ac.waitForServer(ros::Duration(5.0)));
+  EXPECT_TRUE(ac.waitForServer(ros::Duration(15.0)));
   ros::shutdown();
   spin_thread.join();
   

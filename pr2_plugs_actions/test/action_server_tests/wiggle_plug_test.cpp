@@ -61,7 +61,7 @@ TEST(ActionServerTest, wiggle_plug)
   actionlib::SimpleActionClient<pr2_plugs_msgs::WigglePlugAction> ac("wiggle_plug"); 
 
 
-  EXPECT_TRUE(ac.waitForServer(ros::Duration(5.0)));
+  EXPECT_TRUE(ac.waitForServer(ros::Duration(15.0)));
   ros::shutdown();
   spin_thread.join();
   
