@@ -7,6 +7,7 @@ import actionlib;
 from pr2_common_action_msgs.msg import *
 from pr2_plugs_msgs.msg import *
 from pr2_controllers_msgs.msg import *
+from joint_trajectory_action_tools.tools import *
 from actionlib_msgs.msg import *
 from trajectory_msgs.msg import JointTrajectoryPoint
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
