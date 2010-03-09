@@ -8,8 +8,8 @@
   <node pkg="pr2_plugs_actions" type="detect_wall_norm.py" name="detect_wall_norm" output="screen"/>
 
   <!-- vision detect outlet action -->
-  <!--include file="$(find pr2_plugs_actions)/launch/detect_outlet.launch"/-->
-  <node pkg="pr2_plugs_actions" type="vision_detect_outlet.py" name="vision_detect_outlet" output="screen"/>
+  <include file="$(find pr2_plugs_actions)/launch/detect_outlet.launch"/>
+  <!--node pkg="pr2_plugs_actions" type="vision_detect_outlet.py" name="vision_detect_outlet" output="screen"/-->
 
   <!-- vision detect plug action -->
   <!--include file="$(find pr2_plugs_actions)/launch/detect_plug.launch"/-->
