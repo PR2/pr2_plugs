@@ -23,26 +23,25 @@ def execute_cb(goal):
   rospy.loginfo("Action server received goal")
   preempt_timeout = rospy.Duration(5.0)
 
-  # move to joint space position
-  rospy.loginfo("Move in joint space...")
-  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/detect_plug'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr('Move 1 in joint space failed')
+  # move the spine up
+  rospy.loginfo("Moving up spine...")
+  spine_goal.position = 0.16
+  if spine_client.send_goal_and_wait(spine_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    rospy.logerr('Moving up spine failed')
     server.set_aborted()
     return
 
-  # open gripper
-  rospy.loginfo("Open gripper...")  
-  gripper_goal.command.position = 0.07
-  gripper_goal.command.max_effort = 99999
-  if gripper_client.send_goal_and_wait(gripper_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr('Open gripper failed')
+  # move to detection position in joint space
+  rospy.loginfo("Move in joint space to detecting position...")
+  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/detect_plug_on_base'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    rospy.logerr('Move to detection position failed')
     server.set_aborted()
     return
 
   # call vision plug detection
   rospy.loginfo("Detecting plug...")
   detect_plug_goal.camera_name = "/forearm_camera_r"
-  detect_plug_goal.prior = PoseStampedMath().fromEuler(-0.32, -0.24, 0.56, 0, -pi/2, pi).msg
+  detect_plug_goal.prior = PoseStampedMath().fromEuler(0.075, 0.03, 0.24, pi/2, 0, pi/2).msg
   detect_plug_goal.prior.header.stamp = rospy.Time.now()
   detect_plug_goal.prior.header.frame_id = "base_link"
   detect_plug_goal.origin_on_right = True
@@ -58,12 +57,30 @@ def execute_cb(goal):
     return
   plug_pose = transformer.transformPose('base_link', plug_pose)
 
+
+  # move to grasp position in joint space
+  rospy.loginfo("Move in joint space to grasping position...")
+  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/grasp_plug_approach'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    rospy.logerr('Move to grasping position failed')
+    server.set_aborted()
+    return
+
+  # open gripper
+  rospy.loginfo("Open gripper...")  
+  gripper_goal.command.position = 0.07
+  gripper_goal.command.max_effort = 99999
+  if gripper_client.send_goal_and_wait(gripper_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    rospy.logerr('Open gripper failed')
+    server.set_aborted()
+    return
+
+
   # grasp plug
   cart_space_goal.ik_seed.name = ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint', 'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
-  cart_space_goal.ik_seed.position = [-2.1060293903819898, 0.26298790696529961, -3.6540052314061247, -2.0685583319566816, -0.57887736940987111, -1.4212910723690739, -3.2345250184874357]
+  cart_space_goal.ik_seed.position = [-0.42972163482294801, 0.99393222878020571, -2.9066834445806746, -1.1962312380847619, 1.0253396733773847, -0.99226493985362119, 2.6919730975699872]
   pose_tf_plug = PoseStampedMath(detect_plug_client.get_result().plug_pose)
   pose_plug_gripper = PoseStampedMath()
-  pose_plug_gripper.fromEuler(-.03, 0, .01, pi/2, 0, -pi/6)
+  pose_plug_gripper.fromEuler(-.03, 0, .01, pi/2, 0, -pi/9)
   pose_tf_plug = detect_plug_client.get_result().plug_pose
   try:
     transformer.waitForTransform("base_link", pose_tf_plug.header.frame_id, pose_tf_plug.header.stamp, rospy.Duration(2.0))
@@ -99,16 +116,23 @@ def execute_cb(goal):
   gripper_goal.command.max_effort = 99999
   gripper_client.send_goal_and_wait(gripper_goal, rospy.Duration(20.0), preempt_timeout) 
 
-  # Pull plug off base
-  joint_space_goal.trajectory.header.stamp = rospy.Time.now()
-  if joint_space_client.send_goal_and_wait(joint_space_goal, rospy.Duration(5.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr('Move plug off base failed')
+  # move plug off base in joint space
+  rospy.loginfo("Move in joint space to remove plug from base...")
+  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/remove_plug_from_base'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    rospy.logerr('Move to remove plug from base failed')
+    server.set_aborted()
+    return
+
+  # move the spine down
+  rospy.loginfo("Moving down spine...")
+  spine_goal.position = 0.01
+  if spine_client.send_goal_and_wait(spine_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    rospy.logerr('Moving down spine failed')
     server.set_aborted()
     return
 
   # return result
   result = FetchPlugResult()
-  #result.plug_pose = detect_plug_client.get_result().plug_pose
   result.plug_pose = plug_pose
   server.set_succeeded(result)
   rospy.loginfo("Action server goal finished")  
@@ -129,7 +153,10 @@ if __name__ == '__main__':
 
   joint_space_client = actionlib.SimpleActionClient('r_arm_plugs_controller/joint_trajectory_action', JointTrajectoryAction)
   joint_space_client.wait_for_server()
-  joint_space_goal = JointTrajectoryGoal()
+
+  spine_client = actionlib.SimpleActionClient('torso_controller/position_joint_action', SingleJointPositionAction)
+  spine_client.wait_for_server()
+  spine_goal = SingleJointPositionGoal()
 
   cart_space_client = actionlib.SimpleActionClient('r_arm_ik', PR2ArmIKAction)
   cart_space_client.wait_for_server()

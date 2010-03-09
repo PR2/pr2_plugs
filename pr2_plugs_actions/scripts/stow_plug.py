@@ -23,9 +23,17 @@ def execute_cb(goal):
   rospy.loginfo("Action server received goal")
   preempt_timeout = rospy.Duration(5.0)
 
+  # move the spine up
+  rospy.loginfo("Moving up spine...")
+  spine_goal.position = 0.16
+  if spine_client.send_goal_and_wait(spine_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    rospy.logerr('Moving up spine failed')
+    server.set_aborted()
+    return
+
   # move to joint space position
   rospy.loginfo("Move in joint space...")
-  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/detect_plug'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/grasp_plug_approach'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
     rospy.logerr('Move approach in joint space failed')
     server.set_aborted()
     return
@@ -76,7 +84,7 @@ def execute_cb(goal):
 
   # move to joint space position
   rospy.loginfo("Move in joint space...")
-  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/detect_plug'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/grasp_plug_approach'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
     rospy.logerr('Move retract in joint space failed')
     server.set_aborted()
     return
@@ -98,6 +106,14 @@ def execute_cb(goal):
   rospy.loginfo("Move in joint space...")
   if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/bring_arm_forward'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
     rospy.logerr('Move in joint space failed')
+    server.set_aborted()
+    return
+
+  # move the spine down
+  rospy.loginfo("Moving down spine...")
+  spine_goal.position = 0.01
+  if spine_client.send_goal_and_wait(spine_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    rospy.logerr('Moving down spine failed')
     server.set_aborted()
     return
 
@@ -126,6 +142,10 @@ if __name__ == '__main__':
   cart_space_client = actionlib.SimpleActionClient('r_arm_ik', PR2ArmIKAction)
   cart_space_client.wait_for_server()
   cart_space_goal = PR2ArmIKGoal()
+
+  spine_client = actionlib.SimpleActionClient('torso_controller/position_joint_action', SingleJointPositionAction)
+  spine_client.wait_for_server()
+  spine_goal = SingleJointPositionGoal()
 
   detect_plug_client = actionlib.SimpleActionClient('vision_plug_detection', VisionPlugDetectionAction)
   detect_plug_client.wait_for_server()

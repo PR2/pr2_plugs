@@ -19,9 +19,9 @@ def execute_cb(goal):
   preempt_timeout = rospy.Duration(5.0)
 
   # move to joint space position
-  rospy.loginfo("Move in joint space...")
-  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/detect_plug_on_base'), rospy.Duration(10.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr('Move in joint space failed')
+  rospy.loginfo("Move in joint space to detect plug in gripper...")
+  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/detect_plug_in_gripper'), rospy.Duration(10.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    rospy.logerr('Move to detect plug in gripper failed')
     server.set_aborted()
     return
 

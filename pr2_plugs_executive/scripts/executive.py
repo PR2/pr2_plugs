@@ -80,7 +80,7 @@ def main():
   # Untuck the arms
   untuck_goal = TuckArmsGoal()
   untuck_goal.untuck=True
-  untuck_goal.left=False
+  untuck_goal.left=True
   untuck_goal.right=True
   untucked = False
   while not untucked:
@@ -132,13 +132,13 @@ def main():
   gripper_to_plug = transformer.transformPose('r_gripper_tool_frame', plug_pose)
 
   # Plug in
-  plugin_goal = PluginGoal()
-  plugin_goal.gripper_to_plug = gripper_to_plug
-  plugin_goal.base_to_outlet = base_to_outlet
-  rospy.loginfo('Plugging in...')
-  if ac['plugin'].send_goal_and_wait(plugin_goal, rospy.Duration(60.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr("Failed to plug in!")
-    return
+#   plugin_goal = PluginGoal()
+#   plugin_goal.gripper_to_plug = gripper_to_plug
+#   plugin_goal.base_to_outlet = base_to_outlet
+#   rospy.loginfo('Plugging in...')
+#   if ac['plugin'].send_goal_and_wait(plugin_goal, rospy.Duration(60.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+#     rospy.logerr("Failed to plug in!")
+#     return
 
   # Stow plug
   rospy.loginfo('Stowing plug...')

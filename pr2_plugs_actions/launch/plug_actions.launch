@@ -12,8 +12,8 @@
   <!--node pkg="pr2_plugs_actions" type="vision_detect_outlet.py" name="vision_detect_outlet" output="screen"/-->
 
   <!-- vision detect plug action -->
-  <include file="$(find pr2_plugs_actions)/launch/detect_plug.launch"/>
-  <!--node pkg="pr2_plugs_actions" type="vision_detect_plug.py" name="vision_detect_plug" output="screen"/-->
+  <!--include file="$(find pr2_plugs_actions)/launch/detect_plug.launch"/-->
+  <node pkg="pr2_plugs_actions" type="vision_detect_plug.py" name="vision_detect_plug" output="screen"/>
 
   <!-- detect outlet action -->
   <node pkg="pr2_plugs_actions" type="detect_outlet.py" name="detect_outlet" output="screen"/>
@@ -37,10 +37,10 @@
 
 
   <!-- tf frames for debugging -->
-  <!--node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_outlet_detection/goal VisionOutletDetectionActionGoal goal.prior outlet_detection_prior" name="tf_outlet_detection_prior" output="screen" /-->
-  <!--node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_outlet_detection/result VisionOutletDetectionActionResult result.outlet_pose outlet_detection_result" name="tf_outlet_detection_result" output="screen" /-->
-  <!--node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_plug_detection/goal VisionPlugDetectionActionGoal goal.prior plug_detection_prior" name="tf_plug_detection_prior" output="screen" /-->        
-  <!--node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_plug_detection/result VisionPlugDetectionActionResult result.plug_pose plug_detection_result" name="tf_plug_detection_result" output="screen" /-->        
+  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_outlet_detection/goal VisionOutletDetectionActionGoal goal.prior outlet_detection_prior" name="tf_outlet_detection_prior" output="screen" />
+  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_outlet_detection/result VisionOutletDetectionActionResult result.outlet_pose outlet_detection_result" name="tf_outlet_detection_result" output="screen" />
+  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_plug_detection/goal VisionPlugDetectionActionGoal goal.prior plug_detection_prior" name="tf_plug_detection_prior" output="screen" />   
+  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_plug_detection/result VisionPlugDetectionActionResult result.plug_pose plug_detection_result" name="tf_plug_detection_result" output="screen" />
   <node pkg="pr2_plugs_actions" type="tf_publish.py" args="r_arm_ik/goal PR2ArmIKActionGoal goal.pose r_arm_ik_goal" name="tf_r_arm_ik_goal" output="screen" />        
 
 </launch>
