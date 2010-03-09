@@ -28,5 +28,6 @@
   <depend package="outlet_pose_estimation"/>
   <depend package="image_transport"/>
   <depend package="joint_trajectory_action_tools"/>
+  <depend package="executive_python"/>
 
 </package>

@@ -70,7 +70,7 @@ def main():
 
   def wait_and_transform(frame_id,pose):
     try:
-      transformer.waitForTransform(frame, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
+      transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
     except rospy.ServiceException, e:
       rospy.logerr('Could not transform between %s and %s' % (frame_id,pose.header.frame_id))
       raise e
@@ -101,10 +101,10 @@ def main():
   exc.tuck_arms_and_wait(untuck_goal)
 
   # Detect the outlet 
-  outlet_pose = exc.detect_outlet_and_wait(detect_outlet_goal).outlet_pose
+  base_to_outlet = exc.detect_outlet_and_wait(detect_outlet_goal).outlet_pose
 
   # Plug in
-  # Fetch alug
+  # Fetch plug
   plug_pose = exc.fetch_plug_and_wait(FetchPlugGoal()).plug_pose
   base_to_plug = wait_and_transform("base_link",plug_pose)
 
@@ -117,16 +117,18 @@ def main():
   plugin_goal.base_to_outlet = base_to_outlet
   exc.plugin_and_wait(plugin_goal)
 
-  # Stow plug
-  stow_plug_goal.gripper_to_plug = gripper_to_plug
-  stow_plug_goal.base_to_plug = base_to_plug
-  exc.stow_plug_and_wait(stow_plug_goal)
-
   # Wiggle in
+  wiggle_in_goal.initial_plug_pose = gripper_to_plug
+  wiggle_in_goal.initial_plug_pose.header.stamp = rospy.Time.now()
   exc.wiggle_plug_and_wait(wiggle_in_goal) 
 
   # Wiggle out
   exc.wiggle_plug_and_wait(wiggle_out_goal)
+
+  # Stow plug
+  stow_plug_goal.gripper_to_plug = gripper_to_plug
+  stow_plug_goal.base_to_plug = base_to_plug
+  exc.stow_plug_and_wait(stow_plug_goal)
 
   # Tuck the arms
   exc.tuck_arms_and_wait(tuck_goal)

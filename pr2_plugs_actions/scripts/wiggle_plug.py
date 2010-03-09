@@ -31,6 +31,15 @@ class PlugWiggleServer:
     self.server = actionlib.simple_action_server.SimpleActionServer(self.name, WigglePlugAction)
     self.server.register_goal_callback(self.goalCB)
 
+
+  def wait_and_transform(self,frame_id,pose):
+    try:
+      self.tf.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
+    except rospy.ServiceException, e:
+      rospy.logerr('Could not transform between %s and %s' % (frame_id,pose.header.frame_id))
+      raise e
+    return self.tf.transformPose(frame_id, pose)
+
   def joint_state_cb(self, msg):
     if self.ik_seed:
       return
@@ -54,8 +63,7 @@ class PlugWiggleServer:
 
     #Find initial pose of plug
     initial_plug_pose = geometry_msgs.msg.PoseStamped()
-    initial_plug_pose.header.frame_id = 'plug_frame_gripper_filtered'
-    initial_plug_pose = self.tf.transformPose('base_link', initial_plug_pose)
+    initial_plug_pose = self.wait_and_transform('base_link', goal.initial_plug_pose)
 
     #Transform desired velocity
     travel_velocity = geometry_msgs.msg.Vector3Stamped()
@@ -99,8 +107,8 @@ class PlugWiggleServer:
       #rate.sleep()
       #Find initial pose of plug
       current_plug_pose = geometry_msgs.msg.PoseStamped()
-      current_plug_pose.header.frame_id = 'plug_frame_gripper_filtered'
-      current_plug_pose = self.tf.transformPose('base_link', current_plug_pose)
+      initial_plug_pose.header.stamp = rospy.Time.now()
+      current_plug_pose = self.wait_and_transform('base_link', goal.initial_plug_pose)
       #If we've wiggled more than abort_threshold out of line, assume we were not in the socket and abort.
       x_error = current_plug_pose.pose.position.x - initial_plug_pose.pose.position.x
       y_error = current_plug_pose.pose.position.y - initial_plug_pose.pose.position.y

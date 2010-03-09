@@ -16,8 +16,6 @@ import copy
 import math
 import tf
 
-#server actionlib.simple_action_server.SimpleActionServer
-
 def drange(start, stop, step):
   r = start
   while r < stop:
