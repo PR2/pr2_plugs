@@ -33,7 +33,7 @@ def execute_cb(goal):
 
   # move to joint space position
   rospy.loginfo("Move in joint space...")
-  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/grasp_plug_approach'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/stow_plug'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
     rospy.logerr('Move approach in joint space failed')
     server.set_aborted()
     return
