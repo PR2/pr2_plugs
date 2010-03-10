@@ -42,11 +42,13 @@
 #include <tf/transform_listener.h>
 #include <kdl/frames.hpp>
 #include <actionlib/server/simple_action_server.h>
-#include <actionlib/server/simple_action_client.h>
+#include <actionlib/client/simple_action_client.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d.h>
 #include <base_local_planner/costmap_model.h>
 #include <geometry_msgs/Point.h>
+#include <pr2_plugs_msgs/AllignBaseAction.h>
+#include <pr2_plugs_msgs/DetectWallNormAction.h>
 
 
 namespace pr2_plugs_actions{
@@ -58,7 +60,7 @@ public:
   AllignBaseAction();
   ~AllignBaseAction();
 
-  void execute(const door_msgs::DoorGoalConstPtr& goal);
+  void execute(const pr2_plugs_msgs::AllignBaseGoalConstPtr& goal);
 
 private:
   geometry_msgs::Point toPoint(const tf::Vector3& pnt);
@@ -68,14 +70,14 @@ private:
   double getVectorAngle(const tf::Vector3& v1, const tf::Vector3& v2);
   std::vector<geometry_msgs::Point> getOrientedFootprint(const tf::Vector3 pos, double theta_cost);
 
-  actionlib::SimpleActionClient wall_detector_;
-  tf::TransformListener& tf_;
+  actionlib::SimpleActionClient<pr2_plugs_msgs::DetectWallNormAction> wall_detector_;
+  tf::TransformListener tf_;
   costmap_2d::Costmap2DROS costmap_ros_;
   costmap_2d::Costmap2D costmap_;
   base_local_planner::CostmapModel costmap_model_;
   ros::Publisher base_pub_;
 
-  actionlib::SimpleActionServer<pr2_plugs_msgs::AllignBase> action_server_;
+  actionlib::SimpleActionServer<pr2_plugs_msgs::AllignBaseAction> action_server_;
   std::vector<geometry_msgs::Point> footprint_;
 };
 

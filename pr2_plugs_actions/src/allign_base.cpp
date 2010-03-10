@@ -42,12 +42,13 @@ using namespace std;
 static const string fixed_frame = "odom_combined";
 static const double motion_step = 0.01; // 1 cm steps
 static const double update_rate = 10.0; // 10 hz
+static const double desired_distance = 1.0;
 
 namespace pr2_plugs_actions{
 
 AllignBaseAction::AllignBaseAction() :
   wall_detector_("detect_wall_norm", true),
-  costmap_ros_("costmap_allign_base", tf),
+  costmap_ros_("costmap_allign_base", tf_),
   costmap_model_(costmap_),
   action_server_(ros::NodeHandle(), 
 		 "allign_base", 
@@ -68,7 +69,7 @@ AllignBaseAction::~AllignBaseAction()
 
 
 
-void AllignBaseAction::execute(const door_msgs::AllignBaseConstPtr& goal)
+void AllignBaseAction::execute(const pr2_plugs_msgs::AllignBaseGoalConstPtr& goal)
 { 
   ROS_INFO("AllignBaseAction: execute");
 
@@ -76,34 +77,34 @@ void AllignBaseAction::execute(const door_msgs::AllignBaseConstPtr& goal)
 
   // get wall normal
   pr2_plugs_msgs::DetectWallNormGoal wall_norm_goal;
-  wall_norm_goal.look_point = goal.look_point;
-  if (wall_detector_.sendGoalAndWait(wall_norm_goal, ros::Duration(100.0), ros::Duration(5.0)) != SimpleClientGoalState::SUCCEEDED){
+  wall_norm_goal.look_point = goal->look_point;
+  if (wall_detector_.sendGoalAndWait(wall_norm_goal, ros::Duration(100.0), ros::Duration(5.0)) != actionlib::SimpleClientGoalState::SUCCEEDED){
     ROS_ERROR("AllignBaseAction: failed to get wall norm");
     action_server_.setAborted();
     return;
   }
 
   // convert wall norm to fixed frame
-  geometry_msgs::PointStamped wall_point = wall_detector_.getResult().wall_point;
-  geometry_msgs::PointStamped wall_norm = wall_detector_.getResult().wall_norm;
-  if (!tf_.waitForTransform(fixed_frame, wall_norm.header.frame_id, wall_norm.header.stamp, ros::Duration(2.0))){
-    ROS_ERROR("AllignBaseAction: failed to transform from frame %s to %s", fixed_frame.c_str(), wall_norm.header.frame_id.c_str());
+  geometry_msgs::PointStamped wall_point_msg = wall_detector_.getResult()->wall_point;
+  geometry_msgs::Vector3Stamped wall_norm_msg = wall_detector_.getResult()->wall_norm;
+  if (!tf_.waitForTransform(fixed_frame, wall_norm_msg.header.frame_id, wall_norm_msg.header.stamp, ros::Duration(2.0))){
+    ROS_ERROR("AllignBaseAction: failed to transform from frame %s to %s", fixed_frame.c_str(), wall_norm_msg.header.frame_id.c_str());
     action_server_.setAborted();
     return;
   }
-  tf_.transformPoint(fixed_frame, wall_point, wall_point);
-  tf_.transformVector(fixed_frame, wall_norm, wall_norm);
-  tf::Vector3 wall_normal = fromVector(wall_norm);
-  tf::Vector3 wall_point = fromPoint(wall_point);
+  tf_.transformPoint(fixed_frame, wall_point_msg, wall_point_msg);
+  tf_.transformVector(fixed_frame, wall_norm_msg, wall_norm_msg);
+  tf::Vector3 wall_norm = fromVector(wall_norm_msg.vector);
+  tf::Vector3 wall_point = fromPoint(wall_point_msg.point);
 
   // get current robot pose
   tf::Stamped<tf::Pose> robot_pose;
   costmap_ros_.getRobotPose(robot_pose);
-  ROS_DEBUG("AllignBaseAction: current robot pose %f %f - %f", robot_pose.getOrigin().x(), robot_pose.getOrigin().y(), tf::getYaw(robot_pose.getRotation()))
+  ROS_DEBUG("AllignBaseAction: current robot pose %f %f - %f", robot_pose.getOrigin().x(), robot_pose.getOrigin().y(), tf::getYaw(robot_pose.getRotation()));
 
   // get desired robot pose
   tf::Vector3 desired_position = robot_pose.getOrigin() + (wall_norm * (wall_norm.dot(wall_point-robot_pose.getOrigin()) - desired_distance));
-  double yaw = getVectorAngle(tf::Vector(0,1,0), wall_norm);
+  double yaw = getVectorAngle(tf::Vector3(0,1,0), wall_norm);
   ROS_DEBUG("AllignBaseAction: desired robot pose %f %f - %f", desired_position.x(), desired_position.y(), yaw);
 
   costmap_ros_.stop();
@@ -169,9 +170,9 @@ double AllignBaseAction::getVectorAngle(const tf::Vector3& v1, const tf::Vector3
 
 int main(int argc, char** argv)
 {
-  ros::init("allign_base", argc, argv);
+  ros::init(argc, argv, "allign_base");
 
-  pr2_plugs_actions::AllignBase action_server;
+  pr2_plugs_actions::AllignBaseAction action_server;
 
   ros::spin();
   return 0;

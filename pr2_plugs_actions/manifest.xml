@@ -30,5 +30,7 @@
   <depend package="joint_trajectory_action_tools"/>
   <depend package="pr2_arm_ik_action" />
   <depend package="executive_python"/>
+  <depend package="costmap_2d"/>
+  <depend package="base_local_planner"/>
 
 </package>
