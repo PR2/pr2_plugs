@@ -1,5 +1,6 @@
 <launch>
   <rosparam command="load" file="$(find pr2_plugs_actions)/config/joint_trajectories.yaml" />
+  <rosparam command="load" file="$(find pr2_plugs_actions)/config/cart_ik_seeds.yaml" />
 
   <!-- detect wall norm action -->
   <include file="$(find stereo_wall_detection)/wall_extractor.launch"/>

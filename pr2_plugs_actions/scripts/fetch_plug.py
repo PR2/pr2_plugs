@@ -8,6 +8,7 @@ from pr2_common_action_msgs.msg import *
 from pr2_plugs_msgs.msg import *
 from pr2_controllers_msgs.msg import *
 from joint_trajectory_action_tools.tools import *
+from pr2_arm_ik_action.tools import *
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
 from actionlib_msgs.msg import *
 import geometry_msgs.msg
@@ -76,8 +77,8 @@ def execute_cb(goal):
 
 
   # grasp plug
-  cart_space_goal.ik_seed.name = ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint', 'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
-  cart_space_goal.ik_seed.position = [-0.42972163482294801, 0.99393222878020571, -2.9066834445806746, -1.1962312380847619, 1.0253396733773847, -0.99226493985362119, 2.6919730975699872]
+  cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/grasp_plug_seed')
+
   pose_tf_plug = PoseStampedMath(detect_plug_client.get_result().plug_pose)
   pose_plug_gripper = PoseStampedMath()
   pose_plug_gripper.fromEuler(-.03, 0, .01, pi/2, 0, -pi/9)
