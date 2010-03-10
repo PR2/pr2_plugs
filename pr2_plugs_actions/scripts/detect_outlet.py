@@ -34,6 +34,14 @@ def execute_cb(goal):
       rospy.logerr('Wall norm detection failed, trying again')
       rospy.sleep(2.0)
 
+    # move the spine up
+    rospy.loginfo("Moving down spine...")
+    spine_goal.position = 0.01
+    if spine_client.send_goal_and_wait(spine_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+      rospy.logerr('Moving down spine failed')
+      server.set_aborted()
+      return
+
     # move to joint space position
     rospy.loginfo("Move in joint space to view the outlet...")
     if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/detect_outlet'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
@@ -101,11 +109,13 @@ if __name__ == '__main__':
   # Construct tf listener
   transformer = tf.TransformListener(True, rospy.Duration(60.0))  
 
-
   # create action clients we use
   joint_space_client = actionlib.SimpleActionClient('r_arm_plugs_controller/joint_trajectory_action', JointTrajectoryAction)
   joint_space_client.wait_for_server()
-  #  joint_space_goal = JointTrajectoryGoal()
+
+  spine_client = actionlib.SimpleActionClient('torso_controller/position_joint_action', SingleJointPositionAction)
+  spine_client.wait_for_server()
+  spine_goal = SingleJointPositionGoal()
 
   wall_norm_client = actionlib.SimpleActionClient('detect_wall_norm', DetectWallNormAction)
   wall_norm_client.wait_for_server()
