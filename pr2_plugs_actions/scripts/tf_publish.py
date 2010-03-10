@@ -30,11 +30,12 @@ class tfPublisher:
 
     def publish_tf(self): 
         if self.initialized:
-            position = self.pose.pose.position
-            orientation = self.pose.pose.orientation
-            self.tf_broadcaster.sendTransform((position.x, position.y, position.z), 
-                                              (orientation.x, orientation.y, orientation.z, orientation.w),
-                                              rospy.Time.now(), self.my_tf_name, self.pose.header.frame_id)
+            if(len(self.pose.header.frame_id)>0):
+                position = self.pose.pose.position
+                orientation = self.pose.pose.orientation
+                self.tf_broadcaster.sendTransform((position.x, position.y, position.z), 
+                                                  (orientation.x, orientation.y, orientation.z, orientation.w),
+                                                  rospy.Time.now(), self.my_tf_name, self.pose.header.frame_id)
         
 
 
