@@ -5,6 +5,20 @@ pr2_plugs_configuration:
     seed_position: 
     - [-0.42972163482294801, 0.99393222878020571, -2.9066834445806746, -1.1962312380847619, 
       1.0253396733773847, -0.99226493985362119, 2.6919730975699872]
+  return_plug_seed:
+    joint_names: ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint',
+                  'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
+    seed_position:
+    - [-0.42972163482294801, 0.99393222878020571, -2.9066834445806746, -1.1962312380847619, 
+      1.0253396733773847, -0.99226493985362119, 2.6919730975699872]
+  approach_outlet_seed:
+    joint_names: ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint',
+                  'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
+    seed_position:
+    - [-1.1923984671080066, 0.73545055250367874, -3.7393139990349042, -1.5455017517279956, 
+      -2.0403840212157824, -1.8022484830811007, -3.1887412034226328]
+
+
 
 
 

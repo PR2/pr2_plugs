@@ -7,6 +7,7 @@ import actionlib;
 from pr2_common_action_msgs.msg import *
 from pr2_plugs_msgs.msg import *
 from pr2_controllers_msgs.msg import *
+from pr2_arm_ik_action.tools import *
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
 from actionlib_msgs.msg import *
 import geometry_msgs.msg
@@ -27,8 +28,7 @@ def execute_cb(goal):
   preempt_timeout = rospy.Duration(5.0)
 
   # approach outlet
-  cart_space_goal.ik_seed.name = ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint', 'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
-  cart_space_goal.ik_seed.position =   [-1.1923984671080066, 0.73545055250367874, -3.7393139990349042, -1.5455017517279956, -2.0403840212157824, -1.8022484830811007, -3.1887412034226328]
+  cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/approah_outlet_seed')
 
   time = rospy.Time.now()
   try:
