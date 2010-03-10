@@ -24,18 +24,18 @@ class tfPublisher:
 
     def callback(self, data):
         self.pose = eval("data."+self.my_field)
-        if not self.initialized:
-            rospy.loginfo('Initializing tf publisher')
-        self.initialized = True
+        if(len(self.pose.header.frame_id)>0):
+            if not self.initialized:
+                rospy.loginfo('Initializing tf publisher')
+            self.initialized = True
 
     def publish_tf(self): 
         if self.initialized:
-            if(len(self.pose.header.frame_id)>0):
-                position = self.pose.pose.position
-                orientation = self.pose.pose.orientation
-                self.tf_broadcaster.sendTransform((position.x, position.y, position.z), 
-                                                  (orientation.x, orientation.y, orientation.z, orientation.w),
-                                                  rospy.Time.now(), self.my_tf_name, self.pose.header.frame_id)
+            position = self.pose.pose.position
+            orientation = self.pose.pose.orientation
+            self.tf_broadcaster.sendTransform((position.x, position.y, position.z), 
+                                              (orientation.x, orientation.y, orientation.z, orientation.w),
+                                              rospy.Time.now(), self.my_tf_name, self.pose.header.frame_id)
         
 
 

@@ -13,8 +13,8 @@
   <!--node pkg="pr2_plugs_actions" type="vision_detect_outlet.py" name="vision_detect_outlet" output="screen"/-->
 
   <!-- vision detect plug action -->
-  <!--include file="$(find pr2_plugs_actions)/launch/detect_plug.launch"/-->
-  <node pkg="pr2_plugs_actions" type="vision_detect_plug.py" name="vision_detect_plug" output="screen"/>
+  <include file="$(find pr2_plugs_actions)/launch/detect_plug.launch"/>
+  <!--node pkg="pr2_plugs_actions" type="vision_detect_plug.py" name="vision_detect_plug" output="screen"/-->
 
   <!-- detect outlet action -->
   <node pkg="pr2_plugs_actions" type="detect_outlet.py" name="detect_outlet" output="screen"/>
