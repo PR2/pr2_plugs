@@ -22,7 +22,8 @@
   <!-- detect plug action -->
   <node pkg="pr2_plugs_actions" type="detect_plug.py" name="detect_plug" output="screen"/>
 
-
+  <!-- align base action -->
+  <node pkg="pr2_plugs_actions" type="align_base" name="align_base" output="screen"/>
 
   <!-- fetch plug action -->
   <node pkg="pr2_plugs_actions" type="fetch_plug.py" name="fetch_plug" output="screen"/>
