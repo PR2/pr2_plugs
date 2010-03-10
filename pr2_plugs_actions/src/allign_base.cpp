@@ -1,0 +1,178 @@
+/*********************************************************************
+ * Software License Agreement (BSD License)
+ * 
+ *  Copyright (c) 2008, Willow Garage, Inc.
+ *  All rights reserved.
+ * 
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ * 
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of Willow Garage nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ * 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *********************************************************************/
+
+/* Author: Wim Meeussen */
+
+#include "pr2_plugs_actions/allign_base.h"
+
+using namespace ros;
+using namespace std;
+
+static const string fixed_frame = "odom_combined";
+static const double motion_step = 0.01; // 1 cm steps
+static const double update_rate = 10.0; // 10 hz
+
+namespace pr2_plugs_actions{
+
+AllignBaseAction::AllignBaseAction() :
+  wall_detector_("detect_wall_norm", true),
+  costmap_ros_("costmap_allign_base", tf),
+  costmap_model_(costmap_),
+  action_server_(ros::NodeHandle(), 
+		 "allign_base", 
+		 boost::bind(&AllignBaseAction::execute, this, _1))
+{
+  costmap_ros_.stop();
+
+  ros::NodeHandle node;
+  base_pub_ = node.advertise<geometry_msgs::Twist>("base_controller/command", 10);
+
+  footprint_ = costmap_ros_.getRobotFootprint();
+};
+
+
+
+AllignBaseAction::~AllignBaseAction()
+{};
+
+
+
+void AllignBaseAction::execute(const door_msgs::AllignBaseConstPtr& goal)
+{ 
+  ROS_INFO("AllignBaseAction: execute");
+
+  costmap_ros_.start();
+
+  // get wall normal
+  pr2_plugs_msgs::DetectWallNormGoal wall_norm_goal;
+  wall_norm_goal.look_point = goal.look_point;
+  if (wall_detector_.sendGoalAndWait(wall_norm_goal, ros::Duration(100.0), ros::Duration(5.0)) != SimpleClientGoalState::SUCCEEDED){
+    ROS_ERROR("AllignBaseAction: failed to get wall norm");
+    action_server_.setAborted();
+    return;
+  }
+
+  // convert wall norm to fixed frame
+  geometry_msgs::PointStamped wall_point = wall_detector_.getResult().wall_point;
+  geometry_msgs::PointStamped wall_norm = wall_detector_.getResult().wall_norm;
+  if (!tf_.waitForTransform(fixed_frame, wall_norm.header.frame_id, wall_norm.header.stamp, ros::Duration(2.0))){
+    ROS_ERROR("AllignBaseAction: failed to transform from frame %s to %s", fixed_frame.c_str(), wall_norm.header.frame_id.c_str());
+    action_server_.setAborted();
+    return;
+  }
+  tf_.transformPoint(fixed_frame, wall_point, wall_point);
+  tf_.transformVector(fixed_frame, wall_norm, wall_norm);
+  tf::Vector3 wall_normal = fromVector(wall_norm);
+  tf::Vector3 wall_point = fromPoint(wall_point);
+
+  // get current robot pose
+  tf::Stamped<tf::Pose> robot_pose;
+  costmap_ros_.getRobotPose(robot_pose);
+  ROS_DEBUG("AllignBaseAction: current robot pose %f %f - %f", robot_pose.getOrigin().x(), robot_pose.getOrigin().y(), tf::getYaw(robot_pose.getRotation()))
+
+  // get desired robot pose
+  tf::Vector3 desired_position = robot_pose.getOrigin() + (wall_norm * (wall_norm.dot(wall_point-robot_pose.getOrigin()) - desired_distance));
+  double yaw = getVectorAngle(tf::Vector(0,1,0), wall_norm);
+  ROS_DEBUG("AllignBaseAction: desired robot pose %f %f - %f", desired_position.x(), desired_position.y(), yaw);
+
+  costmap_ros_.stop();
+  action_server_.setSucceeded();
+}
+
+
+geometry_msgs::Point AllignBaseAction::toPoint(const tf::Vector3& pnt)
+{
+  geometry_msgs::Point res;
+  res.x = pnt.x();
+  res.y = pnt.y();
+  res.z = pnt.z();
+  return res;
+}
+
+geometry_msgs::Vector3 AllignBaseAction::toVector(const tf::Vector3& pnt)
+{
+  geometry_msgs::Vector3 res;
+  res.x = pnt.x();
+  res.y = pnt.y();
+  res.z = pnt.z();
+  return res;
+}
+
+tf::Vector3 AllignBaseAction::fromVector(const geometry_msgs::Vector3& pnt)
+{
+  return tf::Vector3(pnt.x, pnt.y, pnt.z);
+}
+
+tf::Vector3 AllignBaseAction::fromPoint(const geometry_msgs::Point& pnt)
+{
+  return tf::Vector3(pnt.x, pnt.y, pnt.z);
+}
+
+
+std::vector<geometry_msgs::Point> AllignBaseAction::getOrientedFootprint(const tf::Vector3 pos, double theta_cost)
+{
+  double cos_th = cos(theta_cost);
+  double sin_th = sin(theta_cost);
+  std::vector<geometry_msgs::Point> oriented_footprint;
+  for(unsigned int i = 0; i < footprint_.size(); ++i){
+    geometry_msgs::Point new_pt;
+    new_pt.x = pos.x() + (footprint_[i].x * cos_th - footprint_[i].y * sin_th);
+    new_pt.y = pos.y() + (footprint_[i].x * sin_th + footprint_[i].y * cos_th);
+    oriented_footprint.push_back(new_pt);
+  }
+  return oriented_footprint;
+}
+
+double AllignBaseAction::getVectorAngle(const tf::Vector3& v1, const tf::Vector3& v2)
+{
+  tf::Vector3 vec1 = v1; vec1 = vec1.normalize();
+  tf::Vector3 vec2 = v2; vec2 = vec2.normalize();
+  double dot      = vec2.x() * vec1.x() + vec2.y() * vec1.y();
+  double perp_dot = vec2.y() * vec1.x() - vec2.x() * vec1.y();
+  return atan2(perp_dot, dot);
+}
+
+}
+
+
+
+int main(int argc, char** argv)
+{
+  ros::init("allign_base", argc, argv);
+
+  pr2_plugs_actions::AllignBase action_server;
+
+  ros::spin();
+  return 0;
+}

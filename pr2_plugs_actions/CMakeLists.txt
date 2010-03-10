@@ -23,8 +23,8 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 
 rosbuild_add_executable(vision_detect_plug src/vision_detect_plug.cpp)
-
 rosbuild_add_executable(vision_detect_outlet src/vision_detect_outlet.cpp)
+#rosbuild_add_executable(allign_base src/allign_base.cpp)
 
 #### Download outlet templates ####
 rosbuild_download_data(http://pr.willowgarage.com/data/outlet_detection/outlet_templates_20091207.tar.gz outlet_templates_20091207.tar.gz 6ac4bfc16222132cdb17181761349c72)
