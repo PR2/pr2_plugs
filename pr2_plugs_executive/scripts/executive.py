@@ -89,18 +89,18 @@ def main():
 
 
   # Detect the outlet 
-#   detect_outlet_goal = DetectOutletGoal()
-#   rospy.loginfo("Detecting the outlet ...")
-#   if ac['detect_outlet'].send_goal_and_wait(detect_outlet_goal, rospy.Duration(90.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-#     rospy.logerr("Failed to detect the outlet!")
-#     return
-#   outlet_pose = ac['detect_outlet'].get_result().outlet_pose
-#   try:
-#     transformer.waitForTransform("base_link", outlet_pose.header.frame_id, outlet_pose.header.stamp, rospy.Duration(2.0))
-#   except rospy.ServiceException, e:
-#     rospy.logerr('Could not transform between base_link and %s' %outlet_pose.header.frame_id)
-#     return
-#  base_to_outlet = transformer.transformPose('base_link', outlet_pose)
+  detect_outlet_goal = DetectOutletGoal()
+  rospy.loginfo("Detecting the outlet ...")
+  if ac['detect_outlet'].send_goal_and_wait(detect_outlet_goal, rospy.Duration(90.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    rospy.logerr("Failed to detect the outlet!")
+    return
+  outlet_pose = ac['detect_outlet'].get_result().outlet_pose
+  try:
+    transformer.waitForTransform("base_link", outlet_pose.header.frame_id, outlet_pose.header.stamp, rospy.Duration(2.0))
+  except rospy.ServiceException, e:
+    rospy.logerr('Could not transform between base_link and %s' %outlet_pose.header.frame_id)
+    return
+  base_to_outlet = transformer.transformPose('base_link', outlet_pose)
 
 
   # Fetch plug
