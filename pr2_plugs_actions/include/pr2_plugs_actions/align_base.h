@@ -63,6 +63,8 @@ public:
   void execute(const pr2_plugs_msgs::AlignBaseGoalConstPtr& goal);
 
 private:
+  geometry_msgs::Twist diff2D(const tf::Pose& pose1, const tf::Pose& pose2);
+  geometry_msgs::Twist limitTwist(const geometry_msgs::Twist& twist);
   geometry_msgs::Point toPoint(const tf::Vector3& pnt);
   geometry_msgs::Vector3 toVector(const tf::Vector3& pnt);
   tf::Vector3 fromVector(const geometry_msgs::Vector3& pnt);

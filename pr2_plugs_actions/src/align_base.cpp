@@ -42,7 +42,7 @@ using namespace std;
 static const string fixed_frame = "odom_combined";
 static const double motion_step = 0.01; // 1 cm steps
 static const double update_rate = 10.0; // 10 hz
-static const double desired_distance = 1.0;
+static const double desired_distance = 0.81;
 
 namespace pr2_plugs_actions{
 
@@ -102,14 +102,48 @@ void AlignBaseAction::execute(const pr2_plugs_msgs::AlignBaseGoalConstPtr& goal)
   ROS_INFO("AlignBaseAction: current robot pose %f %f ==> %f", robot_pose.getOrigin().x(), robot_pose.getOrigin().y(), tf::getYaw(robot_pose.getRotation()));
 
   // get desired robot pose
-  tf::Vector3 desired_position = robot_pose.getOrigin() + (wall_norm * (wall_norm.dot(wall_point-robot_pose.getOrigin()) - desired_distance));
-  double yaw = getVectorAngle(tf::Vector3(0,1,0), wall_norm*-1);
-  ROS_INFO("AlignBaseAction: desired robot pose %f %f ==> %f", desired_position.x(), desired_position.y(), yaw);
+  tf::Pose desired_pose;
+  desired_pose.setOrigin(robot_pose.getOrigin() + (wall_norm * (wall_norm.dot(wall_point-robot_pose.getOrigin()) - desired_distance)));
+  desired_pose.setRotation(tf::createQuaternionFromYaw(getVectorAngle(tf::Vector3(0,1,0), wall_norm*-1)));
+  ROS_INFO("AlignBaseAction: desired robot pose %f %f ==> %f", desired_pose.getOrigin().x(), desired_pose.getOrigin().y(), tf::getYaw(desired_pose.getRotation()));
+
+  // command base to desired pose
+  geometry_msgs::Twist diff = diff2D(desired_pose, robot_pose);
+  ROS_INFO("AlignBaseAction: diff %f %f ==> %f", diff.linear.x, diff.linear.y, diff.angular.z);
+  diff = limitTwist(diff);
+  ROS_INFO("AlignBaseAction: diff limit %f %f ==> %f", diff.linear.x, diff.linear.y, diff.angular.z);
+  while (fabs(diff.linear.x) > 0.02 || abs(diff.linear.y) > 0.02 || abs(diff.angular.z) > 0.02){
+    base_pub_.publish(diff);
+    costmap_ros_.getRobotPose(robot_pose);
+    diff = limitTwist(diff2D(desired_pose, robot_pose));
+    ros::Duration(0.01).sleep();
+  }
 
   costmap_ros_.stop();
   action_server_.setSucceeded();
 }
 
+
+
+geometry_msgs::Twist AlignBaseAction::diff2D(const tf::Pose& pose1, const tf::Pose& pose2)
+{
+  geometry_msgs::Twist res;
+  tf::Pose diff = pose2.inverse() * pose1;
+  res.linear.x = diff.getOrigin().x();
+  res.linear.y = diff.getOrigin().y();
+  res.angular.z = tf::getYaw(diff.getRotation());
+  return res;
+}
+
+
+geometry_msgs::Twist AlignBaseAction::limitTwist(const geometry_msgs::Twist& twist)
+{
+  geometry_msgs::Twist res;
+  if (fabs(twist.linear.x) > 0.01) res.linear.x = 0.1 * twist.linear.x / fabs(twist.linear.x);
+  if (fabs(twist.linear.y) > 0.01) res.linear.y = 0.1 * twist.linear.y / fabs(twist.linear.y);
+  if (fabs(twist.angular.z) > 0.01) res.angular.z = 0.2 * twist.angular.z / fabs(twist.angular.z);
+  return res;
+}
 
 geometry_msgs::Point AlignBaseAction::toPoint(const tf::Vector3& pnt)
 {
