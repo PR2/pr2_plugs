@@ -78,11 +78,8 @@ void AlignBaseAction::execute(const pr2_plugs_msgs::AlignBaseGoalConstPtr& goal)
   // get wall normal
   pr2_plugs_msgs::DetectWallNormGoal wall_norm_goal;
   wall_norm_goal.look_point = goal->look_point;
-  if (wall_detector_.sendGoalAndWait(wall_norm_goal, ros::Duration(100.0), ros::Duration(5.0)) != actionlib::SimpleClientGoalState::SUCCEEDED){
-    ROS_ERROR("AlignBaseAction: failed to get wall norm");
-    action_server_.setAborted();
-    return;
-  }
+  while (ros::ok() && wall_detector_.sendGoalAndWait(wall_norm_goal, ros::Duration(100.0), ros::Duration(5.0)) != actionlib::SimpleClientGoalState::SUCCEEDED)
+    ROS_INFO("AlignBaseAction: try again to get wall norm");
 
   // convert wall norm to fixed frame
   geometry_msgs::PointStamped wall_point_msg = wall_detector_.getResult()->wall_point;
@@ -96,16 +93,18 @@ void AlignBaseAction::execute(const pr2_plugs_msgs::AlignBaseGoalConstPtr& goal)
   tf_.transformVector(fixed_frame, wall_norm_msg, wall_norm_msg);
   tf::Vector3 wall_norm = fromVector(wall_norm_msg.vector);
   tf::Vector3 wall_point = fromPoint(wall_point_msg.point);
+  ROS_INFO("AlignBaseAction: wall norm  %f %f %f", wall_norm.x(), wall_norm.y(), wall_norm.z());
+  ROS_INFO("AlignBaseAction: wall point %f %f %f", wall_point.x(), wall_point.y(), wall_point.z());
 
   // get current robot pose
   tf::Stamped<tf::Pose> robot_pose;
   costmap_ros_.getRobotPose(robot_pose);
-  ROS_DEBUG("AlignBaseAction: current robot pose %f %f - %f", robot_pose.getOrigin().x(), robot_pose.getOrigin().y(), tf::getYaw(robot_pose.getRotation()));
+  ROS_INFO("AlignBaseAction: current robot pose %f %f ==> %f", robot_pose.getOrigin().x(), robot_pose.getOrigin().y(), tf::getYaw(robot_pose.getRotation()));
 
   // get desired robot pose
   tf::Vector3 desired_position = robot_pose.getOrigin() + (wall_norm * (wall_norm.dot(wall_point-robot_pose.getOrigin()) - desired_distance));
-  double yaw = getVectorAngle(tf::Vector3(0,1,0), wall_norm);
-  ROS_DEBUG("AlignBaseAction: desired robot pose %f %f - %f", desired_position.x(), desired_position.y(), yaw);
+  double yaw = getVectorAngle(tf::Vector3(0,1,0), wall_norm*-1);
+  ROS_INFO("AlignBaseAction: desired robot pose %f %f ==> %f", desired_position.x(), desired_position.y(), yaw);
 
   costmap_ros_.stop();
   action_server_.setSucceeded();

@@ -42,7 +42,7 @@ def execute_cb(goal):
   pose_plug_gripper = PoseStampedMath(goal.gripper_to_plug).inverse()
 
   # plug in
-  for offset in drange(-0.03, 0.00, 0.01):
+  for offset in drange(-0.05, -0.02, 0.01):
     pose_outlet_plug = PoseStampedMath().fromEuler(offset, 0, 0, 0, 0, 0)
     cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
     cart_space_goal.pose.header.stamp = rospy.Time.now()
@@ -50,9 +50,10 @@ def execute_cb(goal):
     cart_space_goal.move_duration = rospy.Duration(3.0)
     if cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
       rospy.logerr('Failed to approach outlet')
+  rospy.sleep(15.0)
 
   # unplug
-  for offset in drange(0.00, 0.03, 0.01):
+  for offset in drange(0.02, 0.05, 0.01):
     pose_outlet_plug = PoseStampedMath().fromEuler(-offset, 0, 0, 0, 0, 0)
     cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
     cart_space_goal.pose.header.stamp = rospy.Time.now()
@@ -61,7 +62,6 @@ def execute_cb(goal):
     if cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
       rospy.logerr('Failed to unplug')
 
-  rospy.sleep(5.0)
 
   # return result
   result = PluginResult()

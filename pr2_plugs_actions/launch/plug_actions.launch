@@ -24,6 +24,42 @@
 
   <!-- align base action -->
   <node pkg="pr2_plugs_actions" type="align_base" name="align_base" output="screen"/>
+  <group ns="align_base/costmap_align_base" >
+    <rosparam file="$(find pr2_plugs_actions)/launch/footprint.yaml" command="load" />
+    <!-- Start Costmap Parameters -->
+    <param name="global_frame" value="odom_combined" />
+    <param name="robot_base_frame" value="base_link" />
+    <param name="update_frequency" value="5.0" />
+    <param name="publish_frequency" value="1.0" />
+    <param name="obstacle_range" value="1.0" />
+    <param name="max_obstacle_height" value="2.0" />
+    <param name="raytrace_range" value="1.5" />
+    <param name="observation_sources" value="base_scan" />
+    <param name="base_scan/observation_persistence" value="0.0" />
+    <param name="base_scan/expected_update_rate" value="0.2" />
+    <param name="base_scan/data_type" value="LaserScan" />
+    <param name="base_scan/clearing" value="true" />
+    <param name="base_scan/marking" value="false" />
+    <param name="base_scan_marking/observation_persistence" value="0.0" />
+    <param name="base_scan_marking/expected_update_rate" value="0.2" />
+    <param name="base_scan_marking/data_type" value="PointCloud" />
+    <param name="base_scan_marking/clearing" value="false" />
+    <param name="base_scan_marking/marking" value="true" />
+    <param name="rolling_window" value="true" />
+    <param name="static_map" value="false" />
+    <!-- begin only used if static map is set to false -->
+    <param name="width" value="5.0" />
+    <param name="height" value="5.0" />
+    <param name="origin_x" value="-2.5" />
+    <param name="origin_y" value="-2.5" />
+    <param name="resolution" value="0.01" />
+    <!-- end only used if static map is set to false -->
+    <param name="cost_scaling_factor" value="1.0" />
+    <param name="lethal_cost_threshold" value="100" />
+    <!-- End Costmap Parameters -->
+    <remap from="obstacles" to="~obstacles" />
+    <remap from="inflated_obstacles" to="~inflated_obstacles" />
+  </group>
 
   <!-- fetch plug action -->
   <node pkg="pr2_plugs_actions" type="fetch_plug.py" name="fetch_plug" output="screen"/>
