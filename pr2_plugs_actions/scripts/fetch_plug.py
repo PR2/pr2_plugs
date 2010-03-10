@@ -27,15 +27,18 @@ def execute_cb(goal):
   # move the spine up
   rospy.loginfo("Moving up spine...")
   spine_goal.position = 0.16
-  if spine_client.send_goal_and_wait(spine_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr('Moving up spine failed')
-    server.set_aborted()
-    return
+  spine_client.send_goal(spine_goal)
 
   # move to detection position in joint space
   rospy.loginfo("Move in joint space to detecting position...")
   if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/detect_plug_on_base'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
     rospy.logerr('Move to detection position failed')
+    server.set_aborted()
+    return
+
+  # check move the spine up
+  if not spine_client.wait_for_result(rospy.Duration(20.0)) or spine_client.get_state() != GoalStatus.SUCCEEDED:
+    rospy.logerr('Moving up spine failed')
     server.set_aborted()
     return
 
@@ -126,12 +129,6 @@ def execute_cb(goal):
   rospy.loginfo("Move in joint space to remove plug from base...")
   if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/remove_plug'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
     rospy.logerr('Move to remove plug from base failed')
-    server.set_aborted()
-    return
-
-  # check move the spine down
-  if not spine_client.wait_for_result(rospy.Duration(20.0)) or spine_client.get_state() != GoalStatus.SUCCEEDED:
-    rospy.logerr('Moving down spine failed')
     server.set_aborted()
     return
 

@@ -115,12 +115,6 @@ def execute_cb(goal):
     server.set_aborted()
     return
 
-  # check move the spine down
-  if not spine_client.wait_for_result(rospy.Duration(20.0)) or spine_client.get_state() != GoalStatus.SUCCEEDED:
-    rospy.logerr('Moving down spine failed')
-    server.set_aborted()
-    return
-
   # return result
   server.set_succeeded(StowPlugResult())
   rospy.loginfo("Action server goal finished")  
