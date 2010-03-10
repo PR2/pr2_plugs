@@ -34,7 +34,7 @@
 
 /* Author: Wim Meeussen */
 
-#include "pr2_plugs_actions/allign_base.h"
+#include "pr2_plugs_actions/align_base.h"
 
 using namespace ros;
 using namespace std;
@@ -46,13 +46,13 @@ static const double desired_distance = 1.0;
 
 namespace pr2_plugs_actions{
 
-AllignBaseAction::AllignBaseAction() :
+AlignBaseAction::AlignBaseAction() :
   wall_detector_("detect_wall_norm", true),
-  costmap_ros_("costmap_allign_base", tf_),
+  costmap_ros_("costmap_align_base", tf_),
   costmap_model_(costmap_),
   action_server_(ros::NodeHandle(), 
-		 "allign_base", 
-		 boost::bind(&AllignBaseAction::execute, this, _1))
+		 "align_base", 
+		 boost::bind(&AlignBaseAction::execute, this, _1))
 {
   costmap_ros_.stop();
 
@@ -64,14 +64,14 @@ AllignBaseAction::AllignBaseAction() :
 
 
 
-AllignBaseAction::~AllignBaseAction()
+AlignBaseAction::~AlignBaseAction()
 {};
 
 
 
-void AllignBaseAction::execute(const pr2_plugs_msgs::AllignBaseGoalConstPtr& goal)
+void AlignBaseAction::execute(const pr2_plugs_msgs::AlignBaseGoalConstPtr& goal)
 { 
-  ROS_INFO("AllignBaseAction: execute");
+  ROS_INFO("AlignBaseAction: execute");
 
   costmap_ros_.start();
 
@@ -79,7 +79,7 @@ void AllignBaseAction::execute(const pr2_plugs_msgs::AllignBaseGoalConstPtr& goa
   pr2_plugs_msgs::DetectWallNormGoal wall_norm_goal;
   wall_norm_goal.look_point = goal->look_point;
   if (wall_detector_.sendGoalAndWait(wall_norm_goal, ros::Duration(100.0), ros::Duration(5.0)) != actionlib::SimpleClientGoalState::SUCCEEDED){
-    ROS_ERROR("AllignBaseAction: failed to get wall norm");
+    ROS_ERROR("AlignBaseAction: failed to get wall norm");
     action_server_.setAborted();
     return;
   }
@@ -88,7 +88,7 @@ void AllignBaseAction::execute(const pr2_plugs_msgs::AllignBaseGoalConstPtr& goa
   geometry_msgs::PointStamped wall_point_msg = wall_detector_.getResult()->wall_point;
   geometry_msgs::Vector3Stamped wall_norm_msg = wall_detector_.getResult()->wall_norm;
   if (!tf_.waitForTransform(fixed_frame, wall_norm_msg.header.frame_id, wall_norm_msg.header.stamp, ros::Duration(2.0))){
-    ROS_ERROR("AllignBaseAction: failed to transform from frame %s to %s", fixed_frame.c_str(), wall_norm_msg.header.frame_id.c_str());
+    ROS_ERROR("AlignBaseAction: failed to transform from frame %s to %s", fixed_frame.c_str(), wall_norm_msg.header.frame_id.c_str());
     action_server_.setAborted();
     return;
   }
@@ -100,19 +100,19 @@ void AllignBaseAction::execute(const pr2_plugs_msgs::AllignBaseGoalConstPtr& goa
   // get current robot pose
   tf::Stamped<tf::Pose> robot_pose;
   costmap_ros_.getRobotPose(robot_pose);
-  ROS_DEBUG("AllignBaseAction: current robot pose %f %f - %f", robot_pose.getOrigin().x(), robot_pose.getOrigin().y(), tf::getYaw(robot_pose.getRotation()));
+  ROS_DEBUG("AlignBaseAction: current robot pose %f %f - %f", robot_pose.getOrigin().x(), robot_pose.getOrigin().y(), tf::getYaw(robot_pose.getRotation()));
 
   // get desired robot pose
   tf::Vector3 desired_position = robot_pose.getOrigin() + (wall_norm * (wall_norm.dot(wall_point-robot_pose.getOrigin()) - desired_distance));
   double yaw = getVectorAngle(tf::Vector3(0,1,0), wall_norm);
-  ROS_DEBUG("AllignBaseAction: desired robot pose %f %f - %f", desired_position.x(), desired_position.y(), yaw);
+  ROS_DEBUG("AlignBaseAction: desired robot pose %f %f - %f", desired_position.x(), desired_position.y(), yaw);
 
   costmap_ros_.stop();
   action_server_.setSucceeded();
 }
 
 
-geometry_msgs::Point AllignBaseAction::toPoint(const tf::Vector3& pnt)
+geometry_msgs::Point AlignBaseAction::toPoint(const tf::Vector3& pnt)
 {
   geometry_msgs::Point res;
   res.x = pnt.x();
@@ -121,7 +121,7 @@ geometry_msgs::Point AllignBaseAction::toPoint(const tf::Vector3& pnt)
   return res;
 }
 
-geometry_msgs::Vector3 AllignBaseAction::toVector(const tf::Vector3& pnt)
+geometry_msgs::Vector3 AlignBaseAction::toVector(const tf::Vector3& pnt)
 {
   geometry_msgs::Vector3 res;
   res.x = pnt.x();
@@ -130,18 +130,18 @@ geometry_msgs::Vector3 AllignBaseAction::toVector(const tf::Vector3& pnt)
   return res;
 }
 
-tf::Vector3 AllignBaseAction::fromVector(const geometry_msgs::Vector3& pnt)
+tf::Vector3 AlignBaseAction::fromVector(const geometry_msgs::Vector3& pnt)
 {
   return tf::Vector3(pnt.x, pnt.y, pnt.z);
 }
 
-tf::Vector3 AllignBaseAction::fromPoint(const geometry_msgs::Point& pnt)
+tf::Vector3 AlignBaseAction::fromPoint(const geometry_msgs::Point& pnt)
 {
   return tf::Vector3(pnt.x, pnt.y, pnt.z);
 }
 
 
-std::vector<geometry_msgs::Point> AllignBaseAction::getOrientedFootprint(const tf::Vector3 pos, double theta_cost)
+std::vector<geometry_msgs::Point> AlignBaseAction::getOrientedFootprint(const tf::Vector3 pos, double theta_cost)
 {
   double cos_th = cos(theta_cost);
   double sin_th = sin(theta_cost);
@@ -155,7 +155,7 @@ std::vector<geometry_msgs::Point> AllignBaseAction::getOrientedFootprint(const t
   return oriented_footprint;
 }
 
-double AllignBaseAction::getVectorAngle(const tf::Vector3& v1, const tf::Vector3& v2)
+double AlignBaseAction::getVectorAngle(const tf::Vector3& v1, const tf::Vector3& v2)
 {
   tf::Vector3 vec1 = v1; vec1 = vec1.normalize();
   tf::Vector3 vec2 = v2; vec2 = vec2.normalize();
@@ -170,9 +170,9 @@ double AllignBaseAction::getVectorAngle(const tf::Vector3& v1, const tf::Vector3
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "allign_base");
+  ros::init(argc, argv, "align_base");
 
-  pr2_plugs_actions::AllignBaseAction action_server;
+  pr2_plugs_actions::AlignBaseAction action_server;
 
   ros::spin();
   return 0;

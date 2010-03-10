@@ -34,8 +34,8 @@
 
 /* Author: Wim Meeusen */
 
-#ifndef ALLIGN_BASE_H
-#define ALLIGN_BASE_H
+#ifndef ALIGN_BASE_H
+#define ALIGN_BASE_H
 
 #include <ros/ros.h>
 #include <tf/tf.h>
@@ -47,20 +47,20 @@
 #include <costmap_2d/costmap_2d.h>
 #include <base_local_planner/costmap_model.h>
 #include <geometry_msgs/Point.h>
-#include <pr2_plugs_msgs/AllignBaseAction.h>
+#include <pr2_plugs_msgs/AlignBaseAction.h>
 #include <pr2_plugs_msgs/DetectWallNormAction.h>
 
 
 namespace pr2_plugs_actions{
 
 
-class AllignBaseAction
+class AlignBaseAction
 {
 public:
-  AllignBaseAction();
-  ~AllignBaseAction();
+  AlignBaseAction();
+  ~AlignBaseAction();
 
-  void execute(const pr2_plugs_msgs::AllignBaseGoalConstPtr& goal);
+  void execute(const pr2_plugs_msgs::AlignBaseGoalConstPtr& goal);
 
 private:
   geometry_msgs::Point toPoint(const tf::Vector3& pnt);
@@ -77,7 +77,7 @@ private:
   base_local_planner::CostmapModel costmap_model_;
   ros::Publisher base_pub_;
 
-  actionlib::SimpleActionServer<pr2_plugs_msgs::AllignBaseAction> action_server_;
+  actionlib::SimpleActionServer<pr2_plugs_msgs::AlignBaseAction> action_server_;
   std::vector<geometry_msgs::Point> footprint_;
 };
 
