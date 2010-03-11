@@ -1,4 +1,12 @@
+# List of outlet approach poses
+# These are all poses of the base_link in the map frame
 outlet_approach_poses:
-  behind_short_wall: { position: [20.654, 26.187, 0.055], orientation: [-0.008, -0.004, 0.953, 0.302] }
-  melonee: { position: [13.428, 25.429, 0.056], rotation: [-0.002, -0.006, 0.909, -0.416] }
-  phasespace: { position: [19.312, 15.793, 0.049], rotation: [-0.003, -0.002, 0.408, 0.913] }
+  behind_short_wall:
+    position: [20.654, 26.187, 0.055]
+    orientation: [-0.008, -0.004, 0.953, 0.302]
+  melonee:
+    position: [13.428, 25.429, 0.056]
+    orientation: [-0.002, -0.006, 0.909, -0.416]
+  phasespace:
+    position: [19.312, 15.793, 0.049]
+    orientation: [-0.003, -0.002, 0.408, 0.913]
