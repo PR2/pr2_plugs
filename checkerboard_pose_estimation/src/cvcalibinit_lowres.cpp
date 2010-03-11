@@ -306,7 +306,11 @@ int cvFindChessboardCornersLowres(IplImage* img, CvSize size, CvPoint2D32f* corn
     IplImage* smoothed = cvCloneImage(img);
     cvSmooth(img, smoothed);
     GetHoleFeatures(smoothed, features, contrast);
+    vector<feature_t> filtered_features;
+    FilterFeaturesOnEdges(img, features, filtered_features, 2, 10);
     cvReleaseImage(&smoothed);
+    
+    features = filtered_features;
 
 #if defined(_DEBUG_WINDOWS)
     ShowFeatures(img, features);
