@@ -43,6 +43,10 @@ def execute_cb(goal):
       rospy.logerr('Aligning base failed')
       server.set_aborted()
       return
+    if align_base_client.send_goal_and_wait(align_base_goal, rospy.Duration(40.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+      rospy.logerr('Precise aligning base failed')
+      server.set_aborted()
+      return
 
     # move to joint space position
     rospy.loginfo("Move in joint space to view the outlet...")
@@ -52,8 +56,17 @@ def execute_cb(goal):
     rospy.sleep(2.0)
 
     found_outlet = False
-    offset = 0
-    while not found_outlet:
+    offset = [0.0, 0.1, 0.2, -0.1, -0.2]
+    it = 0
+    while not found_outlet and it<len(offset):
+      # move base to detection pose
+      move_base_goal.target_pose = (PoseStampedMath(align_base_client.get_result().base_pose) * PoseStampedMath().fromEuler(offset[it], 0, 0, 0, 0, 0)).msg
+      move_base_goal.target_pose.header.stamp = rospy.Time(0)
+      if move_base_omnidirectional_client.send_goal_and_wait(move_base_goal, rospy.Duration(10.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+        rospy.logerr('Failed to reach new base position')
+        raise ActionException(move_base_omnidirectional_client)          
+      it = it+1
+
       # get wall norm
       rospy.loginfo("Detecting wall norm...")
       while wall_norm_client.send_goal_and_wait(wall_norm_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
@@ -62,23 +75,20 @@ def execute_cb(goal):
 
       # call vision outlet detection
       rospy.loginfo("Detecting outlet with the forearm camera...")
-      vision_detect_outlet_goal.camera_name = "/forearm_camera_r"
       vision_detect_outlet_goal.wall_normal = wall_norm_client.get_result().wall_norm
-      vision_detect_outlet_goal.wall_normal.header.stamp = rospy.Time.now()
+      vision_detect_outlet_goal.camera_name = "/forearm_camera_r"
       vision_detect_outlet_goal.prior = pose_base_outlet.msg
-      vision_detect_outlet_goal.prior.header.stamp = rospy.Time.now()
       vision_detect_outlet_goal.prior.header.frame_id = "base_link"
+      vision_detect_outlet_goal.prior.header.stamp = rospy.Time.now()
       if vision_detect_outlet_client.send_goal_and_wait(vision_detect_outlet_goal, rospy.Duration(10.0), preempt_timeout) == GoalStatus.SUCCEEDED:
         found_outlet = True
-      else:
-        # move base a little
-        move_base_goal.target_pose = (PoseStampedMath(align_base_client.get_result().base_pose) * PoseStampedMath().fromEuler(offset, 0, 0, 0, 0, 0)).msg
-        move_base_goal.target_pose.header.stamp = rospy.Time(0)
-        if move_base_omnidirectional_client.send_goal_and_wait(move_base_goal, rospy.Duration(10.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-          rospy.logerr('Failed to reach new base position')
-          raise ActionException(move_base_omnidirectional_client)          
+  
 
-      offset = offset + 0.05
+    # check if outlet was found
+    if not found_outlet:
+      rospy.logerr('Failed to detect outlet')
+      server.set_aborted()
+      return
 
     # Transform outlet pose into fixed frame and return the result
     result = DetectOutletResult()

@@ -92,8 +92,14 @@ void MoveBaseOmnidirectionalAction::execute(const move_base_msgs::MoveBaseGoalCo
   ROS_INFO("MoveBaseOmnidirectionalAction: diff %f %f ==> %f", diff.linear.x, diff.linear.y, diff.angular.z);
   diff = limitTwist(diff);
   ROS_INFO("MoveBaseOmnidirectionalAction: diff limit %f %f ==> %f", diff.linear.x, diff.linear.y, diff.angular.z);
-  while (fabs(diff.linear.x) > 0.02 || abs(diff.linear.y) > 0.02 || abs(diff.angular.z) > 0.02){
+  ros::Time goal_reached_time = ros::Time::now();
+  while (goal_reached_time + ros::Duration(2.0) > ros::Time::now()) {
+    // check for bounds
+    if (fabs(diff.linear.x) > 0.02 || abs(diff.linear.y) > 0.02 || abs(diff.angular.z) > 0.02)
+      goal_reached_time = ros::Time::now();
+    // check for preemption
     if (action_server_.isPreemptRequested()){
+      ROS_WARN("MoveBaseOmnidirectionalAction: Preempted");
       geometry_msgs::Twist zero;
       base_pub_.publish(zero);
       action_server_.setPreempted();
@@ -127,7 +133,7 @@ geometry_msgs::Twist MoveBaseOmnidirectionalAction::limitTwist(const geometry_ms
   geometry_msgs::Twist res;
   if (fabs(twist.linear.x) > 0.01) res.linear.x = 0.1 * twist.linear.x / fabs(twist.linear.x);
   if (fabs(twist.linear.y) > 0.01) res.linear.y = 0.1 * twist.linear.y / fabs(twist.linear.y);
-  if (fabs(twist.angular.z) > 0.01) res.angular.z = 0.2 * twist.angular.z / fabs(twist.angular.z);
+  if (fabs(twist.angular.z) > 0.01) res.angular.z = 0.15 * twist.angular.z / fabs(twist.angular.z);
   return res;
 }
 
