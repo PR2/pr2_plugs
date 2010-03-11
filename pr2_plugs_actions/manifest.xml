@@ -19,6 +19,7 @@
   <depend package="tf"/>
   <depend package="pr2_msgs"/>
   <depend package="std_srvs"/>
+  <depend package="move_base_msgs"/>
   <depend package="dynamic_reconfigure"/>
   <depend package="pr2_common_action_msgs"/>
   <depend package="pr2_plugs_common"/>

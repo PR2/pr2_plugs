@@ -24,7 +24,10 @@
 
   <!-- align base action -->
   <node pkg="pr2_plugs_actions" type="align_base" name="align_base" output="screen"/>
-  <group ns="align_base/costmap_align_base" >
+
+  <!-- move base omnidirectional action -->
+  <node pkg="pr2_plugs_actions" type="move_base_omnidirectional" name="move_base_omnidirectional" output="screen"/>
+  <group ns="move_base_omnidirectional/costmap_move_base" >
     <rosparam file="$(find pr2_plugs_actions)/launch/footprint.yaml" command="load" />
     <!-- Start Costmap Parameters -->
     <param name="global_frame" value="odom_combined" />

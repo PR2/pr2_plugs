@@ -63,7 +63,7 @@ def main():
 
 	detect_wall_norm.send_goal(goal)
 	detect_wall_norm.wait_for_result(rospy.Duration(60.0))
-
+	rospy.loginfo("Goal completed")
 
 if __name__ == "__main__":
 	main()

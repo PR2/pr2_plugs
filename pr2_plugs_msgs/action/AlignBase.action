@@ -1,3 +1,4 @@
 geometry_msgs/PointStamped look_point
 ---
+geometry_msgs/PoseStamped base_pose
 ---
