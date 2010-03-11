@@ -95,7 +95,7 @@ void MoveBaseOmnidirectionalAction::execute(const move_base_msgs::MoveBaseGoalCo
   ros::Time goal_reached_time = ros::Time::now();
   while (goal_reached_time + ros::Duration(2.0) > ros::Time::now()) {
     // check for bounds
-    if (fabs(diff.linear.x) > 0.02 || abs(diff.linear.y) > 0.02 || abs(diff.angular.z) > 0.02)
+    if (fabs(diff.linear.x) > 0.02 || abs(diff.linear.y) > 0.02 || abs(diff.angular.z) > 0.04)
       goal_reached_time = ros::Time::now();
     // check for preemption
     if (action_server_.isPreemptRequested()){
