@@ -97,16 +97,15 @@ void AlignBaseAction::execute(const pr2_plugs_msgs::AlignBaseGoalConstPtr& goal)
   ROS_INFO("AlignBaseAction: current robot pose %f %f ==> %f", robot_pose.getOrigin().x(), robot_pose.getOrigin().y(), tf::getYaw(robot_pose.getRotation()));
   
   // get desired robot pose
-  tf::Stamped<tf::Pose> desired_pose;
-  desired_pose.frame_id_ = fixed_frame;
-  desired_pose.stamp_ = ros::Time::now();
+  tf::Pose desired_pose;
   desired_pose.setOrigin(robot_pose.getOrigin() + (wall_norm * (wall_norm.dot(wall_point-robot_pose.getOrigin()) - desired_distance)));
   desired_pose.setRotation(tf::createQuaternionFromYaw(getVectorAngle(tf::Vector3(0,1,0), wall_norm*-1)));
+  desired_pose = desired_pose * tf::Pose(tf::Quaternion::getIdentity(), tf::Vector3(goal->offset, 0.0, 0.0));
   ROS_INFO("AlignBaseAction: desired robot pose %f %f ==> %f", desired_pose.getOrigin().x(), desired_pose.getOrigin().y(), tf::getYaw(desired_pose.getRotation()));
     
   // command base to desired pose
   move_base_msgs::MoveBaseGoal move_base_goal;
-  tf::poseStampedTFToMsg(desired_pose, move_base_goal.target_pose);
+  tf::poseStampedTFToMsg(tf::Stamped<tf::Pose>(desired_pose, ros::Time::now(), fixed_frame), move_base_goal.target_pose);
   if (move_base_omnidirectional_.sendGoalAndWait(move_base_goal, ros::Duration(20.0), ros::Duration(5.0)) != actionlib::SimpleClientGoalState::SUCCEEDED){
     ROS_ERROR("AlignBaseAction: failed to move base to desired pose");
     action_server_.setAborted();
@@ -114,6 +113,7 @@ void AlignBaseAction::execute(const pr2_plugs_msgs::AlignBaseGoalConstPtr& goal)
   }
   pr2_plugs_msgs::AlignBaseResult  align_result;
   align_result.base_pose = move_base_goal.target_pose;
+  align_result.wall_norm = wall_norm_msg;
   action_server_.setSucceeded(align_result);
 }
 

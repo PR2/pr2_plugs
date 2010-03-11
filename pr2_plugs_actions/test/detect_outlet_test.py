@@ -60,7 +60,7 @@ def main():
   # Call the action
   rospy.loginfo("Calling the action server...")
   action_goal = DetectOutletGoal()
-  if (action_client.send_goal_and_wait(action_goal, rospy.Duration(30.0), rospy.Duration(5.0)) == GoalStatus.SUCCEEDED):
+  if (action_client.send_goal_and_wait(action_goal, rospy.Duration(300.0), rospy.Duration(5.0)) == GoalStatus.SUCCEEDED):
     rospy.loginfo('Call to action server succeeded')
   else:
     rospy.logerr('Call to action server failed')
