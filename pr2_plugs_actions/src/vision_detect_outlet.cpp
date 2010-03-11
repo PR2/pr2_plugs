@@ -240,7 +240,7 @@ protected:
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "vision_detect_plug");
+  ros::init(argc, argv, "vision_detect_outlet");
   DetectOutletAction action(ros::this_node::getName());
   ros::spin();
 

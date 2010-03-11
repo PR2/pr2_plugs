@@ -48,7 +48,7 @@ def execute_cb(goal):
   detect_plug_goal.prior = PoseStampedMath().fromEuler(0.075, 0.03, 0.24, pi/2, 0, pi/2).msg
   detect_plug_goal.prior.header.stamp = rospy.Time.now()
   detect_plug_goal.prior.header.frame_id = "base_link"
-  detect_plug_goal.origin_on_right = True
+  detect_plug_goal.origin_on_right = False
   if detect_plug_client.send_goal_and_wait(detect_plug_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
     rospy.logerr('Vision plug detection failed')
     server.set_aborted()
