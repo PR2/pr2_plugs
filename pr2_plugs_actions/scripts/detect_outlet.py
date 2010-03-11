@@ -8,6 +8,8 @@ import tf
 from pr2_common_action_msgs.msg import *
 from pr2_plugs_msgs.msg import *
 from pr2_controllers_msgs.msg import *
+from geometry_msgs.msg import *
+from move_base_msgs.msg import *
 from actionlib_msgs.msg import *
 from joint_trajectory_action_tools.tools import *
 from trajectory_msgs.msg import JointTrajectoryPoint
@@ -28,17 +30,17 @@ def execute_cb(goal):
   preempt_timeout = rospy.Duration(5.0)
 
   try:
-    # get wall norm
-    rospy.loginfo("Detecting wall norm...")
-    while wall_norm_client.send_goal_and_wait(wall_norm_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-      rospy.logerr('Wall norm detection failed, trying again')
-      rospy.sleep(2.0)
-
-    # move the spine up
-    rospy.loginfo("Moving down spine...")
+    # make sure spine is down
+    rospy.loginfo("Make sure spine is down...")
     spine_goal.position = 0.01
     if spine_client.send_goal_and_wait(spine_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
       rospy.logerr('Moving down spine failed')
+      server.set_aborted()
+      return
+
+    # align base
+    if align_base_client.send_goal_and_wait(align_base_goal, rospy.Duration(40.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+      rospy.logerr('Aligning base failed')
       server.set_aborted()
       return
 
@@ -49,20 +51,34 @@ def execute_cb(goal):
       raise ActionException(joint_space_client)
     rospy.sleep(2.0)
 
-    # call vision outlet detection
-    rospy.loginfo("Detecting outlet with the forearm camera...")
-    vision_detect_outlet_goal.camera_name = "/forearm_camera_r"
+    found_outlet = False
+    offset = 0
+    while not found_outlet:
+      # get wall norm
+      rospy.loginfo("Detecting wall norm...")
+      while wall_norm_client.send_goal_and_wait(wall_norm_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+        rospy.logerr('Wall norm detection failed, trying again')
+        rospy.sleep(2.0)
 
-    vision_detect_outlet_goal.wall_normal = wall_norm_client.get_result().wall_norm
-    vision_detect_outlet_goal.wall_normal.header.stamp = rospy.Time.now()
+      # call vision outlet detection
+      rospy.loginfo("Detecting outlet with the forearm camera...")
+      vision_detect_outlet_goal.camera_name = "/forearm_camera_r"
+      vision_detect_outlet_goal.wall_normal = wall_norm_client.get_result().wall_norm
+      vision_detect_outlet_goal.wall_normal.header.stamp = rospy.Time.now()
+      vision_detect_outlet_goal.prior = pose_base_outlet.msg
+      vision_detect_outlet_goal.prior.header.stamp = rospy.Time.now()
+      vision_detect_outlet_goal.prior.header.frame_id = "base_link"
+      if vision_detect_outlet_client.send_goal_and_wait(vision_detect_outlet_goal, rospy.Duration(10.0), preempt_timeout) == GoalStatus.SUCCEEDED:
+        found_outlet = True
+      else:
+        # move base a little
+        move_base_goal.target_pose = (PoseStampedMath(align_base_client.get_result().base_pose) * PoseStampedMath().fromEuler(offset, 0, 0, 0, 0, 0)).msg
+        move_base_goal.target_pose.header.stamp = rospy.Time(0)
+        if move_base_omnidirectional_client.send_goal_and_wait(move_base_goal, rospy.Duration(10.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+          rospy.logerr('Failed to reach new base position')
+          raise ActionException(move_base_omnidirectional_client)          
 
-    vision_detect_outlet_goal.prior = pose_base_outlet.msg
-    vision_detect_outlet_goal.prior.header.stamp = rospy.Time.now()
-    vision_detect_outlet_goal.prior.header.frame_id = "base_link"
-
-    if vision_detect_outlet_client.send_goal_and_wait(vision_detect_outlet_goal, rospy.Duration(30.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-      rospy.logerr('Detecting the outlet with the forearm camera failed.')
-      raise ActionException(vision_detect_outlet_client)
+      offset = offset + 0.05
 
     # Transform outlet pose into fixed frame and return the result
     result = DetectOutletResult()
@@ -93,11 +109,16 @@ if __name__ == '__main__':
 
   # Declare wall norm goal
   # This is the point at which we want the head to look
+  look_point = PointStamped()
+  look_point.header.frame_id = 'base_link'
+  look_point.point.x = -0.14
+  look_point.point.y = -0.82
+  look_point.point.z = 0.5
   wall_norm_goal = DetectWallNormGoal()
-  wall_norm_goal.look_point.header.frame_id = 'base_link'
-  wall_norm_goal.look_point.point.x = -0.14
-  wall_norm_goal.look_point.point.y = -0.82
-  wall_norm_goal.look_point.point.z = 0.5
+  wall_norm_goal.look_point = look_point
+  align_base_goal = AlignBaseGoal()
+  align_base_goal.look_point = look_point
+
 
   # Declare the goal for the detector
   vision_detect_outlet_goal = VisionOutletDetectionGoal()
@@ -122,6 +143,13 @@ if __name__ == '__main__':
 
   vision_detect_outlet_client = actionlib.SimpleActionClient('vision_outlet_detection', VisionOutletDetectionAction)
   vision_detect_outlet_client.wait_for_server()
+
+  move_base_omnidirectional_client = actionlib.SimpleActionClient('move_base_omnidirectional', MoveBaseAction)
+  move_base_omnidirectional_client.wait_for_server()
+  move_base_goal = MoveBaseGoal()
+
+  align_base_client = actionlib.SimpleActionClient('align_base', AlignBaseAction)
+  align_base_client.wait_for_server()
   rospy.loginfo('Connected to action clients')
 
   # create action server
