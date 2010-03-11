@@ -324,6 +324,7 @@ void ApplyGamma(IplImage* img, float gamma)
 
 void FilterFeaturesOnEdges(const IplImage* img, const vector<feature_t>& src_features, vector<feature_t>& dst_features, int max_edge_dist, int min_contour_size)
 {
+    printf("entered filterfeaturesonedges\n");
 	IplImage* gray = cvCreateImage(cvGetSize(img), 8, 1);
 	if (img->nChannels > 1)
 		cvCvtColor(img,gray,CV_BGR2GRAY);
@@ -331,7 +332,13 @@ void FilterFeaturesOnEdges(const IplImage* img, const vector<feature_t>& src_fea
 		cvCopy(img,gray);
 
 	IplImage* edges = cvCreateImage( cvGetSize(img), 8, 1 );
-	cvCanny( gray, edges, 140, 160, 5 );
+	cvCanny( gray, edges, 100, 140, 3 );
+    
+#if 0
+    cvNamedWindow("1", 1);
+    cvShowImage("1", edges);
+    cvWaitKey(0);
+#endif
 
 	CvMemStorage* storage = cvCreateMemStorage(0);
 	CvSeq* contours;
@@ -349,25 +356,22 @@ void FilterFeaturesOnEdges(const IplImage* img, const vector<feature_t>& src_fea
 	for(CvSeq* contour = contours; contour; contour = contour->h_next)
 	{
 		CvRect rect = cvBoundingRect(contour);
-		if ((rect.width > min_contour_size) && (rect.height > min_contour_size) )
+		if ((rect.width < min_contour_size) || (rect.height < min_contour_size) )
 		{			
-#if 0
-			cvSeqPush(contours_filt,&contour);
-			CvPoint* pt1;
-			CvPoint* pt2;
-			for (int i=0;i<contour->total-1;i++)
-			{
-				pt1 = (CvPoint*)cvGetSeqElem(contour,i);
-				pt2 = (CvPoint*)cvGetSeqElem(contour,i+1);
-				cvLine(edges1,*pt1,*pt2,cvScalar(255));
-			}	
-			pt1 = (CvPoint*)cvGetSeqElem(contour,0);
-			pt2 = (CvPoint*)cvGetSeqElem(contour,contour->total-1);
-			cvLine(edges1,*pt1,*pt2,cvScalar(255));
-#else
-            cvDrawContours(edges1, contour, cvScalar(255), cvScalar(255), 0, 1);
-#endif
-		}		
+            continue;
+        }
+        
+        CvSeq* poly = cvApproxPoly(contour, sizeof(CvContour), storage1, CV_POLY_APPROX_DP, 1.0);
+        for(int i = 0; i < poly->total; i++)
+        {
+            CvPoint pt1 = *(CvPoint*)cvGetSeqElem(poly, i);
+            CvPoint pt2 = *(CvPoint*)cvGetSeqElem(poly, i + 1);
+            
+            const int min_segment_size = min_contour_size;
+            if(abs(pt1.x - pt2.x) < min_segment_size || abs(pt1.y - pt2.y) < min_segment_size) continue;
+            cvLine(edges1, pt1, pt2, cvScalar(255));
+        }
+//        cvDrawContours(edges1, contour, cvScalar(255), cvScalar(255), 0, 1);
 	}
 
 	for (int i=0;i<max_edge_dist;i++)
@@ -375,7 +379,7 @@ void FilterFeaturesOnEdges(const IplImage* img, const vector<feature_t>& src_fea
 		cvDilate(edges1,edges1);
 	}
     
-#if 1
+#if 0
     cvNamedWindow("1", 1);
     cvShowImage("1", edges1);
     cvWaitKey(0);
@@ -397,3 +401,4 @@ void FilterFeaturesOnEdges(const IplImage* img, const vector<feature_t>& src_fea
 	cvReleaseImage(&edges1);
 	cvReleaseImage(&gray);
 }
+
