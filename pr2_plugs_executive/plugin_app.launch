@@ -7,6 +7,6 @@
   <include file="$(find wg_pr2_2dnav)/pr2_2dnav.launch" />
 
   <!-- plugs executive -->
-  <node pkg="pr2_plugs_executive" type="executive.py" name="plugs_executive" output="screen" />
+  <node pkg="pr2_plugs_executive" type="executive_smach.py" name="plugs_executive" output="screen" />
 
 </launch>

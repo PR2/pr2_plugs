@@ -33,5 +33,6 @@
   <depend package="executive_python"/>
   <depend package="costmap_2d"/>
   <depend package="base_local_planner"/>
+  <depend package="smach"/>
 
 </package>

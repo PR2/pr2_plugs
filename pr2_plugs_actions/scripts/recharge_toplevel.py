@@ -42,14 +42,16 @@ import tf
 
 from pr2_plugs_msgs.msg import *
 from actionlib_msgs.msg import *
+from move_base_msgs.msg import *
 from pr2_common_action_msgs.msg import *
+from pr2_plugs_actions.posestampedmath import PoseStampedMath
 from std_srvs.srv import *
 from executive_python import *
 
 # State machine classes
 from smach.state import *
 from smach.state_machine import *
-from smach.action_state import *
+from smach.simple_action_state import *
 
 import actionlib
 
@@ -82,22 +84,22 @@ def main():
       # Meta-state for sending commands
       EmptyState('navigate_and_plugin'),
       # Tuck the arms
-      SimpleActionState('tuck','tuck_arms',TuckArmsAction
+      SimpleActionState('tuck','tuck_arms',TuckArmsAction,
         goal = TuckArmsGoal(False,True,True)),
       # Navigate to the requested outlet
-      SimpleActionState('navigate_to_outlet','move_base',MoveBaseAction
+      SimpleActionState('navigate_to_outlet','move_base',MoveBaseAction,
         goal = move_base_goal),
       # Untuck the arms
-      SimpleActionState('untuck','tuck_arms',TuckArmsAction
+      SimpleActionState('untuck','tuck_arms',TuckArmsAction,
         goal = TuckArmsGoal(True,False,True),aborted='untuck'),
       # Perform outlet detection
       SimpleActionState('detect_outlet','detect_outlet_sm',DetectOutletSMAction,
-        goal = DetectOutletSMGoal()), aborted="navigate_to_outlet",
+        goal = DetectOutletSMGoal(), aborted="navigate_to_outlet"),
       # Once we have the outlet pose, we will fetch the plug and plug in
       SimpleActionState('fetch_plug','fetch_plug_sm',FetchPlugAction,
         goal = FetchPlugGoal(), aborted='fetch_plug'),
       # Re-detect the plug in the gripper, plug, and wiggle in
-      SimpleActionState('plugin','plugin',PluginAction
+      SimpleActionState('plugin','plugin',PluginAction,
         goal = PluginGoal(), aborted='detect_outlet')
       )
 

@@ -1,4 +1,4 @@
-bool plug_in
+bool plugin
 bool unplug
 executive_python_msgs/Smach smach_info
 ---

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 import roslib
 roslib.load_manifest('pr2_plugs_actions')
@@ -5,18 +6,28 @@ roslib.load_manifest('pr2_plugs_actions')
 import rospy
 
 import os,sys,time
+from math import *
+import copy
+import math
 import tf
 
-from pr2_plugs_msgs.msg import *
-from actionlib_msgs.msg import *
-from pr2_common_action_msgs.msg import *
 from std_srvs.srv import *
+
+from actionlib_msgs.msg import *
+from pr2_plugs_msgs.msg import *
+from pr2_common_action_msgs.msg import *
+from pr2_controllers_msgs.msg import *
+from trajectory_msgs.msg import *
+
 from executive_python import *
+from pr2_arm_ik_action.tools import *
+from pr2_plugs_actions.posestampedmath import PoseStampedMath
+from joint_trajectory_action_tools.tools import *
 
 # State machine classes
 from smach.state import *
 from smach.state_machine import *
-from smach.action_state import *
+from smach.simple_action_state import *
 
 import actionlib
 
@@ -95,17 +106,17 @@ def main():
   detect_plug_goal.origin_on_right = False
 
   # Open gripper goal
-  open_gripper_goal = Pr2GripperCommandAction()
+  open_gripper_goal = Pr2GripperCommandGoal()
   open_gripper_goal.command.position = 0.07
   open_gripper_goal.command.max_effort = 99999
 
   # Close gripper goal
-  close_gripper_goal = Pr2GripperCommandAction()
+  close_gripper_goal = Pr2GripperCommandGoal()
   close_gripper_goal.command.position = 0.0
   close_gripper_goal.command.max_effort = 99999
 
   # Construct state machine
-  sm = StateMachine('fetch_plug',FetchPlugSMAction,result_cb = construct_action_result)
+  sm = StateMachine('fetch_plug_sm',FetchPlugSMAction,result_cb = construct_action_result)
   # Define nominal sequence
   sm.add_sequence(
       # Raise spine
@@ -134,7 +145,7 @@ def main():
       # Open the gripper
       SimpleActionState('open_gripper',
         'r_gripper_controller/gripper_action', Pr2GripperCommandAction,
-        goal = open_gripper_goal)
+        goal = open_gripper_goal),
 
       # Grasp the plug
       GraspPlugState('grasp_plug',aborted = 'recover_grasp_to_detect_pose'),
@@ -159,7 +170,7 @@ def main():
   # Define recovery states
   sm.add(SimpleActionState('recover_grasp_to_detect_pose',
     'r_arm_plugs_controller/joint_trajectory_action', JointTrajectoryAction,
-    goal = get_action_goal('pr2_plugs_configuration/move_arm_grasp_to_detect_pose'),
+    goal = get_action_goal('pr2_plugs_configuration/recover_grasp_to_detect'),
     succeeded = 'detect_plug_on_base'))
 
   # Populate the sm database with some stubbed out results

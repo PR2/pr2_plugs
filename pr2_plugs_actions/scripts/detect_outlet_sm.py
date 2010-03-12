@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 import roslib
 roslib.load_manifest('pr2_plugs_actions')
@@ -5,18 +6,26 @@ roslib.load_manifest('pr2_plugs_actions')
 import rospy
 
 import os,sys,time
+from math import *
 import tf
 
-from pr2_plugs_msgs.msg import *
 from actionlib_msgs.msg import *
 from pr2_common_action_msgs.msg import *
-from std_srvs.srv import *
+from pr2_plugs_msgs.msg import *
+from pr2_controllers_msgs.msg import *
+from geometry_msgs.msg import *
+from trajectory_msgs.msg import *
+from move_base_msgs.msg import *
+
 from executive_python import *
+from pr2_arm_ik_action.tools import *
+from pr2_plugs_actions.posestampedmath import PoseStampedMath
+from joint_trajectory_action_tools.tools import *
 
 # State machine classes
 from smach.state import *
 from smach.state_machine import *
-from smach.action_state import *
+from smach.simple_action_state import *
 
 import actionlib
 
@@ -53,7 +62,7 @@ class OutletSearchState(State):
     # Create action clients
     self.align_base_client = actionlib.SimpleActionClient('align_base', AlignBaseAction)
     self.align_base_client.wait_for_server()
-    selfvision_detect_outlet_client = actionlib.SimpleActionClient('vision_outlet_detection', VisionOutletDetectionAction)
+    self.vision_detect_outlet_client = actionlib.SimpleActionClient('vision_outlet_detection', VisionOutletDetectionAction)
     self.vision_detect_outlet_client.wait_for_server()
 
   def enter(self):
@@ -101,7 +110,7 @@ def construct_action_result(sm):
   self.result.outlet_pose = sm.userdata.outlet_precise_pose
 
 def main():
-  rospy.init_node("fetch_plug_sm")
+  rospy.init_node("detect_outlet_sm")
 
   # Define fixed goals
   # Declare wall norm goal
@@ -123,7 +132,7 @@ def main():
   vision_detect_outlet_goal.prior.header.frame_id = "base_link"
 
   # Construct state machine
-  sm = StateMachine('detect_outlet',DetectOutletSMAction,DetectOutletSMResult(),result_cb = construct_action_result)
+  sm = StateMachine('detect_outlet_sm',DetectOutletSMAction,result_cb = construct_action_result)
   # Define nominal sequence
   sm.add_sequence(
       # Raise spine
@@ -159,11 +168,11 @@ def main():
         goal = wall_norm_goal),
       
       # Lower the spine
-      SimpleActionState('vision_detect_outlet',
+      SimpleActionState('vision_outlet_detection',
         'vision_detect_outlet', VisionOutletDetectionAction,
         goal = vision_detect_outlet_goal,
         goal_cb = update_vision_detect_goal_stamp,
-        result_cb = store_precise_outlet_pose)
+        result_cb = store_precise_outlet_result)
       )
 
   # Define recovery states

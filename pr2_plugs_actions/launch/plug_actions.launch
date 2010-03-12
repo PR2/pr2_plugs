@@ -2,6 +2,9 @@
   <rosparam command="load" file="$(find pr2_plugs_actions)/config/joint_trajectories.yaml" />
   <rosparam command="load" file="$(find pr2_plugs_actions)/config/cart_ik_seeds.yaml" />
 
+  <!-- detect outlet action -->
+  <node pkg="pr2_plugs_actions" type="recharge_toplevel.py" name="recharge_toplevel" output="screen"/>
+
   <!-- detect wall norm action -->
   <include file="$(find stereo_wall_detection)/wall_extractor.launch"/>
 
@@ -17,7 +20,8 @@
   <!--node pkg="pr2_plugs_actions" type="vision_detect_plug.py" name="vision_detect_plug" output="screen"/-->
 
   <!-- detect outlet action -->
-  <node pkg="pr2_plugs_actions" type="detect_outlet.py" name="detect_outlet" output="screen"/>
+  <!--node pkg="pr2_plugs_actions" type="detect_outlet.py" name="detect_outlet" output="screen"/-->
+  <node pkg="pr2_plugs_actions" type="detect_outlet_sm.py" name="detect_outlet_sm" output="screen"/>
 
   <!-- detect plug action -->
   <node pkg="pr2_plugs_actions" type="detect_plug.py" name="detect_plug" output="screen"/>
@@ -65,7 +69,8 @@
   </group>
 
   <!-- fetch plug action -->
-  <node pkg="pr2_plugs_actions" type="fetch_plug.py" name="fetch_plug" output="screen"/>
+  <!--node pkg="pr2_plugs_actions" type="fetch_plug.py" name="fetch_plug" output="screen"/-->
+  <node pkg="pr2_plugs_actions" type="fetch_plug_sm.py" name="fetch_plug_sm" output="screen"/>
 
   <!-- stow plug action -->
   <node pkg="pr2_plugs_actions" type="stow_plug.py" name="stow_plug" output="screen"/>
