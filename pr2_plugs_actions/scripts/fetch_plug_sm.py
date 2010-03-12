@@ -1,11 +1,10 @@
 
 import roslib
-roslib.load_manifest('pr2_plugs_executive')
+roslib.load_manifest('pr2_plugs_actions')
 
 import rospy
 
 import os,sys,time
-import threading
 import tf
 
 from pr2_plugs_msgs.msg import *
@@ -79,6 +78,10 @@ class GraspPlugState(State):
 
     self.set_succeeded()
 
+# Callback to stuff the result for this action
+def construct_action_result(sm):
+  self.result.plug_pose = sm.userdata.plug_pose
+
 def main():
   rospy.init_node("fetch_plug_sm")
 
@@ -102,7 +105,7 @@ def main():
   close_gripper_goal.command.max_effort = 99999
 
   # Construct state machine
-  sm = StateMachine('fetch_plug',FetchPlugSMAction,RechargeSMResult())
+  sm = StateMachine('fetch_plug',FetchPlugSMAction,FetchPlugSMResult(),result_cb = construct_action_result)
   # Define nominal sequence
   sm.add_sequence(
       # Raise spine
@@ -119,12 +122,14 @@ def main():
       SimpleActionState('detect_plug_on_base',
         'vision_plug_detection',VisionPlugDetectionAction,
         goal = detect_plug_goal,
+        aborted = 'move_arm_base_detect_pose',
         result_cb = store_detect_plug_result),
 
       # Move arm to the grasp pose
       SimpleActionState('move_arm_base_grasp_pose',
         'r_arm_plugs_controller/joint_trajectory_action', JointTrajectoryAction,
-        goal = get_action_goal('pr2_plugs_configuration/detect_plug_on_base')),
+        goal = get_action_goal('pr2_plugs_configuration/detect_plug_on_base'),
+        aborted = 'recover_grasp_to_detect_pose'),
 
       # Open the gripper
       SimpleActionState('open_gripper',
@@ -132,12 +137,13 @@ def main():
         goal = open_gripper_goal)
 
       # Grasp the plug
-      GraspPlugState('grasp_plug'),
+      GraspPlugState('grasp_plug',aborted = 'recover_grasp_to_detect_pose'),
 
       # Close the gripper
       SimpleActionState('close_gripper',
         'r_gripper_controller/gripper_action', Pr2GripperCommandAction,
-        goal = close_gripper_goal)
+        goal = close_gripper_goal,
+        aborted='recover_grasp_to_detect_pose'),
 
       # Remove the plug form the base
       SimpleActionState('move_arm_remove_plug',
@@ -150,9 +156,15 @@ def main():
         goal = SingleJointPositionGoal(position=0.01))
       )
 
+  # Define recovery states
+  sm.add(SimpleActionState('recover_grasp_to_detect_pose',
+    'r_arm_plugs_controller/joint_trajectory_action', JointTrajectoryAction,
+    goal = get_action_goal('pr2_plugs_configuration/move_arm_grasp_to_detect_pose'),
+    succeeded = 'detect_plug_on_base'))
+
   # Populate the sm database with some stubbed out results
-  # Run state machine action server with no default state
-  sm.run_server()
+  # Run state machine action server with default state
+  sm.run_server('raise_spine')
 
 
 if __name__ == "__main__":

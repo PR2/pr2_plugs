@@ -78,7 +78,7 @@ def main():
       # Navigate to the requested outlet
       EmptyState('navigate_to_outlet'),
       # Untuck the arms
-      SimpleActionState('untuck','tuck_arms'TuckArmsAction
+      SimpleActionState('untuck','tuck_arms',TuckArmsAction
         goal = TuckArmsGoal(True,False,True),aborted='untuck'),
       # Perform outlet detection
       EmptyState('detect_outlet'),
