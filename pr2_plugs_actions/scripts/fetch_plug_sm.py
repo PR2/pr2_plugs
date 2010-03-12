@@ -105,7 +105,7 @@ def main():
   close_gripper_goal.command.max_effort = 99999
 
   # Construct state machine
-  sm = StateMachine('fetch_plug',FetchPlugSMAction,FetchPlugSMResult(),result_cb = construct_action_result)
+  sm = StateMachine('fetch_plug',FetchPlugSMAction,result_cb = construct_action_result)
   # Define nominal sequence
   sm.add_sequence(
       # Raise spine

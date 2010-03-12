@@ -11,11 +11,13 @@
   <depend package="actionlib_msgs"/>
   <depend package="geometry_msgs"/>
   <depend package="sensor_msgs"/>
+  <depend package="executive_python_msgs"/>
 
   <export>
     <cpp cflags="-I${prefix}/msg/cpp -I${prefix}/srv/cpp"/>
    <rosdoc config="rosdoc.yaml" />
   </export>
+
 
 
 </package>

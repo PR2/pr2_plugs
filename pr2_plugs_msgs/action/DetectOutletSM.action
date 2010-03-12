@@ -1,0 +1,5 @@
+executive_python_msgs/Smach smach_info
+---
+geometry_msgs/PoseStamped outlet_pose
+executive_python_msgs/Smach smach_info
+---

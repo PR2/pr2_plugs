@@ -43,7 +43,6 @@ import tf
 from pr2_plugs_msgs.msg import *
 from actionlib_msgs.msg import *
 from pr2_common_action_msgs.msg import *
-from std_srvs.srv import *
 from executive_python import *
 
 # State machine classes
@@ -53,47 +52,12 @@ from smach.action_state import *
 
 import actionlib
 
-class TFUtil():
-  def __init__(self):
-    # Construct tf listener
-    transformer = tf.TransformListener(True, rospy.Duration(60.0))  
-
-  def wait_and_transform(frame_id,pose):
-    try:
-      transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
-    except rospy.ServiceException, e:
-      rospy.logerr('Could not transform between %s and %s' % (frame_id,pose.header.frame_id))
-      raise e
-    return transformer.transformPose(frame_id, pose)
-
 def main():
-  rospy.init_node("plugs_executive")
+  rospy.init_node("plugs_smach_executive")
 
-  # Construct state machine
-  sm = StateMachine('recharge_executive',RechargeSMAction,RechargeSMResult())
-  # Define nominal sequence
-  sm.add_sequence(
-      # Meta-state for sending commands
-      EmptyState('navigate_and_plugin'),
-      # Navigate to the requested outlet
-      EmptyState('navigate_to_outlet'),
-      # Untuck the arms
-      SimpleActionState('untuck','tuck_arms',TuckArmsAction
-        goal = TuckArmsGoal(True,False,True),aborted='untuck'),
-      # Perform outlet detection
-      EmptyState('detect_outlet'),
-      # Once we have the outlet pose, we will fetch the plug and plug in
-      SimpleActionState('fetch_plug','fetch_plug',FetchPlugAction,
-        goal = FetchPlugGoal(), aborted='fetch_plug'),
-      # Re-detect the plug in the gripper, plug, and wiggle in
-      SimpleActionState('plugin','plugin',PluginAction
-        goal = PluginGoal(), aborted='detect_outlet')
-      )
-
-  # Populate the sm database with some stubbed out results
-  # Run state machine action server with no default state
-  sm.run_server()
-
+  recharge_client = actionlib.SimpleActionClient('recharge',RechargeSMAction)
+  recharge_client.wait_for_server()
+  recharge_client.send_goal_and_wait(RechargeSMGoal(plugin=True,unplug=True))
 
 if __name__ == "__main__":
   main()
