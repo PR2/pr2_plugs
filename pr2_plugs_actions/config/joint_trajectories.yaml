@@ -19,7 +19,7 @@ pr2_plugs_configuration:
     joint_names: ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint', 'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
     waypoints:
     - [[-1.455193584911505, 0.63144298327761739, -3.4703306592708247, -1.3213131327201302, 1.6761772486581412, -1.757847897926085, 2.5080173833889021], [], [], 3.0]
-    - [[-1.216671246775457, 0.80435500610312283, -3.7192013497968883, -1.3333291017649631, 3.7934963252225566, -1.9128701802409407, 3.2350079293330256], [], [], 6.0]
+    - [[-1.2288585195269337, 0.81027665072043464, -3.7392457030931232, -1.5140029495716054, 3.8161723833071757, -1.9902792427781377, 3.0105143327391501], [], [], 6.0]
   detect_plug_on_base:
     joint_names: ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint', 'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
     waypoints:
