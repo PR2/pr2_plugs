@@ -122,11 +122,7 @@ CvOneWayDescriptorBase::~CvOneWayDescriptorBase()
 
 
     delete []m_descriptors;
-
-    if(!m_transforms)
-    {
-        delete []m_poses;
-    }
+    delete []m_poses;
 
     for(int i = 0; i < m_pose_count; i++)
     {
@@ -633,6 +629,8 @@ void readPCAFeatures(const char* filename, CvMat** avg, CvMat** eigenvectors)
     *avg = cvCloneMat(_avg);
     *eigenvectors = cvCloneMat(_eigenvectors);
 
+    cvReleaseMat(&_avg);
+    cvReleaseMat(&_eigenvectors);
     cvReleaseFileStorage(&fs);
     cvReleaseMemStorage(&storage);
 }

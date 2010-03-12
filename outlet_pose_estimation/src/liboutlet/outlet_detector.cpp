@@ -103,6 +103,7 @@ int detect_outlet_tuple(IplImage* src, CvMat* intrinsic_matrix, CvMat* distortio
 
 
 #endif
+    cvReleaseImage(&red);
 
     if(outlets.size() != (size_t)outlet_templ.get_count())
     {
