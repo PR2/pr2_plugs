@@ -46,27 +46,17 @@ from pr2_common_action_msgs.msg import *
 from std_srvs.srv import *
 from executive_python import *
 
+# State machine classes
+from smach.state import *
+from smach.state_machine import *
+from smach.action_state import *
+
 import actionlib
 
-def main():
-  rospy.init_node("plugs_executive")
-
-  # Construct list of actions
-  actions = {
-      'tuck_arms':(TuckArmsAction, 30.0),
-      'detect_outlet':(DetectOutletAction, 90.0),
-      'fetch_plug':(FetchPlugAction, 60.0),
-      'detect_plug':(DetectPlugInGripperAction, 40.0),
-      'wiggle_plug':(WigglePlugAction, 30.0),
-      'stow_plug':(StowPlugAction, 45.0),
-      'plugin':(PluginAction, 60.0)
-      }
-
-  # Construct executive
-  exc = ActionExecutive(actions)
-
-  # Construct tf listener
-  transformer = tf.TransformListener(True, rospy.Duration(60.0))  
+class TFUtil():
+  def __init__(self):
+    # Construct tf listener
+    transformer = tf.TransformListener(True, rospy.Duration(60.0))  
 
   def wait_and_transform(frame_id,pose):
     try:
@@ -76,65 +66,33 @@ def main():
       raise e
     return transformer.transformPose(frame_id, pose)
 
-  untuck_goal = TuckArmsGoal(untuck=True,left=False,right=True)
-  detect_outlet_goal = DetectOutletGoal()
-  detect_plug_goal = DetectPlugInGripperGoal()
-  plugin_goal = PluginGoal()
-  stow_plug_goal = StowPlugGoal()
-  tuck_goal = TuckArmsGoal(untuck=False,left=False,right=True)
+def main():
+  rospy.init_node("plugs_executive")
 
-  wiggle_in_goal = WigglePlugGoal()
-  wiggle_in_goal.travel.x = 0.05
-  wiggle_in_goal.offset.y = 0.01
-  wiggle_in_goal.period = rospy.Duration(2.0)
-  wiggle_in_goal.move_duration = rospy.Duration(10.0)
-  wiggle_in_goal.abort_threshold = 0.02
+  # Construct state machine
+  sm = StateMachine('recharge_executive',RechargeSMAction,RechargeSMResult())
+  # Define nominal sequence
+  sm.add_sequence(
+      # Meta-state for sending commands
+      EmptyState('navigate_and_plugin'),
+      # Navigate to the requested outlet
+      EmptyState('navigate_to_outlet'),
+      # Untuck the arms
+      SimpleActionState('untuck','tuck_arms'TuckArmsAction
+        goal = TuckArmsGoal(True,False,True),aborted='untuck'),
+      # Perform outlet detection
+      EmptyState('detect_outlet'),
+      # Once we have the outlet pose, we will fetch the plug and plug in
+      SimpleActionState('fetch_plug','fetch_plug',FetchPlugAction,
+        goal = FetchPlugGoal(), aborted='fetch_plug'),
+      # Re-detect the plug in the gripper, plug, and wiggle in
+      SimpleActionState('plugin','plugin',PluginAction
+        goal = PluginGoal(), aborted='detect_outlet')
+      )
 
-  wiggle_out_goal = WigglePlugGoal()
-  wiggle_out_goal.travel.x = -0.08
-  wiggle_out_goal.offset.y = 0.01
-  wiggle_out_goal.period = rospy.Duration(2.0)
-  wiggle_out_goal.move_duration = rospy.Duration(10.0)
-  wiggle_out_goal.abort_threshold = 0.02
-
-  # Untuck the arms
-  exc.tuck_arms_and_wait(untuck_goal)
-
-  # Detect the outlet 
-  base_to_outlet = exc.detect_outlet_and_wait(detect_outlet_goal).outlet_pose
-
-  # Plug in
-  # Fetch plug
-  plug_pose = exc.fetch_plug_and_wait(FetchPlugGoal()).plug_pose
-  base_to_plug = wait_and_transform("base_link",plug_pose)
-
-  # Detect the plug in gripper
-  plug_pose = exc.detect_plug_and_wait(detect_plug_goal).plug_pose
-  gripper_to_plug = wait_and_transform('r_gripper_tool_frame', plug_pose)
-
-  # Plug in
-  plugin_goal.gripper_to_plug = gripper_to_plug
-  plugin_goal.base_to_outlet = base_to_outlet
-  exc.plugin_and_wait(plugin_goal)
-
-  # Wiggle in
-  wiggle_in_goal.initial_plug_pose = gripper_to_plug
-  wiggle_in_goal.initial_plug_pose.header.stamp = rospy.Time.now()
-  exc.wiggle_plug_and_wait(wiggle_in_goal) 
-
-  # Wiggle out
-  exc.wiggle_plug_and_wait(wiggle_out_goal)
-
-  # Stow plug
-  stow_plug_goal.gripper_to_plug = gripper_to_plug
-  stow_plug_goal.base_to_plug = base_to_plug
-  exc.stow_plug_and_wait(stow_plug_goal)
-
-  # Tuck the arms
-  exc.tuck_arms_and_wait(tuck_goal)
-
-  rospy.loginfo("Plugged in and uplugged!")
-
+  # Populate the sm database with some stubbed out results
+  # Run state machine action server with no default state
+  sm.run_server()
 
 
 if __name__ == "__main__":
