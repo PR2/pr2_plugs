@@ -67,7 +67,6 @@
 
   <!-- fetch plug action -->
   <node pkg="pr2_plugs_actions" type="fetch_plug.py" name="fetch_plug" output="screen"/>
-  <!--node pkg="pr2_plugs_actions" type="fetch_plug_sm.py" name="fetch_plug_sm" output="screen"/-->
 
   <!-- stow plug action -->
   <node pkg="pr2_plugs_actions" type="stow_plug.py" name="stow_plug" output="screen"/>
