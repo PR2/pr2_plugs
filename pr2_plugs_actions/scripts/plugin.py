@@ -28,7 +28,7 @@ def execute_cb(goal):
   preempt_timeout = rospy.Duration(5.0)
 
   # approach outlet
-  cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/approah_outlet_seed')
+  cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
 
   time = rospy.Time.now()
   try:
