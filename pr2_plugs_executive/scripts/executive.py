@@ -42,14 +42,17 @@ import time
 import tf
 
 from pr2_plugs_msgs.msg import *
+from move_base_msgs.msg import *
 from actionlib_msgs.msg import *
 from pr2_common_action_msgs.msg import *
+from pr2_plugs_actions.posestampedmath import PoseStampedMath
 from std_srvs.srv import *
 
 import actionlib
 
 # Declare list of actions for easy construction
 actions = [
+    ('move_base',MoveBaseAction),
     ('tuck_arms',TuckArmsAction),
     ('detect_outlet',DetectOutletAction),
     ('fetch_plug',FetchPlugAction),
@@ -77,11 +80,26 @@ def main():
     ac[name].wait_for_server()
   rospy.loginfo("All actions started.")
 
-  # Untuck the arms
+  # Tuck the arms
   untuck_goal = TuckArmsGoal()
-  untuck_goal.untuck=True
+  untuck_goal.untuck=False
   untuck_goal.left=True
   untuck_goal.right=True
+  untucked = False
+  while not untucked:
+    rospy.loginfo("Untucking right arm...")
+    untucked = (ac['tuck_arms'].send_goal_and_wait(untuck_goal, rospy.Duration(30.0), preempt_timeout) == GoalStatus.SUCCEEDED)
+
+  # move to plug
+  move_base_goal = MoveBaseGoal()
+  move_base_goal.target_pose = PoseStampedMath().fromEuler(19.457, 16.099, 0.051, 0.014, -0.001, 1.192).msg
+  move_base_goal.target_pose.header.stamp = rospy.Time.now()
+  move_base_goal.target_pose.header.frame_id = "map"
+  while ac['move_base'].send_goal_and_wait(move_base_goal, rospy.Duration(300.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    rospy.logwarn("Failed to move to the outlet. Tyring again")
+
+  # Untuck the arms
+  untuck_goal.untuck=True
   untucked = False
   while not untucked:
     rospy.loginfo("Untucking right arm...")
@@ -116,7 +134,6 @@ def main():
     return
   base_to_plug = transformer.transformPose('base_link', plug_pose)
 
-
   # Detect the plug in gripper
   detect_plug_goal = DetectPlugInGripperGoal()
   rospy.loginfo('Detecting plug in gripper...')
@@ -132,13 +149,13 @@ def main():
   gripper_to_plug = transformer.transformPose('r_gripper_tool_frame', plug_pose)
 
   # Plug in
-#   plugin_goal = PluginGoal()
-#   plugin_goal.gripper_to_plug = gripper_to_plug
-#   plugin_goal.base_to_outlet = base_to_outlet
-#   rospy.loginfo('Plugging in...')
-#   if ac['plugin'].send_goal_and_wait(plugin_goal, rospy.Duration(60.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-#     rospy.logerr("Failed to plug in!")
-#     return
+  plugin_goal = PluginGoal()
+  plugin_goal.gripper_to_plug = gripper_to_plug
+  plugin_goal.base_to_outlet = base_to_outlet
+  rospy.loginfo('Plugging in...')
+  if ac['plugin'].send_goal_and_wait(plugin_goal, rospy.Duration(60.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    rospy.logerr("Failed to plug in!")
+    return
 
   # Stow plug
   rospy.loginfo('Stowing plug...')
