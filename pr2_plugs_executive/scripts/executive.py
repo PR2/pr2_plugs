@@ -70,7 +70,7 @@ class Executive:
       ('detect_outlet',DetectOutletAction),
       ('fetch_plug',FetchPlugAction),
       ('detect_plug',DetectPlugInGripperAction),
-      ('wiggle_plug',WigglePlugAction),
+      ('wiggle_plug2',WigglePlug2Action),
       ('stow_plug',StowPlugAction),
       ('plugin',PluginAction)]
 
@@ -192,6 +192,20 @@ class Executive:
       if self.ac['plugin'].send_goal_and_wait(plugin_goal, rospy.Duration(60.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
         rospy.logerr("Failed to plug in!")
         return
+
+      #Wiggle in
+      wiggle_goal = WigglePlug2Goal()
+      wiggle_goal.gripper_to_plug = self.gripper_to_plug
+      wiggle_goal.base_to_outlet = base_to_outlet
+      wiggle_goal.wiggle_period = ropsy.Duration(2.0)
+      wiggle_goal.wiggle_amplitude = 0.01
+      wiggle_goal.timeout = rospy.Duration(20.0)
+      rospy.loginfo('wiggling in...')
+      if self.ac['wiggle_plug2'].send_goal_and_wait(wiggle_goal, rospy.Duration(60.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
+        rospy.logerr("Failed to wiggle in!")
+        return
+
+
 
       rospy.loginfo("Plugged in!")
       self.recharge_state.state = RechargeState.PLUGGED_IN
