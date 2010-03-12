@@ -2,3 +2,4 @@ int32 state
 int32 WAITING_FOR_STATE = 0
 int32 UNPLUGGED = 1
 int32 PLUGGED_IN = 2
+int32 FAILED = 3
