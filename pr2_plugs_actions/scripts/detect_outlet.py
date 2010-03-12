@@ -40,6 +40,7 @@ def execute_cb(goal):
 
     # align base
     rospy.loginfo("Rough base alignment...")
+    align_base_goal.offset = 0
     if align_base_client.send_goal_and_wait(align_base_goal, rospy.Duration(40.0), preempt_timeout) != GoalStatus.SUCCEEDED:
       rospy.logerr('Aligning base failed')
       server.set_aborted()
