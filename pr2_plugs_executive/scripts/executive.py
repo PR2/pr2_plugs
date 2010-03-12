@@ -45,176 +45,188 @@ from pr2_plugs_msgs.msg import *
 from move_base_msgs.msg import *
 from actionlib_msgs.msg import *
 from pr2_common_action_msgs.msg import *
+from geometry_msgs.msg import *
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
 from std_srvs.srv import *
 
 import actionlib
 
-# Declare list of actions for easy construction
-actions = [
-    ('move_base',MoveBaseAction),
-    ('tuck_arms',TuckArmsAction),
-    ('detect_outlet',DetectOutletAction),
-    ('fetch_plug',FetchPlugAction),
-    ('detect_plug',DetectPlugInGripperAction),
-    ('wiggle_plug',WigglePlugAction),
-    ('stow_plug',StowPlugAction),
-    ('plugin',PluginAction)]
+
 
 def main():
   rospy.init_node("plugs_executive")
 
-  # publisher for state
-  recharge_state_pub = rospy.Publisher('recharge_state', RechargeState, None, False, True)
-  recharge_state = RechargeState()
-  recharge_state.state = RechargeState.WAITING_FOR_STATE
-  recharge_state_pub.publish(recharge_state)
-
-  # construct tf listener
-  transformer = tf.TransformListener(True, rospy.Duration(60.0))  
-  preempt_timeout = rospy.Duration(5.0)
-
-  # Construct action ac
-  rospy.loginfo("Starting actions.")
-  ac = dict()
-  for (name,action) in actions:
-    ac[name] = actionlib.SimpleActionClient(name,action)
-
-  # Wait for all the ac to start
-  for (name,action) in actions:
-    print "Wait for server "+name
-    ac[name].wait_for_server()
-  rospy.loginfo("All actions started.")
-
-  # ready to receive commands
-  recharge_state.state = RechargeState.UNPLUGGED
-  recharge_state_pub.publish(recharge_state)
-  rospy.Subscriber("recharge_command", RechargeCommand, recharge_cb)
-
+  executive = Executive()
   rospy.spin()
 
 
+class Executive:
+  def __init__(self):
 
-def recharge_cb(msg):
-  if recharge_state.state == RechargeState.WAITING_FOR_STATE:
-    rospy.logerr("Plugs Executive: can't execute commands while still waiting for state")
-    return
+    # Declare list of actions for easy construction  
+    actions = [
+      ('move_base',MoveBaseAction),
+      ('tuck_arms',TuckArmsAction),
+      ('detect_outlet',DetectOutletAction),
+      ('fetch_plug',FetchPlugAction),
+      ('detect_plug',DetectPlugInGripperAction),
+      ('wiggle_plug',WigglePlugAction),
+      ('stow_plug',StowPlugAction),
+      ('plugin',PluginAction)]
 
-  elif recharge_state.state == RechargeState.UNPLUGGED and msg.command == RechargeCommand.PLUG_IN:
-    rospy.logerr("Plugs Executive: Starting to plug in")
-    recharge_state.state = RechargeState.WAITING_FOR_STATE
-    recharge_state_pub.publish(recharge_state)
+    # publisher for state
+    self.recharge_state = RechargeState()
+    self.recharge_state_pub = rospy.Publisher('recharge_state', RechargeState, None, False, True)
+    self.recharge_state.state = RechargeState.WAITING_FOR_STATE
+    self.recharge_state_pub.publish(self.recharge_state)
 
-    # Tuck the arms
-    untuck_goal = TuckArmsGoal()
-    untuck_goal.untuck=False
-    untuck_goal.left=True
-    untuck_goal.right=True
-    untucked = False
-    while not untucked:
-      rospy.loginfo("Untucking right arm...")
-      untucked = (ac['tuck_arms'].send_goal_and_wait(untuck_goal, rospy.Duration(30.0), preempt_timeout) == GoalStatus.SUCCEEDED)
+    # subscriber for commands
+    rospy.Subscriber("recharge_command", RechargeCommand, self.recharge_cb)
 
-    # move to plug
-    move_base_goal = MoveBaseGoal()
-    move_base_goal.target_pose = PoseStampedMath().fromEuler(19.457, 16.099, 0.051, 0.014, -0.001, 1.192).msg
-    move_base_goal.target_pose.header.stamp = rospy.Time.now()
-    move_base_goal.target_pose.header.frame_id = "map"
-    while ac['move_base'].send_goal_and_wait(move_base_goal, rospy.Duration(300.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-      rospy.logwarn("Failed to move to the outlet. Tyring again")
+    # construct tf listener
+    self.transformer = tf.TransformListener(True, rospy.Duration(60.0))  
+    self.preempt_timeout = rospy.Duration(5.0)
 
-    # Untuck the arms
-    untuck_goal.untuck=True
-    untucked = False
-    while not untucked:
-      rospy.loginfo("Untucking right arm...")
-      untucked = (ac['tuck_arms'].send_goal_and_wait(untuck_goal, rospy.Duration(30.0), preempt_timeout) == GoalStatus.SUCCEEDED)
+    # Construct action ac
+    rospy.loginfo("Starting actions.")
+    self.ac = dict()
+    for (name,action) in actions:
+      self.ac[name] = actionlib.SimpleActionClient(name,action)
 
-    # Detect the outlet 
-    detect_outlet_goal = DetectOutletGoal()
-    rospy.loginfo("Detecting the outlet ...")
-    if ac['detect_outlet'].send_goal_and_wait(detect_outlet_goal, rospy.Duration(90.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-      rospy.logerr("Failed to detect the outlet!")
-      return
-    outlet_pose = ac['detect_outlet'].get_result().outlet_pose
-    try:
-      transformer.waitForTransform("base_link", outlet_pose.header.frame_id, outlet_pose.header.stamp, rospy.Duration(2.0))
-    except rospy.ServiceException, e:
-      rospy.logerr('Could not transform between base_link and %s' %outlet_pose.header.frame_id)
-      return
-    base_to_outlet = transformer.transformPose('base_link', outlet_pose)
+    # Wait for all the ac to start
+    for (name,action) in actions:
+      print "Wait for server "+name
+      self.ac[name].wait_for_server()
+    rospy.loginfo("All actions started.")
 
+    # ready to receive commands
+    self.recharge_state.state = RechargeState.UNPLUGGED
+    self.recharge_state_pub.publish(self.recharge_state)
 
-    # Fetch plug
-    rospy.loginfo('Fetching plug...')
-    if ac['fetch_plug'].send_goal_and_wait(FetchPlugGoal(), rospy.Duration(60.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-      rospy.logerr("Failed to fetch plug!")
-      return
-    plug_pose = ac['fetch_plug'].get_result().plug_pose
-    try:
-      transformer.waitForTransform("base_link", plug_pose.header.frame_id, plug_pose.header.stamp, rospy.Duration(2.0))
-    except rospy.ServiceException, e:
-      rospy.logerr('Could not transform between base_link and %s' %plug_pose.header.frame_id)
-      return
-    base_to_plug = transformer.transformPose('base_link', plug_pose)
+    # vars we need between plug and unplug
+    self.gripper_to_plug = PoseStamped()
+    self.base_to_plug = PoseStamped()
 
-    # Detect the plug in gripper
-    detect_plug_goal = DetectPlugInGripperGoal()
-    rospy.loginfo('Detecting plug in gripper...')
-    if ac['detect_plug'].send_goal_and_wait(detect_plug_goal, rospy.Duration(30.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-      rospy.logerr("Failed to detect plug in gripper!")
-      return
-    plug_pose = ac['detect_plug'].get_result().plug_pose
-    try:
-      transformer.waitForTransform("r_gripper_tool_frame", plug_pose.header.frame_id, plug_pose.header.stamp, rospy.Duration(2.0))
-    except rospy.ServiceException, e:
-      rospy.logerr('Could not transform between r_gripper_tool_frame and %s' %plug_pose.header.frame_id)
-      return
-    gripper_to_plug = transformer.transformPose('r_gripper_tool_frame', plug_pose)
-
-    # Plug in
-    plugin_goal = PluginGoal()
-    plugin_goal.gripper_to_plug = gripper_to_plug
-    plugin_goal.base_to_outlet = base_to_outlet
-    rospy.loginfo('Plugging in...')
-    if ac['plugin'].send_goal_and_wait(plugin_goal, rospy.Duration(60.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-      rospy.logerr("Failed to plug in!")
+  def recharge_cb(self, msg):
+    if self.recharge_state.state == RechargeState.WAITING_FOR_STATE:
+      rospy.logerr("Plugs Executive: can't execute commands while still waiting for state")
       return
 
-    rospy.loginfo("Plugged in!")
-    recharge_state.state = RechargeState.PLUGGED_IN
-    recharge_state_pub.publish(recharge_state)
+    elif self.recharge_state.state == RechargeState.UNPLUGGED and msg.command == RechargeCommand.PLUG_IN:
+      rospy.logerr("Plugs Executive: Starting to plug in")
+      self.recharge_state.state = RechargeState.WAITING_FOR_STATE
+      self.recharge_state_pub.publish(self.recharge_state)
+
+      # Tuck the arms
+      untuck_goal = TuckArmsGoal()
+      untuck_goal.untuck=False
+      untuck_goal.left=True
+      untuck_goal.right=True
+      untucked = False
+      while not untucked:
+        rospy.loginfo("Untucking right arm...")
+        untucked = (self.ac['tuck_arms'].send_goal_and_wait(untuck_goal, rospy.Duration(30.0), self.preempt_timeout) == GoalStatus.SUCCEEDED)
+
+      # move to plug
+      move_base_goal = MoveBaseGoal()
+      move_base_goal.target_pose = PoseStampedMath().fromEuler(19.457, 16.099, 0.051, 0.014, -0.001, 1.192).msg
+      move_base_goal.target_pose.header.stamp = rospy.Time.now()
+      move_base_goal.target_pose.header.frame_id = "map"
+      while self.ac['move_base'].send_goal_and_wait(move_base_goal, rospy.Duration(300.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
+        rospy.logwarn("Failed to move to the outlet. Tyring again")
+
+      # Untuck the arms
+      untuck_goal.untuck=True
+      untucked = False
+      while not untucked:
+        rospy.loginfo("Untucking right arm...")
+        untucked = (self.ac['tuck_arms'].send_goal_and_wait(untuck_goal, rospy.Duration(30.0), self.preempt_timeout) == GoalStatus.SUCCEEDED)
+
+      # Detect the outlet 
+      detect_outlet_goal = DetectOutletGoal()
+      rospy.loginfo("Detecting the outlet ...")
+      if self.ac['detect_outlet'].send_goal_and_wait(detect_outlet_goal, rospy.Duration(90.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
+        rospy.logerr("Failed to detect the outlet!")
+        return
+      outlet_pose = self.ac['detect_outlet'].get_result().outlet_pose
+      try:
+        self.transformer.waitForTransform("base_link", outlet_pose.header.frame_id, outlet_pose.header.stamp, rospy.Duration(2.0))
+      except rospy.ServiceException, e:
+        rospy.logerr('Could not transform between base_link and %s' %outlet_pose.header.frame_id)
+        return
+      base_to_outlet = self.transformer.transformPose('base_link', outlet_pose)
+
+
+      # Fetch plug
+      rospy.loginfo('Fetching plug...')
+      if self.ac['fetch_plug'].send_goal_and_wait(FetchPlugGoal(), rospy.Duration(60.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
+        rospy.logerr("Failed to fetch plug!")
+        return
+      plug_pose = self.ac['fetch_plug'].get_result().plug_pose
+      try:
+        self.transformer.waitForTransform("base_link", plug_pose.header.frame_id, plug_pose.header.stamp, rospy.Duration(2.0))
+      except rospy.ServiceException, e:
+        rospy.logerr('Could not transform between base_link and %s' %plug_pose.header.frame_id)
+        return
+      self.base_to_plug = self.transformer.transformPose('base_link', plug_pose)
+
+      # Detect the plug in gripper
+      detect_plug_goal = DetectPlugInGripperGoal()
+      rospy.loginfo('Detecting plug in gripper...')
+      if self.ac['detect_plug'].send_goal_and_wait(detect_plug_goal, rospy.Duration(30.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
+        rospy.logerr("Failed to detect plug in gripper!")
+        return
+      plug_pose = self.ac['detect_plug'].get_result().plug_pose
+      try:
+        self.transformer.waitForTransform("r_gripper_tool_frame", plug_pose.header.frame_id, plug_pose.header.stamp, rospy.Duration(2.0))
+      except rospy.ServiceException, e:
+        rospy.logerr('Could not transform between r_gripper_tool_frame and %s' %plug_pose.header.frame_id)
+        return
+      self.gripper_to_plug = self.transformer.transformPose('r_gripper_tool_frame', plug_pose)
+
+      # Plug in
+      plugin_goal = PluginGoal()
+      plugin_goal.gripper_to_plug = self.gripper_to_plug
+      plugin_goal.base_to_outlet = base_to_outlet
+      rospy.loginfo('Plugging in...')
+      if self.ac['plugin'].send_goal_and_wait(plugin_goal, rospy.Duration(60.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
+        rospy.logerr("Failed to plug in!")
+        return
+
+      rospy.loginfo("Plugged in!")
+      self.recharge_state.state = RechargeState.PLUGGED_IN
+      self.recharge_state_pub.publish(self.recharge_state)
 
 
 
-  elif recharge_state.state == RechargeState.PLUGGED_IN  and msg.command == RechargeCommand.UNPLUG:
-    rospy.logerr("Plugs Executive: Starting to plug in")
-    recharge_state.state = RechargeState.WAITING_FOR_STATE
-    recharge_state_pub.publish(recharge_state)
+    elif self.recharge_state.state == RechargeState.PLUGGED_IN  and msg.command == RechargeCommand.UNPLUG:
+      rospy.logerr("Plugs Executive: Starting to plug in")
+      self.recharge_state.state = RechargeState.WAITING_FOR_STATE
+      self.recharge_state_pub.publish(self.recharge_state)
 
-    # Stow plug
-    rospy.loginfo('Stowing plug...')
-    stow_plug_goal = StowPlugGoal()
-    stow_plug_goal.gripper_to_plug = gripper_to_plug
-    stow_plug_goal.base_to_plug = base_to_plug
-    if ac['stow_plug'].send_goal_and_wait(stow_plug_goal, rospy.Duration(45.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-      rospy.logerr("Failed to stow plug!")
-      return
+      # Stow plug
+      rospy.loginfo('Stowing plug...')
+      stow_plug_goal = StowPlugGoal()
+      stow_plug_goal.gripper_to_plug = self.gripper_to_plug
+      stow_plug_goal.base_to_plug = self.base_to_plug
+      if self.ac['stow_plug'].send_goal_and_wait(stow_plug_goal, rospy.Duration(45.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
+        rospy.logerr("Failed to stow plug!")
+        return
 
-    # Tuck the arms
-    tuck_goal = TuckArmsGoal()
-    tuck_goal.untuck=False
-    tuck_goal.left=True
-    tuck_goal.right=True
-    rospy.loginfo("Tucking arms...")
-    ac['tuck_arms'].send_goal_and_wait(tuck_goal, rospy.Duration(30.0), preempt_timeout)
+      # Tuck the arms
+      tuck_goal = TuckArmsGoal()
+      tuck_goal.untuck=False
+      tuck_goal.left=True
+      tuck_goal.right=True
+      rospy.loginfo("Tucking arms...")
+      self.ac['tuck_arms'].send_goal_and_wait(tuck_goal, rospy.Duration(30.0), self.preempt_timeout)
 
-    recharge_state.state = RechargeState.UNPLUGGED
-    recharge_state_pub.publish(recharge_state)
+      self.recharge_state.state = RechargeState.UNPLUGGED
+      self.recharge_state_pub.publish(self.recharge_state)
 
 
-  else:
-    rospy.logerr("Invalid command for the current recharge state")
+    else:
+      rospy.logerr("Invalid command for the current recharge state")
 
 
 if __name__ == "__main__":
