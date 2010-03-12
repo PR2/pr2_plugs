@@ -1,0 +1,9 @@
+geometry_msgs/PoseStamped gripper_to_plug
+geometry_msgs/PoseStamped base_to_outlet
+geometry_msgs/PoseStamped initial_plug_pose
+float64 insertion_depth
+duration timeout
+float64 arbort_threshold
+
+---
+---
