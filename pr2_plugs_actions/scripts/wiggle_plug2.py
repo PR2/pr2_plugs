@@ -39,21 +39,22 @@ def execute_cb(goal):
   pose_base_outlet = PoseStampedMath(goal.base_to_outlet)
   pose_plug_gripper = PoseStampedMath(goal.gripper_to_plug).inverse()
 
-  rate =rospy.rate(10.0)
+  rate = rospy.Rate(10.0)
   start = rospy.Time.now()
-  while(rospy.Time.now() < start + goal.timeout):
-    for offset in drange(-0.02, -0.04, 0.002):
-      t = rospy.Time.now() - start
-      wiggle = goal.wiggle_amplitude * math.sin(t.to_sec() * 2 * math.pi / goal.wiggle_period.to_sec())
-      pose_outlet_plug = PoseStampedMath().fromEuler(offset, 0, wiggle, 0, 0, 0)
-      cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
-      cart_space_goal.pose.header.stamp = rospy.Time.now()
-      cart_space_goal.pose.header.frame_id = 'base_link'
-      cart_space_goal.move_duration = rospy.Duration(0.5)
-      if self.ik_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-        rospy.logerr('Failed to wiggle')
-
-      rate.sleep()
+  rospy.loginfo("starting wiggle") 
+  for offset in drange(0.01, 0.04, 0.002):
+    rospy.loginfo("wiggle wiggle")
+    t = rospy.Time.now() - start
+    wiggle = goal.wiggle_amplitude * math.sin(t.to_sec() * 2 * math.pi / goal.wiggle_period.to_sec())
+    pose_outlet_plug = PoseStampedMath().fromEuler(-offset, 0, wiggle, 0, 0, 0)
+    cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
+    cart_space_goal.pose.header.stamp = rospy.Time.now()
+    cart_space_goal.pose.header.frame_id = 'base_link'
+    cart_space_goal.move_duration = rospy.Duration(0.5)
+    print "sending wiggle goal"
+    if cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+      rospy.logerr('Failed to wiggle')
+    rate.sleep()
 
 
 
