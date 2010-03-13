@@ -176,6 +176,7 @@ def main():
   # Populate the sm database with some stubbed out results
   # Run state machine action server with default state
   sm.run_server('raise_spine')
+  rospy.spin()
 
 
 if __name__ == "__main__":

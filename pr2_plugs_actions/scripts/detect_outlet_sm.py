@@ -54,6 +54,7 @@ class OutletSearchState(State):
       succeeded="SUCCEEDED",
       aborted="ABORTED",
       preempted="PREEMPTED"):
+    State.__init__(self,label,succeeded,aborted,preempted)
     # Store goals
     self.algin_goal = align_goal
     self.vision_detect_outlet_goal = vision_detect_outlet_goal
@@ -169,21 +170,22 @@ def main():
       
       # Lower the spine
       SimpleActionState('vision_outlet_detection',
-        'vision_detect_outlet', VisionOutletDetectionAction,
+        'vision_outlet_detection', VisionOutletDetectionAction,
         goal = vision_detect_outlet_goal,
         goal_cb = update_vision_detect_goal_stamp,
         result_cb = store_precise_outlet_result)
       )
 
   # Define recovery states
-  sm.add(SimpleActionState('recover_grasp_to_detect_pose',
+  sm.add(SimpleActionState('recover_move_arm_outlet_to_free',
     'r_arm_plugs_controller/joint_trajectory_action', JointTrajectoryAction,
-    goal = get_action_goal('pr2_plugs_configuration/move_arm_grasp_to_detect_pose'),
+    goal = get_action_goal('pr2_plugs_configuration/recover_outlet_to_free'),
     succeeded = 'detect_plug_on_base'))
 
   # Populate the sm database with some stubbed out results
   # Run state machine action server with default state
   sm.run_server('lower_spine')
+  rospy.spin()
 
 
 if __name__ == "__main__":

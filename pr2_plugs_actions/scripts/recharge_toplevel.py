@@ -88,7 +88,7 @@ def main():
         goal = TuckArmsGoal(False,True,True)),
       # Navigate to the requested outlet
       SimpleActionState('navigate_to_outlet','move_base',MoveBaseAction,
-        goal = move_base_goal),
+        goal = move_base_goal, aborted='navigate_to_outlet'),
       # Untuck the arms
       SimpleActionState('untuck','tuck_arms',TuckArmsAction,
         goal = TuckArmsGoal(True,False,True),aborted='untuck'),
@@ -96,8 +96,8 @@ def main():
       SimpleActionState('detect_outlet','detect_outlet_sm',DetectOutletSMAction,
         goal = DetectOutletSMGoal(), aborted="navigate_to_outlet"),
       # Once we have the outlet pose, we will fetch the plug and plug in
-      SimpleActionState('fetch_plug','fetch_plug_sm',FetchPlugAction,
-        goal = FetchPlugGoal(), aborted='fetch_plug'),
+      SimpleActionState('fetch_plug','fetch_plug_sm',FetchPlugSMAction,
+        goal = FetchPlugSMGoal(), aborted='fetch_plug'),
       # Re-detect the plug in the gripper, plug, and wiggle in
       SimpleActionState('plugin','plugin',PluginAction,
         goal = PluginGoal(), aborted='detect_outlet')
@@ -105,7 +105,8 @@ def main():
 
   # Populate the sm database with some stubbed out results
   # Run state machine action server with no default state
-  sm.run_server()
+  sm.run_server('navigate_and_plugin')
+  rospy.spin()
 
 
 if __name__ == "__main__":
