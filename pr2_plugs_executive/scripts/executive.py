@@ -114,16 +114,6 @@ class Executive:
 
     elif self.recharge_state.state == RechargeState.UNPLUGGED and msg.command == RechargeCommand.PLUG_IN:
       rospy.logerr("Plugs Executive: Starting to plug in")
-
-      move_base_goal = MoveBaseGoal()
-      if msg.plug_id == 'phasespace':
-        move_base_goal.target_pose = PoseStampedMath().fromEuler(19.457, 16.099, 0.051, 0.014, -0.001, 1.192).msg
-      elif msg.plug_id == 'wim':
-        move_base_goal.target_pose = PoseStampedMath().fromEuler(20.431, 26.208, 0.052, -0.009, 0.007, 2.766).msg
-      else:
-        rospy.logerr('Unknown plug id given')
-        return
-
       self.recharge_state.state = RechargeState.WAITING_FOR_STATE
       self.recharge_state_pub.publish(self.recharge_state)
 
@@ -138,6 +128,14 @@ class Executive:
         untucked = (self.ac['tuck_arms'].send_goal_and_wait(untuck_goal, rospy.Duration(30.0), self.preempt_timeout) == GoalStatus.SUCCEEDED)
 
       # move to plug
+      move_base_goal = MoveBaseGoal()
+      if msg.plug_id == 'phasespace':
+        move_base_goal.target_pose = PoseStampedMath().fromEuler(19.457, 16.099, 0.051, 0.014, -0.001, 1.192).msg
+      elif msg.plug_id == 'wim':
+        move_base_goal.target_pose = PoseStampedMath().fromEuler(20.565, 25.973, 0.051, 0.000, -0.004, 2.781).msg
+      else:
+        rospy.logerr('Unknown plug id given: %s' % msg.plug_id)
+        return
       move_base_goal.target_pose.header.stamp = rospy.Time.now()
       move_base_goal.target_pose.header.frame_id = "map"
       while self.ac['move_base'].send_goal_and_wait(move_base_goal, rospy.Duration(300.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
