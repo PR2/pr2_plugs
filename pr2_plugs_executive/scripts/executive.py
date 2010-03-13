@@ -131,7 +131,7 @@ class Executive:
       move_base_goal = MoveBaseGoal()
       if msg.plug_id == 'phasespace':
         move_base_goal.target_pose = PoseStampedMath().fromEuler(19.457, 16.099, 0.051, 0.014, -0.001, 1.192).msg
-      elif msg.plug_id == 'wim';
+      elif msg.plug_id == 'wim':
         move_base_goal.target_pose = PoseStampedMath().fromEuler(20.431, 26.208, 0.052, -0.009, 0.007, 2.766).msg
       else:
         rospy.logerr('Unknown plug id given')
