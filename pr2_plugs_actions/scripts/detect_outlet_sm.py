@@ -26,26 +26,27 @@ from joint_trajectory_action_tools.tools import *
 from smach.state import *
 from smach.state_machine import *
 from smach.simple_action_state import *
+from smach.joint_trajectory_state import *
 
 import actionlib
 
 class TFUtil():
   def __init__(self):
     # Construct tf listener
-    transformer = tf.TransformListener(True, rospy.Duration(60.0))  
+    self.transformer = tf.TransformListener(True, rospy.Duration(60.0))  
     
-  def wait_and_transform(frame_id,pose):
+  def wait_and_transform(self,frame_id,pose):
     try:
-      transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
+      self.transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
     except rospy.ServiceException, e:
       rospy.logerr('Could not transform between %s and %s' % (frame_id,pose.header.frame_id))
       raise e
-    return transformer.transformPose(frame_id, pose)
+    return self.transformer.transformPose(frame_id, pose)
 
 # Callback to store the plug detection result
 def get_precise_align_goal(state):
-  self.goal.offset = self.sm_userdata.outlet_rough_pose.y
-  return self.goal
+  state.goal.offset = state.sm_userdata.outlet_rough_pose.pose.position.y
+  return state.goal
 
 # Code block state for grasping the plug
 class OutletSearchState(State):
@@ -56,7 +57,7 @@ class OutletSearchState(State):
       preempted="PREEMPTED"):
     State.__init__(self,label,succeeded,aborted,preempted)
     # Store goals
-    self.algin_goal = align_goal
+    self.align_base_goal = align_goal
     self.vision_detect_outlet_goal = vision_detect_outlet_goal
     self.offsets = offsets
 
@@ -69,6 +70,7 @@ class OutletSearchState(State):
   def enter(self):
     """Iterate across a set of offsets to find the outlet"""
     tf_util = TFUtil()
+    preempt_timeout = rospy.Duration(10.0)
 
     # Iterate across move_base offsets
     for offset in self.offsets:
@@ -98,8 +100,8 @@ class OutletSearchState(State):
 
 # Callback for resetting timestamp in vision detection goal
 def update_vision_detect_goal_stamp(state):
-  self.goal.prior.header.stamp = rospy.Time.now()
-  return self.goal
+  state.goal.prior.header.stamp = rospy.Time.now()
+  return state.goal
 
 def store_precise_outlet_result(state, result_state, result):
   tf_util = TFUtil()
@@ -108,10 +110,10 @@ def store_precise_outlet_result(state, result_state, result):
 
 # Callback to stuff the result for this action
 def construct_action_result(sm):
-  self.result.outlet_pose = sm.userdata.outlet_precise_pose
+  sm.result.outlet_pose = sm.userdata.outlet_precise_pose
 
 def main():
-  rospy.init_node("detect_outlet_sm")
+  rospy.init_node("detect_outlet_sm",log_level=rospy.DEBUG)
 
   # Define fixed goals
   # Declare wall norm goal
@@ -134,6 +136,8 @@ def main():
 
   # Construct state machine
   sm = StateMachine('detect_outlet_sm',DetectOutletSMAction,result_cb = construct_action_result)
+  # Default userdata
+  sm.userdata.outlet_precise_pose = PoseStamped()
   # Define nominal sequence
   sm.add_sequence(
       # Raise spine
@@ -144,23 +148,22 @@ def main():
       # Perform rough base alignment
       SimpleActionState('rough_align_base',
         'align_base', AlignBaseAction,
-        goal = AlignBaseGoal(offset = 0)),
+        goal = AlignBaseGoal(offset = 0,look_point=look_point)),
 
       # Move arm so that it can view the outlet
-      SimpleActionState('move_arm_detect_outlet',
-        'r_arm_plugs_controller/joint_trajectory_action', JointTrajectoryAction,
-        goal = get_action_goal('pr2_plugs_configuration/detect_outlet'),
+      JointTrajectoryState('move_arm_detect_outlet',
+        'r_arm_plugs_controller','pr2_plugs_configuration/detect_outlet',
         aborted = 'recover_move_arm_outlet_to_free'),
 
       # Search side-to-side for the outlet
       OutletSearchState('outlet_search',
-        align_base_goal, vision_detect_outlet_goal,
+        AlignBaseGoal(offset = 0,look_point=look_point), vision_detect_outlet_goal,
         offsets = (0.0, 0.1, -0.2, 0.3, -0.4)),
 
       # Align precisely
       SimpleActionState('precise_align_base',
         'align_base', AlignBaseAction,
-        goal = AlignBaseGoal(offset = 0),
+        goal = AlignBaseGoal(offset = 0,look_point=look_point),
         goal_cb = get_precise_align_goal),
 
       # Detect the wall norm
@@ -168,7 +171,7 @@ def main():
         'detect_wall_norm', DetectWallNormAction,
         goal = wall_norm_goal),
       
-      # Lower the spine
+      # Precise detection
       SimpleActionState('vision_outlet_detection',
         'vision_outlet_detection', VisionOutletDetectionAction,
         goal = vision_detect_outlet_goal,
@@ -177,10 +180,9 @@ def main():
       )
 
   # Define recovery states
-  sm.add(SimpleActionState('recover_move_arm_outlet_to_free',
-    'r_arm_plugs_controller/joint_trajectory_action', JointTrajectoryAction,
-    goal = get_action_goal('pr2_plugs_configuration/recover_outlet_to_free'),
-    succeeded = 'detect_plug_on_base'))
+  sm.add(JointTrajectoryState('recover_move_arm_outlet_to_free',
+    'r_arm_plugs_controller','pr2_plugs_configuration/recover_outlet_to_free',
+    succeeded = 'rough_align_base'))
 
   # Populate the sm database with some stubbed out results
   # Run state machine action server with default state

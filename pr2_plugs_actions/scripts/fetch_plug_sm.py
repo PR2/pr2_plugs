@@ -28,21 +28,22 @@ from joint_trajectory_action_tools.tools import *
 from smach.state import *
 from smach.state_machine import *
 from smach.simple_action_state import *
+from smach.joint_trajectory_state import *
 
 import actionlib
 
 class TFUtil():
   def __init__(self):
     # Construct tf listener
-    transformer = tf.TransformListener(True, rospy.Duration(60.0))  
+    self.transformer = tf.TransformListener(True, rospy.Duration(60.0))  
     
-  def wait_and_transform(frame_id,pose):
+  def wait_and_transform(self,frame_id,pose):
     try:
-      transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
+      self.transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
     except rospy.ServiceException, e:
       rospy.logerr('Could not transform between %s and %s' % (frame_id,pose.header.frame_id))
       raise e
-    return transformer.transformPose(frame_id, pose)
+    return self.transformer.transformPose(frame_id, pose)
 
 # Callback to store the plug detection result
 def store_detect_plug_result(state, result_state, result):
@@ -125,9 +126,8 @@ def main():
         goal = SingleJointPositionGoal(position=0.16)),
 
       # Move arm to detect the plug on the base
-      SimpleActionState('move_arm_base_detect_pose',
-        'r_arm_plugs_controller/joint_trajectory_action', JointTrajectoryAction,
-        goal = get_action_goal('pr2_plugs_configuration/detect_plug_on_base')),
+      JointTrajectoryState('move_arm_base_detect_pose',
+        'r_arm_plugs_controller','pr2_plugs_configuration/detect_plug_on_base'),
 
       # Detect the plug
       SimpleActionState('detect_plug_on_base',
@@ -137,9 +137,8 @@ def main():
         result_cb = store_detect_plug_result),
 
       # Move arm to the grasp pose
-      SimpleActionState('move_arm_base_grasp_pose',
-        'r_arm_plugs_controller/joint_trajectory_action', JointTrajectoryAction,
-        goal = get_action_goal('pr2_plugs_configuration/detect_plug_on_base'),
+      JointTrajectoryState('move_arm_base_grasp_pose',
+        'r_arm_plugs_controller','pr2_plugs_configuration/grasp_plug',
         aborted = 'recover_grasp_to_detect_pose'),
 
       # Open the gripper
@@ -157,9 +156,8 @@ def main():
         aborted='recover_grasp_to_detect_pose'),
 
       # Remove the plug form the base
-      SimpleActionState('move_arm_remove_plug',
-        'r_arm_plugs_controller/joint_trajectory_action', JointTrajectoryAction,
-        goal = get_action_goal('pr2_plugs_configuration/remove_plug')),
+      JointTrajectoryState('move_arm_remove_plug',
+        'r_arm_plugs_controller','pr2_plugs_configuration/remove_plug'),
       
       # Lower the spine
       SimpleActionState('raise_spine',
@@ -168,9 +166,8 @@ def main():
       )
 
   # Define recovery states
-  sm.add(SimpleActionState('recover_grasp_to_detect_pose',
-    'r_arm_plugs_controller/joint_trajectory_action', JointTrajectoryAction,
-    goal = get_action_goal('pr2_plugs_configuration/recover_grasp_to_detect'),
+  sm.add(JointTrajectoryState('recover_grasp_to_detect_pose',
+    'r_arm_plugs_controller','pr2_plugs_configuration/recover_grasp_to_detect',
     succeeded = 'detect_plug_on_base'))
 
   # Populate the sm database with some stubbed out results

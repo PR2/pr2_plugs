@@ -91,7 +91,7 @@ def main():
         goal = move_base_goal, aborted='navigate_to_outlet'),
       # Untuck the arms
       SimpleActionState('untuck','tuck_arms',TuckArmsAction,
-        goal = TuckArmsGoal(True,False,True),aborted='untuck'),
+        goal = TuckArmsGoal(True,True,True),aborted='untuck'),
       # Perform outlet detection
       SimpleActionState('detect_outlet','detect_outlet_sm',DetectOutletSMAction,
         goal = DetectOutletSMGoal(), aborted="navigate_to_outlet"),

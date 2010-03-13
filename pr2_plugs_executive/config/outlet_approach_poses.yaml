@@ -1,7 +1,7 @@
 # List of outlet approach poses
 # These are all poses of the base_link in the map frame
 outlet_approach_poses:
-  behind_short_wall:
+  wim:
     position: [20.654, 26.187, 0.055]
     orientation: [-0.008, -0.004, 0.953, 0.302]
   melonee:
