@@ -53,6 +53,10 @@ def main():
 	detect_wall_norm.wait_for_server()
 
 	goal = DetectWallNormGoal()
+        goal.look_point.header.frame_id = "base_link"
+        goal.look_point.point.x = 0.0;
+        goal.look_point.point.y = -1.0;
+        goal.look_point.point.z = 0.5;
 
 	detect_wall_norm.send_goal(goal)
 	detect_wall_norm.wait_for_result(rospy.Duration(60.0))

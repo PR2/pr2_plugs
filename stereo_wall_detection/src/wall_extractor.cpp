@@ -152,7 +152,10 @@ class PlanarFit
       while (!cloud_msg_ || cloud_msg_->points.size() < 50000){
 	ros::Duration(0.1).sleep();
 	if (ros::Time::now() > start + ros::Duration(10.0)){
-	  ROS_ERROR("Timed out waiting for point cloud");
+	  if (!cloud_msg_)
+	    ROS_ERROR("Timed out waiting for point cloud");
+	  else
+	    ROS_ERROR("Only received a point cloud of size %d", (int)cloud_msg_->points.size());
 	  return false;
 	}
       }

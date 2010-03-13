@@ -2,7 +2,7 @@
 
   <node pkg="stereo_wall_detection" type="wall_extractor" name="stereo_wall_detection" output="screen" respawn="true">
     <param name="search_radius"        value="0.03" />
-    <remap from="narrow_stereo_textured/points"        to="narrow_stereo/points" />
+    <!--remap from="narrow_stereo_textured/points"        to="narrow_stereo/points" /-->
 
     <!-- Use downsampling if the data is too dense and the nearest neighborhood searches for normal estimation take too long -->
     <param name="downsample_max_dist"     value="3.0" />
