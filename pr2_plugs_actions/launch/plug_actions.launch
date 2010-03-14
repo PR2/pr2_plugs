@@ -74,6 +74,9 @@
   <!-- plugin action -->
   <node pkg="pr2_plugs_actions" type="plugin.py" name="plugin" output="screen"/>
 
+  <!-- calibration action -->
+  <node pkg="pr2_plugs_actions" type="calibration_plugin.py" name="calibration_plugin" output="screen"/>
+
   <!-- wiggle plug action -->
   <node pkg="pr2_plugs_actions" type="wiggle_plug.py" name="wiggle_plug" output="screen"/>
   <node pkg="pr2_plugs_actions" type="wiggle_plug2.py" name="wiggle_plug2" output="screen"/>
