@@ -1,7 +1,7 @@
 vision_plug_detection:
   square_size: 0.006
   board_width: 4
-  board_width: 5
+  board_height: 5
 
   plug_position_x: 0.017
   plug_position_y: 0.03775
