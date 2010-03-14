@@ -1,0 +1,13 @@
+vision_plug_detection:
+  square_size: 0.006
+  board_width: 4
+  board_width: 5
+
+  plug_position_x: 0.017
+  plug_position_y: 0.03775
+  plug_position_z: 0.024
+  plug_orientation_x: -0.5
+  plug_orientation_y: -0.5
+  plug_orientation_z: 0.5
+  plug_orientation_w: 0.5
+
