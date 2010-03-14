@@ -1,35 +1,35 @@
-#!/usr/bin/env python                                                                               
-# Software License Agreement (BSD License)                                                          
-#                                                                                                   
-# Copyright (c) 2009, Willow Garage, Inc.                                                           
-# All rights reserved.                                                                              
-#                                                                                                   
-# Redistribution and use in source and binary forms, with or without                                
-# modification, are permitted provided that the following conditions                                
-# are met:                                                                                          
-#                                                                                                   
-#  * Redistributions of source code must retain the above copyright                                 
-#    notice, this list of conditions and the following disclaimer.                                  
-#  * Redistributions in binary form must reproduce the above                                        
-#    copyright notice, this list of conditions and the following                                    
-#    disclaimer in the documentation and/or other materials provided                                
-#    with the distribution.                                                                         
-#  * Neither the name of the Willow Garage nor the names of its                                     
-#    contributors may be used to endorse or promote products derived                                
-#    from this software without specific prior written permission.                                  
-#                                                                                                   
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS                               
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT                                 
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS                                 
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE                                    
-# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,                               
-# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,                              
-# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;                                  
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER                                  
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT                                
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN                                 
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE                                   
-# POSSIBILITY OF SUCH DAMAGE.  
+#!/usr/bin/env python
+# Software License Agreement (BSD License)
+#
+# Copyright (c) 2009, Willow Garage, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above
+#    copyright notice, this list of conditions and the following
+#    disclaimer in the documentation and/or other materials provided
+#    with the distribution.
+#  * Neither the name of the Willow Garage nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 
 import roslib
@@ -64,7 +64,7 @@ def main():
 class Executive:
   def __init__(self):
 
-    # Declare list of actions for easy construction                                                 
+    # Declare list of actions for easy construction
     actions = [
       ('move_base',MoveBaseAction),
       ('tuck_arms',TuckArmsAction),
@@ -72,36 +72,36 @@ class Executive:
       ('fetch_plug',FetchPlugAction),
       ('detect_plug',DetectPlugInGripperAction)]
 
-   # publisher for state                                                                           
+   # publisher for state
     self.recharge_state = RechargeState()
     self.recharge_state_pub = rospy.Publisher('recharge_state', RechargeState, None, False, True)
     self.recharge_state.state = RechargeState.WAITING_FOR_STATE
     self.recharge_state_pub.publish(self.recharge_state)
 
-    # subscriber for commands                                                                       
+    # subscriber for commands
     rospy.Subscriber("recharge_command", RechargeCommand, self.recharge_cb)
 
-    # construct tf listener                                                                         
+    # construct tf listener
     self.transformer = tf.TransformListener(True, rospy.Duration(60.0))
     self.preempt_timeout = rospy.Duration(5.0)
 
-    # Construct action ac                                                                           
+    # Construct action ac
     rospy.loginfo("Starting actions.")
     self.ac = dict()
     for (name,action) in actions:
       self.ac[name] = actionlib.SimpleActionClient(name,action)
 
-    # Wait for all the ac to start                                                                  
+    # Wait for all the ac to start
     for (name,action) in actions:
       print "Wait for server "+name
       self.ac[name].wait_for_server()
     rospy.loginfo("All actions started.")
 
-    # ready to receive commands                                                                     
+    # ready to receive commands
     self.recharge_state.state = RechargeState.UNPLUGGED
     self.recharge_state_pub.publish(self.recharge_state)
 
-    # vars we need between plug and unplug                                                          
+    # vars we need between plug and unplug
     self.gripper_to_plug = PoseStamped()
     self.base_to_plug = PoseStamped()
 
@@ -115,7 +115,7 @@ class Executive:
       self.recharge_state.state = RechargeState.WAITING_FOR_STATE
       self.recharge_state_pub.publish(self.recharge_state)
 
-      # Untuck the arms                                                                             
+      # Untuck the arms
       untuck_goal = TuckArmsGoal()
       untuck_goal.left=True
       untuck_goal.right=True
@@ -125,7 +125,7 @@ class Executive:
         rospy.loginfo("Untucking right arm...")
         untucked = (self.ac['tuck_arms'].send_goal_and_wait(untuck_goal, rospy.Duration(30.0), self.preempt_timeout) == GoalStatus.SUCCEEDED)
 
-      # Detect the outlet                                                                           
+      # Detect the outlet
       detect_outlet_goal = DetectOutletGoal()
       rospy.loginfo("Detecting the outlet ...")
       if self.ac['detect_outlet'].send_goal_and_wait(detect_outlet_goal, rospy.Duration(90.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
@@ -151,7 +151,7 @@ class Executive:
         return
       self.base_to_plug = self.transformer.transformPose('base_link', plug_pose)
 
-      # Detect the plug in gripper                                                                  
+      # Detect the plug in gripper
       detect_plug_goal = DetectPlugInGripperGoal()
       rospy.loginfo('Detecting plug in gripper...')
       if self.ac['detect_plug'].send_goal_and_wait(detect_plug_goal, rospy.Duration(30.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
@@ -165,10 +165,11 @@ class Executive:
         return
       self.gripper_to_plug = self.transformer.transformPose('r_gripper_tool_frame', plug_pose)
 
+      rospy.sleep(10.0)
       print "rosrun pr2_controller_manager pr2_controller_manager stop r_arm_plugs_controller"
-      print "insert plug into socket within 15 seconds"
-      rospy.sleep(15.0)
-     
+      print "insert plug into socket within 30 seconds"
+      rospy.sleep(30.0)
+
       time = rospy.Time.now()
       try:
         self.transformer.waitForTransform("base_link", "r_gripper_tool_frame", time, rospy.Duration(2.0))
@@ -179,20 +180,35 @@ class Executive:
       pose_outlet_base = PoseStampedMath(base_to_outlet).inverse()
       pose_gripper_plug = PoseStampedMath(self.gripper_to_plug)
 
-         
+
       outlet_plug_pose = pose_outlet_base*pose_base_gripper*pose_gripper_plug
-      plug_outlet_pose = (outlet_plug_pose.inverse()).msg
-      outlet_plug_pose = (outlet_plug_pose).msg
+      plug_outlet_pose = outlet_plug_pose.inverse()
+      
 
-      plug_position_x = rospy.get_param("vision_plug_detection/plug_position_x")
-      plug_position_z = rospy.get_param("vision_plug_detection/plug_position_z")
-   
-      plug_position_x = plug_position_x + outlet_plug_pose.pose.position.z
-      plug_position_z = plug_position_z + outlet_plug_pose.pose.position.y
+      checker_to_plug = PoseStamped() 
+      checker_to_plug.pose.position.x = rospy.get_param("vision_plug_detection/plug_position_x")
+      checker_to_plug.pose.position.y = rospy.get_param("vision_plug_detection/plug_position_y")
+      checker_to_plug.pose.position.z = rospy.get_param("vision_plug_detection/plug_position_z")
+      checker_to_plug.pose.orientation.x = rospy.get_param("vision_plug_detection/plug_orientation_x")
+      checker_to_plug.pose.orientation.y = rospy.get_param("vision_plug_detection/plug_orientation_y")
+      checker_to_plug.pose.orientation.z = rospy.get_param("vision_plug_detection/plug_orientation_z")
+      checker_to_plug.pose.orientation.w = rospy.get_param("vision_plug_detection/plug_orientation_w")
+      checker_plug_pose = PoseStampedMath(checker_to_plug)
+        
+      plug_offset = (checker_plug_pose*plug_outlet_pose).msg    
 
+      print "plug  to outlet error"
+      print (plug_outlet_pose).msg
+
+      print "plug offset"
+      print plug_offset
+     
+ 
 
       rospy.loginfo("The new calibration values for pr2_plug_description.xml are")
-      rospy.loginfo("plug_position_x: %f plug_position_z: %f", plug_position_x, plug_position_z)  
+      rospy.loginfo("plug_position_x: %f plug_position_z: %f", plug_offset.pose.position.x, plug_offset.pose.position.z)
+
+      self.recharge_state.state = RechargeState.UNPLUGGED
 
 
 if __name__ == '__main__':
