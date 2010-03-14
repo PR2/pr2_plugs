@@ -22,7 +22,7 @@ import tf
 
 def execute_cb(goal):
   rospy.loginfo("Action server received goal")
-  preempt_timeout = rospy.Duration(5.0)
+  preempt_timeout = rospy.Duration(20.0)
 
   # move the spine up
   rospy.loginfo("Moving up spine...")
@@ -118,7 +118,9 @@ def execute_cb(goal):
   rospy.loginfo("Close gripper...")  
   gripper_goal.command.position = 0.0
   gripper_goal.command.max_effort = 99999
-  gripper_client.send_goal_and_wait(gripper_goal, rospy.Duration(20.0), preempt_timeout) 
+  if gripper_client.send_goal_and_wait(gripper_goal, rospy.Duration(40.0), preempt_timeout) !=GoalStatus.ABORTED:
+    rospy.logerr('The gripper did not close on the plug')
+    return
 
   # move the spine down
   rospy.loginfo("Moving down spine...")
