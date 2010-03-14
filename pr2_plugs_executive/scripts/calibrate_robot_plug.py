@@ -70,7 +70,8 @@ class Executive:
       ('tuck_arms',TuckArmsAction),
       ('detect_outlet',DetectOutletAction),
       ('fetch_plug',FetchPlugAction),
-      ('detect_plug',DetectPlugInGripperAction)]
+      ('detect_plug',DetectPlugInGripperAction),
+      ('calibration_plugin',PluginAction)]
 
    # publisher for state
     self.recharge_state = RechargeState()
@@ -165,10 +166,17 @@ class Executive:
         return
       self.gripper_to_plug = self.transformer.transformPose('r_gripper_tool_frame', plug_pose)
 
+      # Plug in          
+      plugin_goal = PluginGoal()
+      plugin_goal.gripper_to_plug = self.gripper_to_plug
+      plugin_goal.base_to_outlet = base_to_outlet
+      rospy.loginfo('Plugging in...')
+      if self.ac['calibration_plugin'].send_goal_and_wait(plugin_goal, rospy.Duration(60.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
+        rospy.logerr("Failed to plug in!")
+        return
+
+      print "put the plug in the socket"
       rospy.sleep(10.0)
-      print "rosrun pr2_controller_manager pr2_controller_manager stop r_arm_plugs_controller"
-      print "insert plug into socket within 30 seconds"
-      rospy.sleep(30.0)
 
       time = rospy.Time.now()
       try:
@@ -176,6 +184,7 @@ class Executive:
       except rospy.ServiceException, e:
         rospy.logerr('Could not transform between gripper and base at time %f' %time.to_sec())
         return
+
       pose_base_gripper= PoseStampedMath().fromTf(self.transformer.lookupTransform("base_link", "r_gripper_tool_frame", time))
       pose_outlet_base = PoseStampedMath(base_to_outlet).inverse()
       pose_gripper_plug = PoseStampedMath(self.gripper_to_plug)
@@ -202,12 +211,21 @@ class Executive:
 
       print "plug offset"
       print plug_offset
-     
- 
+      
+      print "vision_plug_detection:"
+      print "  square_size: 0.006"
+      print "  board_width: 4"
+      print "  board_height: 5"
 
-      rospy.loginfo("The new calibration values for pr2_plug_description.xml are")
-      rospy.loginfo("plug_position_x: %f plug_position_z: %f", plug_offset.pose.position.x, plug_offset.pose.position.z)
+      print "  plug_position_x: %lf" % plug_offset.pose.position.x
+      print "  plug_position_y: %lf" % plug_offset.pose.position.y
+      print "  plug_position_z: %lf" % plug_offset.pose.position.z
+      print "  plug_orientation_x: %lf" % plug_offset.pose.orientation.x
+      print "  plug_orientation_y: %lf" % plug_offset.pose.orientation.y
+      print "  plug_orientation_z: %lf" % plug_offset.pose.orientation.z
+      print "  plug_orientation_w: %lf" % plug_offset.pose.orientation.w
 
+      
       self.recharge_state.state = RechargeState.UNPLUGGED
 
 
