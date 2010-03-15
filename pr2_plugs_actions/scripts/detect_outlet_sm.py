@@ -119,7 +119,7 @@ def store_precise_outlet_result(state, result_state, result):
   state.sm_userdata.sm_result.outlet_pose = TFUtil.wait_and_transform("base_link",result.outlet_pose)
 
 def main():
-  rospy.init_node("detect_outlet_sm",log_level=rospy.DEBUG)
+  rospy.init_node("detect_outlet_sm")#,log_level=rospy.DEBUG)
 
   # Define fixed goals
   # Declare wall norm goal

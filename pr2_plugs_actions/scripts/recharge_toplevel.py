@@ -44,6 +44,7 @@ from pr2_plugs_msgs.msg import *
 from actionlib_msgs.msg import *
 from move_base_msgs.msg import *
 from geometry_msgs.msg import *
+from pr2_controllers_msgs.msg import *
 from pr2_common_action_msgs.msg import *
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
 from std_srvs.srv import *
@@ -143,7 +144,10 @@ class ProcessRechargeCommandState(State):
 def main():
   rospy.init_node("recharge_toplevel")
 
-  # Static move base goal
+  # Close gripper goal
+  close_gripper_goal = Pr2GripperCommandGoal()
+  close_gripper_goal.command.position = 0.0
+  close_gripper_goal.command.max_effort = 99999
 
   # Construct state machine
   sm = StateMachine('recharge',RechargeSMAction)
@@ -165,6 +169,7 @@ def main():
         goal = TuckArmsGoal(False,True,True)),
       # Navigate to the requested outlet
       SimpleActionState('navigate_to_outlet','move_base',MoveBaseAction,
+        exec_timeout = rospy.Duration(20*60.0),
         goal_cb = get_move_base_goal, aborted='navigate_to_outlet'),
       # Untuck the arms
       SimpleActionState('untuck','tuck_arms',TuckArmsAction,
@@ -198,6 +203,14 @@ def main():
   sm.add_sequence(
       # Meta-state for sending commands
       EmptyState('unplug'),
+      # Make sure the gripper is held tightly
+      SimpleActionState('close_gripper',
+        'r_gripper_controller/gripper_action', Pr2GripperCommandAction,
+        goal = close_gripper_goal,
+        succeeded='ABORTED',
+        aborted='wiggle_out'),
+      )
+  sm.add_sequence(
       # Wiggle plug out
       SimpleActionState('wiggle_out','wiggle_plug',WigglePlugAction,
         goal_cb = get_wiggle_out_goal),

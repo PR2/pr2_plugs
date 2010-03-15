@@ -69,7 +69,7 @@ def get_wiggle_goal(state):
   return wiggle_goal
 
 def main():
-  rospy.init_node("plug_in_sm",log_level=rospy.DEBUG)
+  rospy.init_node("plug_in_sm")#,log_level=rospy.DEBUG)
   TFUtil()
 
   # Construct state machine

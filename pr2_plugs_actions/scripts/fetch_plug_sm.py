@@ -105,7 +105,7 @@ def store_detect_plug_result(state, result_state, result):
     state.sm_userdata.sm_result.plug_on_base_pose = TFUtil.wait_and_transform('base_link',result.plug_pose) 
 
 def main():
-  rospy.init_node("fetch_plug_sm",log_level=rospy.DEBUG)
+  rospy.init_node("fetch_plug_sm")#,log_level=rospy.DEBUG)
 
   TFUtil()
   # Define fixed goals
@@ -140,7 +140,9 @@ def main():
       # Detect the plug
       SimpleActionState('detect_plug_on_base',
         'vision_plug_detection',VisionPlugDetectionAction,
+        exec_timeout = rospy.Duration(5.0),
         aborted = 'move_arm_base_detect_pose',
+        preempted = 'move_arm_base_detect_pose',
         goal_cb = get_detect_plug_goal,
         result_cb = store_detect_plug_result),
 
