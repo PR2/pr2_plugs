@@ -2,11 +2,10 @@
   <!--include file="$(find pr2_machine)/$(env ROBOT).machine" /-->
 
   <!-- Plug calibration -->
-  <rosparam command="load" file="$(find pr2_plugs_actions)/config/$(optenv ROBOT_NAME pr2)_plug_description.yaml" />
+  <node pkg="pr2_plugs_actions" type="load_plug_description.py" name="load_plug_description" required="true" />
 
   <!-- The plug finding action -->
   <node pkg="pr2_plugs_actions" type="vision_detect_plug" name="vision_plug_detection" output="screen">
     <param name="subpixel_corners" type="bool" value="true"/>
   </node>
-
 </launch>
