@@ -3,7 +3,7 @@ vision_plug_detection:
   board_width: 4
   board_height: 5
   plug_position_x: 0.019
-  plug_position_y: 0.0470351569989
+  plug_position_y: 0.037
   plug_position_z: 0.028200351148
   plug_orientation_x: 0.5
   plug_orientation_y: 0.5
