@@ -31,34 +31,29 @@ from smach.joint_trajectory_state import *
 import actionlib
 
 class TFUtil():
-  def __init__(self):
-    # Construct tf listener
-    self.transformer = tf.TransformListener(True, rospy.Duration(60.0))  
+  transformer = None
     
-  def wait_and_transform(self,frame_id,pose):
+  @staticmethod
+  def wait_and_transform(frame_id,pose):
+    if not TFUtil.transformer:
+      TFUtil.transformer = tf.TransformListener(True, rospy.Duration(60.0))  
+
     try:
-      self.transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
+      TFUtil.transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
     except rospy.ServiceException, e:
       rospy.logerr('Could not transform between %s and %s' % (frame_id,pose.header.frame_id))
       raise e
-    return self.transformer.transformPose(frame_id, pose)
-
-# Callback to store the plug detection result
-def get_precise_align_goal(state):
-  state.goal.offset = state.sm_userdata.outlet_rough_pose.pose.position.y
-  return state.goal
+    return TFUtil.transformer.transformPose(frame_id, pose)
 
 # Code block state for grasping the plug
 class OutletSearchState(State):
   def __init__(self, label,
-      align_goal, vision_detect_outlet_goal, offsets,
+      offsets,
       succeeded="SUCCEEDED",
       aborted="ABORTED",
       preempted="PREEMPTED"):
     State.__init__(self,label,succeeded,aborted,preempted)
     # Store goals
-    self.align_base_goal = align_goal
-    self.vision_detect_outlet_goal = vision_detect_outlet_goal
     self.offsets = offsets
 
     # Create action clients
@@ -69,27 +64,28 @@ class OutletSearchState(State):
 
   def enter(self):
     """Iterate across a set of offsets to find the outlet"""
-    tf_util = TFUtil()
     preempt_timeout = rospy.Duration(10.0)
+
+    align_base_goal = self.sm_userdata.align_base_goal
+    vision_detect_outlet_goal = self.sm_userdata.vision_detect_outlet_goal
 
     # Iterate across move_base offsets
     for offset in self.offsets:
       # align base
       rospy.loginfo("Search base alignment...")
-      self.align_base_goal.offset = offset
-      if self.align_base_client.send_goal_and_wait(self.align_base_goal, rospy.Duration(40.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+      align_base_goal.offset = offset
+      if self.align_base_client.send_goal_and_wait(align_base_goal, rospy.Duration(40.0), preempt_timeout) != GoalStatus.SUCCEEDED:
         rospy.logerr('Aligning base failed')
         self.set_aborted()
         return
 
       # call vision outlet detection
       rospy.loginfo("Detecting outlet with the forearm camera...")
-      self.vision_detect_outlet_goal.wall_normal = self.align_base_client.get_result().wall_norm
-      self.vision_detect_outlet_goal.prior.header.stamp = rospy.Time.now()
-      if self.vision_detect_outlet_client.send_goal_and_wait(self.vision_detect_outlet_goal, rospy.Duration(5.0), preempt_timeout) == GoalStatus.SUCCEEDED:
+      vision_detect_outlet_goal.wall_normal = align_base_client.get_result().wall_norm
+      vision_detect_outlet_goal.prior.header.stamp = rospy.Time.now()
+      if self.vision_detect_outlet_client.send_goal_and_wait(vision_detect_outlet_goal, rospy.Duration(5.0), preempt_timeout) == GoalStatus.SUCCEEDED:
         # Store the rough outlet position in the state machiine user data structure
-        self.sm_userdata.outlet_rough_pose = PoseStamped()
-        self.sm_userdata.outlet_rough_pose = tf_util.wait_and_transform(
+        self.sm_userdata.outlet_rough_pose = TFUtil.wait_and_transform(
             'r_forearm_cam_optical_frame', self.vision_detect_outlet_client.get_result().outlet_pose)
         # Set succeeded, and return
         self.set_succeeded()
@@ -98,19 +94,20 @@ class OutletSearchState(State):
     rospy.logerr("Could not find outlet in search")
     self.set_aborted()
 
+# Callback to store the plug detection result
+def get_precise_align_goal(state):
+  state.goal.offset = state.sm_userdata.outlet_rough_pose.pose.position.y
+  return state.goal
+
 # Callback for resetting timestamp in vision detection goal
-def update_vision_detect_goal_stamp(state):
+def get_vision_detect_goal(state):
+  state.goal.wall_normal.header.stamp = rospy.Time.now()
   state.goal.prior.header.stamp = rospy.Time.now()
   return state.goal
 
+# Callback for storing the prcide detection result
 def store_precise_outlet_result(state, result_state, result):
-  tf_util = TFUtil()
-  state.sm_userdata.outlet_precise_pose = tf_util.wait_and_transform("base_link",result.outlet_pose)
-
-
-# Callback to stuff the result for this action
-def construct_action_result(sm):
-  sm.result.outlet_pose = sm.userdata.outlet_precise_pose
+  state.sm_userdata.sm_result.outlet_pose = TFUtil.wait_and_transform("base_link",result.outlet_pose)
 
 def main():
   rospy.init_node("detect_outlet_sm",log_level=rospy.DEBUG)
@@ -123,24 +120,30 @@ def main():
   look_point.point.x = -0.14
   look_point.point.y = -0.82
   look_point.point.z = 0.5
+
   wall_norm_goal = DetectWallNormGoal()
   wall_norm_goal.look_point = look_point
+
   align_base_goal = AlignBaseGoal()
   align_base_goal.look_point = look_point
 
-  # Declare the goal for the detector
   vision_detect_outlet_goal = VisionOutletDetectionGoal()
   vision_detect_outlet_goal.camera_name = "/forearm_camera_r"
   vision_detect_outlet_goal.prior = PoseStampedMath().fromEuler(-0.14, -0.82, 0.29, 0, 0, -pi/2).msg
   vision_detect_outlet_goal.prior.header.frame_id = "base_link"
 
+  # Declare the goal for the detector
   # Construct state machine
-  sm = StateMachine('detect_outlet_sm',DetectOutletSMAction,result_cb = construct_action_result)
+  sm = StateMachine('detect_outlet_sm',DetectOutletSMAction)
+
   # Default userdata
-  sm.userdata.outlet_precise_pose = PoseStamped()
+  sm.userdata.align_base_goal = align_base_goal
+  sm.userdata.vision_detect_outlet_goal = vision_detect_outlet_goal
+  sm.userdata.outlet_rough_pose = PoseStamped()
+
   # Define nominal sequence
   sm.add_sequence(
-      # Raise spine
+      # Lower spine
       SimpleActionState('lower_spine',
         'torso_controller/position_joint_action', SingleJointPositionAction,
         goal = SingleJointPositionGoal(position=0.01)),
@@ -157,26 +160,29 @@ def main():
 
       # Search side-to-side for the outlet
       OutletSearchState('outlet_search',
-        AlignBaseGoal(offset = 0,look_point=look_point), vision_detect_outlet_goal,
-        offsets = (0.0, 0.1, -0.2, 0.3, -0.4)),
+        offsets = (0.0, 0.1, -0.2, 0.3, -0.4),
+        aborted = 'recover_move_arm_outlet_to_free'),
 
       # Align precisely
       SimpleActionState('precise_align_base',
         'align_base', AlignBaseAction,
         goal = AlignBaseGoal(offset = 0,look_point=look_point),
-        goal_cb = get_precise_align_goal),
+        goal_cb = get_precise_align_goal,
+        aborted = 'recover_move_arm_outlet_to_free'),
 
       # Detect the wall norm
       SimpleActionState('detect_wall_norm',
         'detect_wall_norm', DetectWallNormAction,
-        goal = wall_norm_goal),
+        goal = wall_norm_goal,
+        aborted = 'recover_move_arm_outlet_to_free'),
       
       # Precise detection
       SimpleActionState('vision_outlet_detection',
         'vision_outlet_detection', VisionOutletDetectionAction,
-        goal = vision_detect_outlet_goal,
-        goal_cb = update_vision_detect_goal_stamp,
-        result_cb = store_precise_outlet_result)
+        goal = sm.userdata.vision_detect_outlet_goal,
+        goal_cb = get_vision_detect_goal,
+        result_cb = store_precise_outlet_result,
+        aborted = 'recover_move_arm_outlet_to_free')
       )
 
   # Define recovery states

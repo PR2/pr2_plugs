@@ -52,7 +52,10 @@ def main():
 
   recharge_client = actionlib.SimpleActionClient('recharge',RechargeSMAction)
   recharge_client.wait_for_server()
-  recharge_client.send_goal_and_wait(RechargeSMGoal(plugin=True,unplug=True))
+  
+  recharge_goal = RechargeSMGoal(plugin=True,unplug=True)
+  recharge_goal.smach_info.initial_state = 'fetch_plug'
+  recharge_client.send_goal_and_wait(recharge_goal)
 
 if __name__ == "__main__":
   main()

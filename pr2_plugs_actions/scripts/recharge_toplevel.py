@@ -43,6 +43,7 @@ import tf
 from pr2_plugs_msgs.msg import *
 from actionlib_msgs.msg import *
 from move_base_msgs.msg import *
+from geometry_msgs.msg import *
 from pr2_common_action_msgs.msg import *
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
 from std_srvs.srv import *
@@ -56,17 +57,31 @@ from smach.simple_action_state import *
 import actionlib
 
 class TFUtil():
-  def __init__(self):
-    # Construct tf listener
-    transformer = tf.TransformListener(True, rospy.Duration(60.0))  
-
+  transformer = None
+    
+  @staticmethod
   def wait_and_transform(frame_id,pose):
+    if not TFUtil.transformer:
+      TFUtil.transformer = tf.TransformListener(True, rospy.Duration(60.0))  
+
     try:
-      transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
+      TFUtil.transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
     except rospy.ServiceException, e:
       rospy.logerr('Could not transform between %s and %s' % (frame_id,pose.header.frame_id))
       raise e
-    return transformer.transformPose(frame_id, pose)
+    return TFUtil.transformer.transformPose(frame_id, pose)
+
+def store_outlet_result(state, result_state, result):
+  state.sm_userdata.outlet_pose = result.outlet_pose
+
+def get_plugin_goal(state):
+  # Update timestamps
+  state.sm_userdata.plug_pose.header.stamp = rospy.Time.now()
+  state.sm_userdata.outlet_pose.header.stamp = rospy.Time.now()
+  # Return goal
+  return PlugInSMGoal(
+      gripper_to_plug = state.sm_userdata.plug_pose,
+      base_to_outlet = state.sm_userdata.outlet_pose)
 
 def main():
   rospy.init_node("recharge_toplevel")
@@ -79,6 +94,11 @@ def main():
 
   # Construct state machine
   sm = StateMachine('recharge',RechargeSMAction)
+
+  # Default userdata fields
+  sm.userdata.outlet_pose = PoseStamped()
+  sm.userdata.plug_pose = PoseStamped()
+
   # Define nominal sequence
   sm.add_sequence(
       # Meta-state for sending commands
@@ -94,13 +114,16 @@ def main():
         goal = TuckArmsGoal(True,True,True),aborted='untuck'),
       # Perform outlet detection
       SimpleActionState('detect_outlet','detect_outlet_sm',DetectOutletSMAction,
-        goal = DetectOutletSMGoal(), aborted="navigate_to_outlet"),
+        goal = DetectOutletSMGoal(),
+        result_cb = store_outlet_result,
+        aborted="navigate_to_outlet"),
       # Once we have the outlet pose, we will fetch the plug and plug in
       SimpleActionState('fetch_plug','fetch_plug_sm',FetchPlugSMAction,
-        goal = FetchPlugSMGoal(), aborted='fetch_plug'),
+        goal = FetchPlugSMGoal(), aborted='fetch_plug', exec_timeout=rospy.Duration(300.0)),
       # Re-detect the plug in the gripper, plug, and wiggle in
-      SimpleActionState('plugin','plugin',PluginAction,
-        goal = PluginGoal(), aborted='detect_outlet')
+      SimpleActionState('plug_in','plug_in_sm',PlugInSMAction,
+        goal = PluginGoal(), aborted='detect_outlet',
+        goal_cb = get_plugin_goal)
       )
 
   # Populate the sm database with some stubbed out results

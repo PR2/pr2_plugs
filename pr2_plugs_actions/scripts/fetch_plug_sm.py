@@ -22,6 +22,7 @@ from trajectory_msgs.msg import *
 from executive_python import *
 from pr2_arm_ik_action.tools import *
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
+from geometry_msgs.msg import *
 from joint_trajectory_action_tools.tools import *
 
 # State machine classes
@@ -33,22 +34,19 @@ from smach.joint_trajectory_state import *
 import actionlib
 
 class TFUtil():
+  transformer = None
   def __init__(self):
-    # Construct tf listener
-    self.transformer = tf.TransformListener(True, rospy.Duration(60.0))  
+    if not TFUtil.transformer:
+      TFUtil.transformer = tf.TransformListener(True, rospy.Duration(60.0))  
     
-  def wait_and_transform(self,frame_id,pose):
+  @staticmethod
+  def wait_and_transform(frame_id,pose):
     try:
-      self.transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
+      TFUtil.transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
     except rospy.ServiceException, e:
       rospy.logerr('Could not transform between %s and %s' % (frame_id,pose.header.frame_id))
       raise e
-    return self.transformer.transformPose(frame_id, pose)
-
-# Callback to store the plug detection result
-def store_detect_plug_result(state, result_state, result):
-  tf_util = TFUtil()
-  state.sm_userdata.plug_on_base_pose = tf_util.wait_and_transform('base_link',result.plug_pose) 
+    return TFUtil.transformer.transformPose(frame_id, pose)
 
 # Code block state for grasping the plug
 class GraspPlugState(State):
@@ -57,8 +55,9 @@ class GraspPlugState(State):
     cart_space_client.wait_for_server()
     cart_space_goal = PR2ArmIKGoal()
 
+    preempt_timeout = rospy.Duration(5.0)
     # Grab relevant user data
-    pose_base_plug = self.sm_userdata.plug_on_base_pose
+    pose_tf_plug = self.sm_userdata.sm_result.plug_on_base_pose
 
     # Get grasp plug IK seed
     cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/grasp_plug_seed')
@@ -67,7 +66,8 @@ class GraspPlugState(State):
     pose_plug_gripper = PoseStampedMath()
     pose_plug_gripper.fromEuler(-.03, 0, .01, pi/2, 0, -pi/9)
 
-    pose_gripper_wrist= PoseStampedMath().fromTf(transformer.lookupTransform("r_gripper_tool_frame", "r_wrist_roll_link", rospy.Time(0)))
+    pose_base_plug= PoseStampedMath(TFUtil.transformer.transformPose("base_link", pose_tf_plug))
+    pose_gripper_wrist= PoseStampedMath().fromTf(TFUtil.transformer.lookupTransform("r_gripper_tool_frame", "r_wrist_roll_link", rospy.Time(0)))
     pose_plug_approach = PoseStampedMath().fromEuler(0, 0.05, 0, 0, 0, 0)
 
     cart_space_goal.pose = (pose_base_plug * pose_plug_approach * pose_plug_gripper * pose_gripper_wrist).msg
@@ -90,21 +90,24 @@ class GraspPlugState(State):
 
     self.set_succeeded()
 
-# Callback to stuff the result for this action
-def construct_action_result(sm):
-  self.result.plug_pose = sm.userdata.plug_pose
-
-def main():
-  rospy.init_node("fetch_plug_sm")
-
-  # Define fixed goals
-  # Plug detection goal
+def get_detect_plug_goal(state):
   detect_plug_goal = VisionPlugDetectionGoal()
   detect_plug_goal.camera_name = "/forearm_camera_r"
   detect_plug_goal.prior = PoseStampedMath().fromEuler(0.075, 0.03, 0.24, pi/2, 0, pi/2).msg
   detect_plug_goal.prior.header.stamp = rospy.Time.now()
   detect_plug_goal.prior.header.frame_id = "base_link"
   detect_plug_goal.origin_on_right = False
+  return detect_plug_goal
+
+# Callback to store the plug detection result
+def store_detect_plug_result(state, result_state, result):
+  state.sm_userdata.sm_result.plug_on_base_pose = TFUtil.wait_and_transform('base_link',result.plug_pose) 
+
+def main():
+  rospy.init_node("fetch_plug_sm",log_level=rospy.DEBUG)
+
+  TFUtil()
+  # Define fixed goals
 
   # Open gripper goal
   open_gripper_goal = Pr2GripperCommandGoal()
@@ -117,7 +120,11 @@ def main():
   close_gripper_goal.command.max_effort = 99999
 
   # Construct state machine
-  sm = StateMachine('fetch_plug_sm',FetchPlugSMAction,result_cb = construct_action_result)
+  sm = StateMachine('fetch_plug_sm',FetchPlugSMAction)
+
+  # Default userdata
+  sm.userdata.plug_pose = PoseStamped()
+
   # Define nominal sequence
   sm.add_sequence(
       # Raise spine
@@ -132,8 +139,8 @@ def main():
       # Detect the plug
       SimpleActionState('detect_plug_on_base',
         'vision_plug_detection',VisionPlugDetectionAction,
-        goal = detect_plug_goal,
         aborted = 'move_arm_base_detect_pose',
+        goal_cb = get_detect_plug_goal,
         result_cb = store_detect_plug_result),
 
       # Move arm to the grasp pose
@@ -153,14 +160,15 @@ def main():
       SimpleActionState('close_gripper',
         'r_gripper_controller/gripper_action', Pr2GripperCommandAction,
         goal = close_gripper_goal,
-        aborted='recover_grasp_to_detect_pose'),
+        succeeded='recover_grasp_to_detect_pose',
+        aborted='move_arm_remove_plug'),
 
       # Remove the plug form the base
       JointTrajectoryState('move_arm_remove_plug',
         'r_arm_plugs_controller','pr2_plugs_configuration/remove_plug'),
       
       # Lower the spine
-      SimpleActionState('raise_spine',
+      SimpleActionState('lower_spine',
         'torso_controller/position_joint_action', SingleJointPositionAction,
         goal = SingleJointPositionGoal(position=0.01))
       )
@@ -168,7 +176,8 @@ def main():
   # Define recovery states
   sm.add(JointTrajectoryState('recover_grasp_to_detect_pose',
     'r_arm_plugs_controller','pr2_plugs_configuration/recover_grasp_to_detect',
-    succeeded = 'detect_plug_on_base'))
+    succeeded = 'detect_plug_on_base',
+    aborted = 'recover_grasp_to_detect_pose'))
 
   # Populate the sm database with some stubbed out results
   # Run state machine action server with default state

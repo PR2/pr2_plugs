@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# stub for outlet detection action
 
 import roslib; roslib.load_manifest('pr2_plugs_actions')
 import rospy

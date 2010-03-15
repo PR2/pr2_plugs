@@ -1,6 +1,6 @@
 executive_python_msgs/Smach smach_info
 ---
 # location where the plug was found on the base
-geometry_msgs/PoseStamped plug_pose
+geometry_msgs/PoseStamped plug_on_base_pose
 executive_python_msgs/Smach smach_info
 ---
