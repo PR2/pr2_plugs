@@ -62,12 +62,14 @@ def execute_cb(goal):
   
   rate = rospy.Rate(100.0)
   if goal.insert == 1:
-    wiggle_start = 0.004
-    wiggle_stop = 0.02
+    current_error =outlet_to_plug_error(goal)
+    wiggle_start = current_error.pose.position.x
+    wiggle_stop = current_error.pose.position.x + 0.015
     step = 0.0005
   else:
-    wiggle_start = 0.004  
-    wiggle_stop = -0.02
+    current_error =outlet_to_plug_error(goal)
+    wiggle_start = current_error.pose.position.x
+    wiggle_stop = current_error.pose.position.x - 0.04
     step = 0.001
 
   start = rospy.Time.now()

@@ -23,6 +23,21 @@ def drange(start, stop, step):
     yield r
     r += step
 
+def outlet_to_plug_error(goal):
+  time = rospy.Time.now()
+  try:
+    transformer.waitForTransform("base_link", "r_gripper_tool_frame", time, rospy.Duration(2.0))
+  except rospy.ServiceException, e:
+    rospy.logerr('Could not transform between gripper and wrist at time %f' %time.to_sec())
+    server.set_aborted()
+    return
+  pose_base_gripper= PoseStampedMath().fromTf(transformer.lookupTransform("base_link","r_gripper_tool_frame", time))
+  pose_outlet_base = PoseStampedMath(goal.base_to_outlet).inverse()
+  pose_gripper_plug = PoseStampedMath(goal.gripper_to_plug)
+  outlet_to_plug = (pose_outlet_base*pose_base_gripper*pose_gripper_plug).msg
+  return outlet_to_plug
+
+
 def execute_cb(goal):
   rospy.loginfo("Action server received goal")
   preempt_timeout = rospy.Duration(5.0)
@@ -49,33 +64,47 @@ def execute_cb(goal):
   pose_base_outlet = PoseStampedMath(goal.base_to_outlet)
   pose_plug_gripper = PoseStampedMath(goal.gripper_to_plug).inverse()
 
+  step = 0.005
   # plug in
-  for offset in drange(-0.07, 0.004, 0.01):
+  for offset in drange(-0.07, 0.09, step):
     pose_outlet_plug = PoseStampedMath().fromEuler(offset, 0, 0, 0, 0, 0)
     cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
     cart_space_goal.pose.header.stamp = rospy.Time.now()
     cart_space_goal.pose.header.frame_id = 'base_link'
-    cart_space_goal.move_duration = rospy.Duration(3.0)
+    cart_space_goal.move_duration = rospy.Duration(1.5)
     if cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-      rospy.logerr('Failed to approach outlet')
+      rospy.loginfo("hit the wall or inserted into outlet")
+      break
+
+  #get current error 
+  start_error = outlet_to_plug_error(goal)  
+  outlet_test = [0.01, -0.01, 0.0]
+  for motion in outlet_test:
+    pose_outlet_plug = PoseStampedMath().fromEuler(offset, 0, motion, 0, 0, 0)
+    cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
+    cart_space_goal.pose.header.stamp = rospy.Time.now()
+    cart_space_goal.pose.header.frame_id = 'base_link'
+    cart_space_goal.move_duration = rospy.Duration(1.5)
+    cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout)
+    plug_error = outlet_to_plug_error(goal)
+    print math.fabs(plug_error.pose.position.z - start_error.pose.position.z)
+    if (math.fabs(plug_error.pose.position.z -start_error.pose.position.z) >= math.fabs(motion)) and (motion != 0.0 ):
+      rospy.logerr("we're not in the outlet")
+      pose_outlet_plug = PoseStampedMath().fromEuler(offset-0.05, 0, 0, 0, 0, 0)
+      cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
+      cart_space_goal.pose.header.stamp = rospy.Time.now()
+      cart_space_goal.pose.header.frame_id = 'base_link'
+      cart_space_goal.move_duration = rospy.Duration(1.5)
+      cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout)
       server.set_aborted()
       return
 
-  # unplug
-#  for offset in drange(0.02, 0.05, 0.01):
-#    pose_outlet_plug = PoseStampedMath().fromEuler(-offset, 0, 0, 0, 0, 0)
-#    cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
-#    cart_space_goal.pose.header.stamp = rospy.Time.now()
-#    cart_space_goal.pose.header.frame_id = 'base_link'
-#    cart_space_goal.move_duration = rospy.Duration(3.0)
-#    if cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-#      rospy.logerr('Failed to unplug')
 
 
   # return result
   result = PluginResult()
   server.set_succeeded(result)
-  rospy.loginfo("Action server goal finished")  
+  rospy.loginfo("Action server goal finished")
 
 
 
