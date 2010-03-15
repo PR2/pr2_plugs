@@ -27,6 +27,14 @@ def execute_cb(goal):
   rospy.loginfo("Action server received goal")
   preempt_timeout = rospy.Duration(5.0)
 
+  # make sure spine is down
+  rospy.loginfo("Make sure spine is down...")
+  spine_goal.position = 0.01
+  if spine_client.send_goal_and_wait(spine_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    rospy.logerr('Moving down spine failed')
+    server.set_aborted()
+    return
+
   # approach outlet
   cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
 
@@ -83,7 +91,13 @@ if __name__ == '__main__':
   cart_space_client = actionlib.SimpleActionClient('r_arm_ik', PR2ArmIKAction)
   cart_space_client.wait_for_server()
   cart_space_goal = PR2ArmIKGoal()
+
+  spine_client = actionlib.SimpleActionClient('torso_controller/position_joint_action', SingleJointPositionAction)
+  spine_client.wait_for_server()
+  spine_goal = SingleJointPositionGoal()
+
   rospy.loginfo('Connected to action clients')
+
 
   # create action server
   server = actionlib.simple_action_server.SimpleActionServer(name, PluginAction, execute_cb)
