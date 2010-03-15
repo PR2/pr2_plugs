@@ -60,7 +60,8 @@ public:
   void execute(const move_base_msgs::MoveBaseGoalConstPtr& goal);
 
 private:
-  geometry_msgs::Twist diff2D(const tf::Pose& pose1, const tf::Pose& pose2);
+  void lockWheels();
+  geometry_msgs::Twist diff2D(const tf::Pose& pose1, const tf::Pose& pose2, double K_trans, double K_rot);
   geometry_msgs::Twist limitTwist(const geometry_msgs::Twist& twist);
   std::vector<geometry_msgs::Point> getOrientedFootprint(const tf::Vector3 pos, double theta_cost);
 
@@ -69,6 +70,7 @@ private:
   costmap_2d::Costmap2D costmap_;
   base_local_planner::CostmapModel costmap_model_;
   ros::Publisher base_pub_;
+  double K_trans, K_rot, tolerance_trans, tolerance_rot;
 
   actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction> action_server_;
   std::vector<geometry_msgs::Point> footprint_;
