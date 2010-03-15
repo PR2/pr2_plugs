@@ -1,12 +1,6 @@
-#goal definition
-geometry_msgs/Vector3 travel
-geometry_msgs/Vector3 offset
-duration period
-duration move_duration
-float64 abort_threshold   #If we move more than this, we'll assume we weren't in the outlet and abort
-geometry_msgs/PoseStamped initial_plug_pose
+geometry_msgs/PoseStamped gripper_to_plug
+geometry_msgs/PoseStamped base_to_outlet
+duration wiggle_period
+int32 insert
 ---
-#result definition
-
 ---
-#feedback
