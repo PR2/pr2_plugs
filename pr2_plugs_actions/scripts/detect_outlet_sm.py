@@ -81,7 +81,7 @@ class OutletSearchState(State):
 
       # call vision outlet detection
       rospy.loginfo("Detecting outlet with the forearm camera...")
-      vision_detect_outlet_goal.wall_normal = align_base_client.get_result().wall_norm
+      vision_detect_outlet_goal.wall_normal = self.align_base_client.get_result().wall_norm
       vision_detect_outlet_goal.prior.header.stamp = rospy.Time.now()
       if self.vision_detect_outlet_client.send_goal_and_wait(vision_detect_outlet_goal, rospy.Duration(5.0), preempt_timeout) == GoalStatus.SUCCEEDED:
         # Store the rough outlet position in the state machiine user data structure
@@ -99,13 +99,21 @@ def get_precise_align_goal(state):
   state.goal.offset = state.sm_userdata.outlet_rough_pose.pose.position.y
   return state.goal
 
+# Callbacks for wall norm
+def get_wall_norm_goal(state):
+  state.sm_userdata.wall_norm_goal.look_point.header.stamp = rospy.Time.now()
+  return state.sm_userdata.wall_norm_goal
+
+def store_wall_norm_result(state, result_state, result):
+  state.sm_userdata.vision_detect_outlet_goal.wall_normal = result.wall_norm
+
 # Callback for resetting timestamp in vision detection goal
 def get_vision_detect_goal(state):
-  state.goal.wall_normal.header.stamp = rospy.Time.now()
-  state.goal.prior.header.stamp = rospy.Time.now()
-  return state.goal
+  state.sm_userdata.vision_detect_outlet_goal.wall_normal.header.stamp = rospy.Time.now()
+  state.sm_userdata.vision_detect_outlet_goal.prior.header.stamp = rospy.Time.now()
+  return state.sm_userdata.vision_detect_outlet_goal
 
-# Callback for storing the prcide detection result
+# Callback for storing the prcise detection result
 def store_precise_outlet_result(state, result_state, result):
   state.sm_userdata.sm_result.outlet_pose = TFUtil.wait_and_transform("base_link",result.outlet_pose)
 
@@ -137,6 +145,7 @@ def main():
   sm = StateMachine('detect_outlet_sm',DetectOutletSMAction)
 
   # Default userdata
+  sm.userdata.wall_norm_goal = wall_norm_goal
   sm.userdata.align_base_goal = align_base_goal
   sm.userdata.vision_detect_outlet_goal = vision_detect_outlet_goal
   sm.userdata.outlet_rough_pose = PoseStamped()
@@ -173,13 +182,13 @@ def main():
       # Detect the wall norm
       SimpleActionState('detect_wall_norm',
         'detect_wall_norm', DetectWallNormAction,
-        goal = wall_norm_goal,
+        goal_cb = get_wall_norm_goal,
+        result_cb = store_wall_norm_result,
         aborted = 'recover_move_arm_outlet_to_free'),
       
       # Precise detection
       SimpleActionState('vision_outlet_detection',
         'vision_outlet_detection', VisionOutletDetectionAction,
-        goal = sm.userdata.vision_detect_outlet_goal,
         goal_cb = get_vision_detect_goal,
         result_cb = store_precise_outlet_result,
         aborted = 'recover_move_arm_outlet_to_free')

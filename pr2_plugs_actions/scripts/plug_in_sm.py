@@ -30,14 +30,15 @@ from smach.joint_trajectory_state import *
 
 import actionlib
 
+
 class TFUtil():
   transformer = None
+  def __init__(self):
+    if not TFUtil.transformer:
+      TFUtil.transformer = tf.TransformListener(True, rospy.Duration(60.0))  
     
   @staticmethod
   def wait_and_transform(frame_id,pose):
-    if not TFUtil.transformer:
-      TFUtil.transformer = tf.TransformListener(True, rospy.Duration(60.0))  
-
     try:
       TFUtil.transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
     except rospy.ServiceException, e:

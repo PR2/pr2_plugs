@@ -114,9 +114,10 @@ def main():
         goal = TuckArmsGoal(True,True,True),aborted='untuck'),
       # Perform outlet detection
       SimpleActionState('detect_outlet','detect_outlet_sm',DetectOutletSMAction,
+        exec_timeout = rospy.Duration(300.0),
         goal = DetectOutletSMGoal(),
         result_cb = store_outlet_result,
-        aborted="navigate_to_outlet"),
+        aborted="tuck"),
       # Once we have the outlet pose, we will fetch the plug and plug in
       SimpleActionState('fetch_plug','fetch_plug_sm',FetchPlugSMAction,
         goal = FetchPlugSMGoal(), aborted='fetch_plug', exec_timeout=rospy.Duration(300.0)),
