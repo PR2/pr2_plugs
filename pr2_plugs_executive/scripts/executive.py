@@ -199,17 +199,19 @@ class Executive:
         rospy.logerr("Failed to plug in!")
         return
 
-      #Wiggle in
+      #Wiggle in                                                                                                                                                                   
       wiggle_goal = WigglePlug2Goal()
       wiggle_goal.gripper_to_plug = self.gripper_to_plug
       wiggle_goal.base_to_outlet = base_to_outlet
-      wiggle_goal.wiggle_period = ropsy.Duration(2.0)
-      wiggle_goal.wiggle_amplitude = 0.01
+      wiggle_goal.wiggle_period = rospy.Duration(0.5)
+      wiggle_goal.wiggle_amplitude = 0.015
+      wiggle_goal.insertion_depth = 0.004
       wiggle_goal.timeout = rospy.Duration(20.0)
       rospy.loginfo('wiggling in...')
       if self.ac['wiggle_plug2'].send_goal_and_wait(wiggle_goal, rospy.Duration(60.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
         rospy.logerr("Failed to wiggle in!")
         return
+
 
 
 
