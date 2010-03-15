@@ -1,0 +1,6 @@
+geometry_msgs/PoseStamped gripper_to_plug
+geometry_msgs/PoseStamped base_to_outlet
+executive_python_msgs/Smach smach_info
+---
+executive_python_msgs/Smach smach_info
+---
