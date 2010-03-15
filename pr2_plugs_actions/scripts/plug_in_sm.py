@@ -48,17 +48,17 @@ class TFUtil():
 
 # Callback to store the plug detection result
 def store_detect_plug_result(state, result_state, result):
-  state.sm_userdata.gripper_to_plug = TFUtil.wait_and_transform('r_gripper_tool_frame',result.plug_pose)
+  state.sm_userdata.sm_result.gripper_to_plug = TFUtil.wait_and_transform('r_gripper_tool_frame',result.plug_pose)
 
 def get_plugin_goal(state):
   plugin_goal = PluginGoal()
-  plugin_goal.gripper_to_plug = state.sm_userdata.gripper_to_plug
+  plugin_goal.gripper_to_plug = state.sm_userdata.sm_result.gripper_to_plug
   plugin_goal.base_to_outlet = state.sm_userdata.sm_goal.base_to_outlet
   return plugin_goal
 
 def get_wiggle_goal(state):
   wiggle_goal = WigglePlugGoal()
-  wiggle_goal.gripper_to_plug = state.sm_userdata.gripper_to_plug
+  wiggle_goal.gripper_to_plug = state.sm_userdata.sm_result.gripper_to_plug
   wiggle_goal.gripper_to_plug.header.stamp = rospy.Time.now()
 
   wiggle_goal.base_to_outlet = state.sm_userdata.sm_goal.base_to_outlet
@@ -74,9 +74,6 @@ def main():
 
   # Construct state machine
   sm = StateMachine('plug_in_sm',PlugInSMAction)
-
-  # Default userdata
-  sm.userdata.gripper_to_plug = PoseStamped()
 
   # Define nominal sequence
   sm.add_sequence(

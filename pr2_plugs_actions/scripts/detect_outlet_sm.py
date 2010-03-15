@@ -82,6 +82,7 @@ class OutletSearchState(State):
       # call vision outlet detection
       rospy.loginfo("Detecting outlet with the forearm camera...")
       vision_detect_outlet_goal.wall_normal = self.align_base_client.get_result().wall_norm
+      vision_detect_outlet_goal.wall_normal.header.stamp = rospy.Time.now()
       vision_detect_outlet_goal.prior.header.stamp = rospy.Time.now()
       if self.vision_detect_outlet_client.send_goal_and_wait(vision_detect_outlet_goal, rospy.Duration(5.0), preempt_timeout) == GoalStatus.SUCCEEDED:
         # Store the rough outlet position in the state machiine user data structure

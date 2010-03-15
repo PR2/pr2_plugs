@@ -54,7 +54,8 @@ def main():
   recharge_client.wait_for_server()
   
   rospy.sleep(10)
-  recharge_goal = RechargeSMGoal(plugin=True,unplug=True)
+  recharge_goal = RechargeSMGoal(command = RechargeCommand(command = RechargeCommand.PLUG_IN, plug_id='phasespace'))
+  #recharge_goal = RechargeSMGoal(command = RechargeCommand(command = RechargeCommand.UNPLUG, plug_id='phasespace'))
   #recharge_goal.smach_info.initial_state = 'fetch_plug'
   recharge_client.send_goal_and_wait(recharge_goal)
 

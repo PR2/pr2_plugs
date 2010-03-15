@@ -1,6 +1,6 @@
-bool plugin
-bool unplug
+RechargeCommand command
 executive_python_msgs/Smach smach_info
 ---
+RechargeState state
 executive_python_msgs/Smach smach_info
 ---
