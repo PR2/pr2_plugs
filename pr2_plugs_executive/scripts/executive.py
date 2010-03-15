@@ -70,7 +70,7 @@ class Executive:
       ('detect_outlet',DetectOutletAction),
       ('fetch_plug',FetchPlugAction),
       ('detect_plug',DetectPlugInGripperAction),
-      ('wiggle_plug2',WigglePlug2Action),
+      ('wiggle_plug',WigglePlugAction),
       ('stow_plug',StowPlugAction),
       ('plugin',PluginAction)]
 
@@ -200,18 +200,15 @@ class Executive:
         return
 
       #Wiggle in                                                                                                                                                                   
-      wiggle_goal = WigglePlug2Goal()
-      wiggle_goal.gripper_to_plug = self.gripper_to_plug
-      wiggle_goal.base_to_outlet = base_to_outlet
-      wiggle_goal.wiggle_period = rospy.Duration(0.5)
-      wiggle_goal.wiggle_amplitude = 0.015
+      self.wiggle_goal = WigglePlugGoal()
+      self.wiggle_goal.gripper_to_plug = self.gripper_to_plug
+      self.wiggle_goal.base_to_outlet = base_to_outlet
+      self.wiggle_goal.wiggle_period = rospy.Duration(0.5)
+      self.wiggle_goal.insert = 1
       rospy.loginfo('wiggling in...')
-      if self.ac['wiggle_plug2'].send_goal_and_wait(wiggle_goal, rospy.Duration(60.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
+      if self.ac['wiggle_plug'].send_goal_and_wait(self.wiggle_goal, rospy.Duration(60.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
         rospy.logerr("Failed to wiggle in!")
         return
-
-
-
 
       rospy.loginfo("Plugged in!")
       self.recharge_state.state = RechargeState.PLUGGED_IN
@@ -223,6 +220,13 @@ class Executive:
       rospy.logerr("Plugs Executive: Starting to plug in")
       self.recharge_state.state = RechargeState.WAITING_FOR_STATE
       self.recharge_state_pub.publish(self.recharge_state)
+
+      self.wiggle_goal.insert = 0
+      rospy.loginfo('wiggling out...')
+      if self.ac['wiggle_plug'].send_goal_and_wait(self.wiggle_goal, rospy.Duration(60.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
+        rospy.logerr("Failed to wiggle out!")
+        return
+
 
       # Stow plug
       rospy.loginfo('Stowing plug...')
