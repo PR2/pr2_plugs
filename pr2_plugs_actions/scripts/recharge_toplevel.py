@@ -173,7 +173,8 @@ def main():
         goal_cb = get_move_base_goal, aborted='navigate_to_outlet'),
       # Untuck the arms
       SimpleActionState('untuck','tuck_arms',TuckArmsAction,
-        goal = TuckArmsGoal(True,True,True),aborted='untuck'),
+        goal = TuckArmsGoal(True,True,True),
+        aborted='untuck'),
       # Perform outlet detection
       SimpleActionState('detect_outlet','detect_outlet_sm',DetectOutletSMAction,
         exec_timeout = rospy.Duration(300.0),
@@ -196,8 +197,14 @@ def main():
       )
 
   # Add recovery states
-  sm.add(SimpleActionState('recover_stow_plug','stow_plug',StowPlugAction,
-        goal_cb = get_stow_plug_goal,succeeded = 'detect_outlet'))
+  sm.add_sequence(
+      # Move the arm back from the outlet so we don't scratch the wall
+      JointTrajectoryState('recover_move_arm_remove_plug',
+        'r_arm_plugs_controller','pr2_plugs_configuration/recover_remove_plug_from_outlet'),
+      # Stow the plug
+      SimpleActionState('recover_stow_plug','stow_plug',StowPlugAction,
+        goal_cb = get_stow_plug_goal,succeeded = 'detect_outlet')
+      )
 
   # Define nominal unplug sequence
   sm.add_sequence(
