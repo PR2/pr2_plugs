@@ -17,9 +17,15 @@ import tf
 
 def drange(start, stop, step):
   r = start
-  while r < stop:
-    yield r
-    r += step
+  if start < stop:
+    while r < stop:
+      yield r
+      r += step
+  if start > stop:
+    while r > stop:
+      yield r
+      r -= step
+
 
 def outlet_to_plug_error(goal):
   time = rospy.Time.now()
@@ -38,9 +44,9 @@ def outlet_to_plug_error(goal):
 
 def execute_cb(goal):
   rospy.loginfo("Action server received goal")
-  preempt_timeout = rospy.Duration(5.0)
+  preempt_timeout = rospy.Duration(10.0)
 
-  # approach outlet
+  
   cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
 
   time = rospy.Time.now()
@@ -53,15 +59,22 @@ def execute_cb(goal):
   pose_gripper_wrist= PoseStampedMath().fromTf(transformer.lookupTransform("r_gripper_tool_frame", "r_wrist_roll_link", time))
   pose_base_outlet = PoseStampedMath(goal.base_to_outlet)
   pose_plug_gripper = PoseStampedMath(goal.gripper_to_plug).inverse()
-
+  
   rate = rospy.Rate(100.0)
-  start = rospy.Time.now()
-  rospy.loginfo("starting wiggle")
+  if goal.insert == 1:
+    wiggle_start = 0.004
+    wiggle_stop = 0.02
+    step = 0.0005
+  else:
+    wiggle_start = 0.004  
+    wiggle_stop = -0.02
+    step = 0.001
 
-  for offset in drange(0.004, 0.02, 0.0005):
+  start = rospy.Time.now()
+  for offset in drange(wiggle_start, wiggle_stop, step):
     t = rospy.Time.now() - start
     wiggle = math.sin(t.to_sec() * 2 * math.pi / goal.wiggle_period.to_sec())
-    pose_outlet_plug = PoseStampedMath().fromEuler(offset, 0, goal.wiggle_amplitude *wiggle, 0, math.pi/30 *wiggle, 0)
+    pose_outlet_plug = PoseStampedMath().fromEuler(offset, 0, 0, 0, math.pi/30 *wiggle, 0)
     cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
     cart_space_goal.pose.header.stamp = rospy.Time.now()
     cart_space_goal.pose.header.frame_id = 'base_link'
@@ -79,8 +92,6 @@ def execute_cb(goal):
 
   result = WigglePlug2Result()
   server.set_succeeded(result)
-  rospy.loginfo("Finished wiggling in")
-
 
 
 if __name__ == '__main__':
