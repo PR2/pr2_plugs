@@ -56,6 +56,18 @@ def get_plugin_goal(state):
   plugin_goal.base_to_outlet = state.sm_userdata.sm_goal.base_to_outlet
   return plugin_goal
 
+def get_wiggle_goal(state):
+  wiggle_goal = WigglePlugGoal()
+  wiggle_goal.gripper_to_plug = state.sm_userdata.gripper_to_plug
+  wiggle_goal.gripper_to_plug.header.stamp = rospy.Time.now()
+
+  wiggle_goal.base_to_outlet = state.sm_userdata.sm_goal.base_to_outlet
+  wiggle_goal.base_to_outlet.header.stamp = rospy.Time.now()
+
+  wiggle_goal.wiggle_period = rospy.Duration(0.5)
+  wiggle_goal.insert = 1
+  return wiggle_goal
+
 def main():
   rospy.init_node("plug_in_sm",log_level=rospy.DEBUG)
   TFUtil()
@@ -77,7 +89,12 @@ def main():
       # Perform rough base alignment
       SimpleActionState('plugin',
         'plugin', PluginAction,
-        goal_cb = get_plugin_goal)
+        goal_cb = get_plugin_goal),
+
+      # Wiggle all the way in
+      SimpleActionState('wiggle_plug',
+        'wiggle_plug', WigglePlugAction,
+        goal_cb = get_wiggle_goal)
       )
 
   # Define recovery states

@@ -123,6 +123,7 @@ def main():
         goal = FetchPlugSMGoal(), aborted='fetch_plug', exec_timeout=rospy.Duration(300.0)),
       # Re-detect the plug in the gripper, plug, and wiggle in
       SimpleActionState('plug_in','plug_in_sm',PlugInSMAction,
+        exec_timeout = rospy.Duration(100.0),
         goal = PluginGoal(), aborted='detect_outlet',
         goal_cb = get_plugin_goal)
       )
