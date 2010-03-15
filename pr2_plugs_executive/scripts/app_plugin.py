@@ -46,7 +46,7 @@ def main():
   rospy.sleep(3)
 
   cmd = RechargeCommand()
-  cmd.plug_id = 'wim'
+  cmd.plug_id = 'phasespace'
   cmd.command = RechargeCommand.PLUG_IN
   pub.publish(cmd)
   

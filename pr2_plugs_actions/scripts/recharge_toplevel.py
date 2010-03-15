@@ -191,7 +191,7 @@ def main():
       )
 
   # Add recovery states
-  sm.add(SimpleActionState('stow_plug','stow_plug',StowPlugAction,
+  sm.add(SimpleActionState('recover_stow_plug','stow_plug',StowPlugAction,
         goal_cb = get_stow_plug_goal,succeeded = 'detect_outlet'))
 
   # Define nominal unplug sequence
