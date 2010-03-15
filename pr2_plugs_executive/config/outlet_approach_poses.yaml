@@ -7,3 +7,6 @@ outlet_approach_poses:
   phasespace:
     position: [19.457, 16.099, 0.051]
     orientation: [-0.003, -0.002, 0.408, 0.913]
+  outlet_I_31: 
+    position: [20.714, 23.834, 0.048]
+    orientation: [0.001, -0.001, 0.978, 0.208]
