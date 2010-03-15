@@ -11,6 +11,7 @@
   <depend package="actionlib_msgs"/>
   <depend package="geometry_msgs"/>
   <depend package="sensor_msgs"/>
+  <depend package="std_msgs"/>
   <depend package="executive_python_msgs"/>
 
   <export>
