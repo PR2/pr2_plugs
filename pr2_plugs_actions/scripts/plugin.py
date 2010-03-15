@@ -50,7 +50,8 @@ def execute_cb(goal):
     cart_space_goal.move_duration = rospy.Duration(3.0)
     if cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
       rospy.logerr('Failed to approach outlet')
-
+      server.set_aborted()
+      return
 
   # unplug
 #  for offset in drange(0.02, 0.05, 0.01):

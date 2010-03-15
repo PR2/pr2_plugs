@@ -21,10 +21,25 @@ def drange(start, stop, step):
     yield r
     r += step
 
+def outlet_to_plug_error(goal):
+  time = rospy.Time.now()
+  try:
+    transformer.waitForTransform("base_link", "r_gripper_tool_frame", time, rospy.Duration(2.0))
+  except rospy.ServiceException, e:
+    rospy.logerr('Could not transform between gripper and wrist at time %f' %time.to_sec())
+    server.set_aborted()
+    return
+  pose_base_gripper= PoseStampedMath().fromTf(transformer.lookupTransform("base_link","r_gripper_tool_frame", time))
+  pose_outlet_base = PoseStampedMath(goal.base_to_outlet).inverse()
+  pose_gripper_plug = PoseStampedMath(goal.gripper_to_plug)
+  outlet_to_plug = (pose_outlet_base*pose_base_gripper*pose_gripper_plug).msg
+  return outlet_to_plug
+
+
 def execute_cb(goal):
   rospy.loginfo("Action server received goal")
   preempt_timeout = rospy.Duration(5.0)
-  
+
   # approach outlet
   cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
 
@@ -41,9 +56,9 @@ def execute_cb(goal):
 
   rate = rospy.Rate(100.0)
   start = rospy.Time.now()
-  rospy.loginfo("starting wiggle") 
-  for offset in drange(0.004, 0.01, 0.0005):
-    rospy.loginfo("wiggle wiggle")
+  rospy.loginfo("starting wiggle")
+
+  for offset in drange(0.004, 0.02, 0.0005):
     t = rospy.Time.now() - start
     wiggle = math.sin(t.to_sec() * 2 * math.pi / goal.wiggle_period.to_sec())
     pose_outlet_plug = PoseStampedMath().fromEuler(offset, 0, goal.wiggle_amplitude *wiggle, 0, math.pi/30 *wiggle, 0)
@@ -51,32 +66,22 @@ def execute_cb(goal):
     cart_space_goal.pose.header.stamp = rospy.Time.now()
     cart_space_goal.pose.header.frame_id = 'base_link'
     cart_space_goal.move_duration = rospy.Duration(0.5)
-    print "sending wiggle goal"
     cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout)
     rate.sleep()
-    #check to see if we're in enough 
-    time = rospy.Time.now()
-    try:
-      transformer.waitForTransform("base_link", "r_gripper_tool_frame", time, rospy.Duration(2.0))
-    except rospy.ServiceException, e:
-      rospy.logerr('Could not transform between gripper and wrist at time %f' %time.to_sec())
-      server.set_aborted()
-      return
-    pose_base_gripper= PoseStampedMath().fromTf(transformer.lookupTransform("base_link","r_gripper_tool_frame", time))
-    pose_outlet_base = PoseStampedMath(goal.base_to_outlet).inverse()
-    pose_gripper_plug = PoseStampedMath(goal.gripper_to_plug)
-    outlet_to_plug = (pose_outlet_base*pose_base_gripper*pose_gripper_plug).msg
-    print "plug to outlet error %f" % outlet_to_plug.pose.position.x
-    print "insertion goal %f" % goal.insertion_depth
-    if math.fabs(outlet_to_plug.pose.position.x)>=goal.insertion_depth:
-      # return result
-      result = WigglePlug2Result()
-      server.set_succeeded(result)
-      rospy.loginfo("plugged in")  
-      return
 
-  server.set_aborted()
-  rospy.logerr("failed to plug in")
+  pose_outlet_plug = PoseStampedMath().fromEuler(offset, 0, 0, 0, 0, 0)
+  cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
+  cart_space_goal.pose.header.stamp = rospy.Time.now()
+  cart_space_goal.pose.header.frame_id = 'base_link'
+  cart_space_goal.move_duration = rospy.Duration(0.5)
+  cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout)
+  rate.sleep()
+
+  result = WigglePlug2Result()
+  server.set_succeeded(result)
+  rospy.loginfo("Finished wiggling in")
+
+
 
 if __name__ == '__main__':
   #Initialize the node
