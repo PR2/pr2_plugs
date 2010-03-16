@@ -4,6 +4,7 @@ PKG = 'pr2_plugs_actions'
 import roslib; roslib.load_manifest(PKG)
 import rospy
 import os
+import rosparam
 
 if __name__ == '__main__':
   rospy.init_node('load_plug_description', anonymous=True)
@@ -27,5 +28,12 @@ if __name__ == '__main__':
 
   plug_desc_path = plug_desc_path[0]
   rospy.loginfo('Loading plug description from %s' % plug_desc_path)
+
+  try:
+    for params, ns in rosparam.load_file(plug_desc_path):
+      rosparam.upload_params(ns, params)
+  except Exception, ex:
+    rospy.logerr('Error loading parameters: ' + str(ex))
+    sys.exit(1)
 
   rospy.spin()
