@@ -84,22 +84,10 @@ def execute_cb(goal):
     server.set_aborted()
     return
 
-  # move to joint space position
-  rospy.loginfo("Move in joint space...")
-  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/verify_plug_on_base'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr('Move retract in joint space failed')
-    server.set_aborted()
-    return
-
-  # call vision plug detection
-  rospy.loginfo("Detecting plug...")
-  detect_plug_goal.camera_name = "/forearm_camera_r"
-  detect_plug_goal.prior = PoseStampedMath().fromEuler(0.075, 0.03, 0.24, pi/2, 0, pi/2).msg
-  detect_plug_goal.prior.header.stamp = rospy.Time.now()
-  detect_plug_goal.prior.header.frame_id = "base_link"
-  detect_plug_goal.origin_on_right = True
-  if detect_plug_client.send_goal_and_wait(detect_plug_goal, rospy.Duration(10.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr('Vision plug detection failed')
+  # detect plug on base
+  rospy.loginfo("Detect plug on base...")
+  if detect_plug_on_base_client.send_goal_and_wait(DetectPlugOnBaseGoal(), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    rospy.logerr('Detecting plug on base failed')
     server.set_aborted()
     return
 
@@ -107,13 +95,6 @@ def execute_cb(goal):
   rospy.loginfo("Moving down spine...")
   spine_goal.position = 0.01
   spine_client.send_goal(spine_goal)
-
-  # move to joint space position
-  rospy.loginfo("Move in joint space...")
-  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/clear_arm'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr('Move in joint space failed')
-    server.set_aborted()
-    return
 
   # return result
   server.set_succeeded(StowPlugResult())
@@ -145,9 +126,8 @@ if __name__ == '__main__':
   spine_client.wait_for_server()
   spine_goal = SingleJointPositionGoal()
 
-  detect_plug_client = actionlib.SimpleActionClient('vision_plug_detection', VisionPlugDetectionAction)
-  detect_plug_client.wait_for_server()
-  detect_plug_goal = VisionPlugDetectionGoal()
+  detect_plug_on_base_client = actionlib.SimpleActionClient('detect_plug_on_base', DetectPlugOnBaseAction)
+  detect_plug_on_base_client.wait_for_server()
   rospy.loginfo('Connected to action clients')
 
   # create action server
