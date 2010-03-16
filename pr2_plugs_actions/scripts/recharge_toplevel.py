@@ -54,6 +54,7 @@ from executive_python import *
 from smach.state import *
 from smach.state_machine import *
 from smach.simple_action_state import *
+from smach.joint_trajectory_state import JointTrajectoryState
 
 import actionlib
 
