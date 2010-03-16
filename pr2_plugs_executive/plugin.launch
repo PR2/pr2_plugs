@@ -18,4 +18,7 @@
   <!-- plug actions -->
   <include file="$(find pr2_plugs_actions)/launch/plug_actions.launch" />
 
+  <!-- outlet locations -->
+  <node pkg="pr2_plugs_executive" type="outlet_server.py" name="outlet_server" outpuet="screen"/>
+
 </launch>

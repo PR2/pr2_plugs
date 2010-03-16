@@ -74,24 +74,36 @@ class TFUtil():
       raise e
     return TFUtil.transformer.transformPose(frame_id, pose)
 
-def get_move_base_goal(state):
-  # Get id from command
-  plug_id = state.sm_userdata.sm_goal.command.plug_id
+class NavigateToOutletState(SimpleActionState):
+  def __init__(self,*args,**kwargs):
+    SimpleActionState.__init__(self,*args,
+        action_name = 'move_base',
+        action_spec = MoveBaseAction,
+        goal_cb = self.get_move_base_goal,
+        **kwargs)
 
-  # Get pose of desired id from the parameter server
-  position = rospy.get_param("outlet_approach_poses/"+plug_id+"/position")
-  orientation = rospy.get_param("outlet_approach_poses/"+plug_id+"/orientation")
-  target_pose = PoseStamped(pose = Pose(
-      position = Point(*position),
-      orientation = Quaternion(*orientation)))
+    # Construct service to access outlet location db
+    self.get_outlet_locations = rospy.ServiceProxy('outlet_locations', GetOutlets)
 
-  # Create goal for move base
-  move_base_goal = MoveBaseGoal()
-  move_base_goal.target_pose = target_pose
-  move_base_goal.target_pose.header.stamp = rospy.Time.now()
-  move_base_goal.target_pose.header.frame_id = "map"
+  def get_move_base_goal(self,state):
+    # Get outlet locations
+    outlets = self.get_outlet_locations().poses
 
-  return move_base_goal
+    # Get id from command
+    plug_id = state.sm_userdata.sm_goal.command.plug_id
+
+    # Grab the relevant outlet approach pose
+    for outlet in outlets:
+      if outlet.name == plug_id or outlet.id == plug_id:
+        target_pose = PoseStamped(pose=outlet.approach_pose)
+
+    # Create goal for move base
+    move_base_goal = MoveBaseGoal()
+    move_base_goal.target_pose = target_pose
+    move_base_goal.target_pose.header.stamp = rospy.Time.now()
+    move_base_goal.target_pose.header.frame_id = "map"
+
+    return move_base_goal
 
 def store_outlet_result(state, result_state, result):
   state.sm_userdata.outlet_pose = result.outlet_pose
@@ -109,7 +121,6 @@ def store_plug_in_result(state, result_state, result):
   state.sm_userdata.plug_in_gripper_pose = result.gripper_to_plug
   if result_state is GoalStatus.SUCCEEDED:
     state.sm_userdata.sm_result.state.state = RechargeState.PLUGGED_IN
-
 
 def get_wiggle_out_goal(state):
   wiggle_goal = WigglePlugGoal()
@@ -170,9 +181,9 @@ def main():
       SimpleActionState('tuck','tuck_arms',TuckArmsAction,
         goal = TuckArmsGoal(False,True,True)),
       # Navigate to the requested outlet
-      SimpleActionState('navigate_to_outlet','move_base',MoveBaseAction,
+      NavigateToOutletState('navigate_to_outlet',
         exec_timeout = rospy.Duration(20*60.0),
-        goal_cb = get_move_base_goal, aborted='navigate_to_outlet'),
+        aborted='navigate_to_outlet'),
       # Untuck the arms
       SimpleActionState('untuck','tuck_arms',TuckArmsAction,
         goal = TuckArmsGoal(True,True,True),
