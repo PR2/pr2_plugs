@@ -90,6 +90,15 @@ class GraspPlugState(State):
 
     self.set_succeeded()
 
+def get_detect_plug_goal(state):
+  detect_plug_goal = VisionPlugDetectionGoal()
+  detect_plug_goal.camera_name = "/forearm_camera_r"
+  detect_plug_goal.prior = PoseStampedMath().fromEuler(0.075, 0.03, 0.24, pi/2, 0, pi/2).msg
+  detect_plug_goal.prior.header.stamp = rospy.Time.now()
+  detect_plug_goal.prior.header.frame_id = "base_link"
+  detect_plug_goal.origin_on_right = False
+  return detect_plug_goal
+
 # Callback to store the plug detection result
 def store_detect_plug_result(state, result_state, result):
   if result_state == GoalStatus.SUCCEEDED:
@@ -130,11 +139,11 @@ def main():
 
       # Detect the plug
       SimpleActionState('detect_plug_on_base',
-        'detect_plug_on_base',DetectPlugOnBaseAction,
-        exec_timeout = rospy.Duration(120.0),
+        'vision_plug_detection',VisionPlugDetectionAction,
+        exec_timeout = rospy.Duration(9.0),
         aborted = 'move_arm_base_detect_pose',
         preempted = 'move_arm_base_detect_pose',
-        goal = DetectPlugOnBaseGoal(),
+        goal_cb = get_detect_plug_goal,
         result_cb = store_detect_plug_result),
 
       # Move arm to the grasp pose
@@ -148,13 +157,13 @@ def main():
         goal = open_gripper_goal),
 
       # Grasp the plug
-      GraspPlugState('grasp_plug',aborted = 'detect_plug_on_base'),
+      GraspPlugState('grasp_plug',aborted = 'recover_grasp_to_detect_pose'),
 
       # Close the gripper
       SimpleActionState('close_gripper',
         'r_gripper_controller/gripper_action', Pr2GripperCommandAction,
         goal = close_gripper_goal,
-        succeeded='detect_plug_on_base',
+        succeeded='recover_grasp_to_detect_pose',
         aborted='move_arm_remove_plug')
       )
   sm.add_sequence(
