@@ -23,6 +23,9 @@
   <!-- detect plug action -->
   <node pkg="pr2_plugs_actions" type="detect_plug.py" name="detect_plug" output="screen"/>
 
+  <!-- detect plug on base action -->
+  <node pkg="pr2_plugs_actions" type="detect_plug_on_base.py" name="detect_plug_on_base" output="screen"/>
+
   <!-- align base action -->
   <node pkg="pr2_plugs_actions" type="align_base" name="align_base" output="screen"/>
 

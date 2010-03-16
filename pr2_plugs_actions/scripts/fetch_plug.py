@@ -29,31 +29,14 @@ def execute_cb(goal):
   spine_goal.position = 0.16
   spine_client.send_goal(spine_goal)
 
-  # move to detection position in joint space
-  rospy.loginfo("Move in joint space to detecting position...")
-  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/detect_plug_on_base'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr('Move to detection position failed')
+  # detect plug on base
+  rospy.loginfo("Detect plug on base...")
+  if detect_plug_on_base_client.send_goal_and_wait(DetectPlugOnBaseGoal(), rospy.Duration(60.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    rospy.logerr('Detect plug on base failed')
     server.set_aborted()
     return
 
-  # check move the spine up
-  if not spine_client.wait_for_result(rospy.Duration(20.0)) or spine_client.get_state() != GoalStatus.SUCCEEDED:
-    rospy.logerr('Moving up spine failed')
-    server.set_aborted()
-    return
-
-  # call vision plug detection
-  rospy.loginfo("Detecting plug...")
-  detect_plug_goal.camera_name = "/forearm_camera_r"
-  detect_plug_goal.prior = PoseStampedMath().fromEuler(0.075, 0.03, 0.24, pi/2, 0, pi/2).msg
-  detect_plug_goal.prior.header.stamp = rospy.Time.now()
-  detect_plug_goal.prior.header.frame_id = "base_link"
-  detect_plug_goal.origin_on_right = False
-  if detect_plug_client.send_goal_and_wait(detect_plug_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr('Vision plug detection failed')
-    server.set_aborted()
-    return
-  plug_pose = detect_plug_client.get_result().plug_pose
+  plug_pose = detect_plug_on_base_client.get_result().plug_pose
   try:
     transformer.waitForTransform("base_link", plug_pose.header.frame_id, plug_pose.header.stamp, rospy.Duration(2.0))
   except rospy.ServiceException, e:
@@ -156,6 +139,9 @@ if __name__ == '__main__':
 
   joint_space_client = actionlib.SimpleActionClient('r_arm_plugs_controller/joint_trajectory_action', JointTrajectoryAction)
   joint_space_client.wait_for_server()
+
+  detect_plug_on_base_client = actionlib.SimpleActionClient('detect_plug_on_base', DetectPlugOnBaseAction)
+  detect_plug_on_base_client.wait_for_server()
 
   spine_client = actionlib.SimpleActionClient('torso_controller/position_joint_action', SingleJointPositionAction)
   spine_client.wait_for_server()

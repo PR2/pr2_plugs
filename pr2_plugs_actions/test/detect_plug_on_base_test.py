@@ -32,26 +32,39 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import roslib
-roslib.load_manifest('pr2_plugs_executive')
+roslib.load_manifest('pr2_plugs_actions')
 
 import rospy
+
+import os
+import sys
+import time
+
 from pr2_plugs_msgs.msg import *
+from actionlib_msgs.msg import *
+from pr2_common_action_msgs.msg import *
+from std_srvs.srv import *
+
+import actionlib
 
 
 def main():
-  rospy.init_node("plugs_app_test")
+  rospy.init_node("detect_plug_on_base_test")
 
-  # publisher for commands
-  pub = rospy.Publisher('recharge_command', RechargeCommand)
-  rospy.sleep(3)
+  # Construct action ac
+  rospy.loginfo("Starting action client...")
+  action_client = actionlib.SimpleActionClient('detect_plug_on_base', DetectPlugOnBaseAction)
+  action_client.wait_for_server()
+  rospy.loginfo("Action client connected to action server.")
 
-  cmd = RechargeCommand()
-#  cmd.plug_id = 'phasespace'
-  cmd.plug_id = 'wim'
-  cmd.command = RechargeCommand.PLUG_IN
-  pub.publish(cmd)
-  
-  rospy.sleep(3)
+  # Call the action
+  rospy.loginfo("Calling the action server...")
+  action_goal = DetectPlugOnBaseGoal()
+  if action_client.send_goal_and_wait(action_goal, rospy.Duration(60.0), rospy.Duration(5.0)) == GoalStatus.SUCCEEDED:
+    rospy.loginfo('Call to action server succeeded')
+  else:
+    rospy.logerr('Call to action server failed')
+
 
 if __name__ == "__main__":
   main()

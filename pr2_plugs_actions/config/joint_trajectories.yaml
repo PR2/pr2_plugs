@@ -38,11 +38,30 @@ pr2_plugs_configuration:
     waypoints:
     - [[-1.0959592119036856, 1.0969688451214317, -2.5258407319521945, -1.2660107209716225, -0.11899140067860306, -0.71846330566687477, 3.4658662593814729], [], [], 3.0]
     - [[-0.2810700699018725, 1.296359078878631, -1.8525108160250425, -1.4520410850994556, -2.6666928041551885, -0.70802116484297151, 3.2907863649007059], [], [], 9.0]
-  verify_plug_on_base:
+  detect_plug_on_base0:
     joint_names: ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint', 'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
     waypoints:
     - [[-1.1573101087478552, 1.2082957639268939, -1.7771440476311957, -1.7178401111996124, -1.1668913807880066, -0.81061519843781693, 3.2587637997074044], [], [], 3.0]
-    - [[-0.2810700699018725, 1.296359078878631, -1.8525108160250425, -1.4520410850994556, -2.6666928041551885, -0.70802116484297151, 3.2907863649007059], [], [], 6.0]
+  detect_plug_on_base1:
+    joint_names: ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint', 'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
+    waypoints:
+    - [[-0.2810700699018725, 1.296359078878631, -1.8525108160250425, -1.4520410850994556, -2.6666928041551885, -0.70802116484297151, 3.2907863649007059], [], [], 3.0]
+  detect_plug_on_base2:
+    joint_names: ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint', 'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
+    waypoints:
+    - [[-0.084001040444317443, 1.136559269134316, -1.8310232692914774, -1.4252585034935032, -1.9661645811838993, -0.49071084314553892, 3.350242977636805], [], [], 3.0]
+  detect_plug_on_base3:
+    joint_names: ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint', 'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
+    waypoints:
+    - [[-0.1815821290734897, 1.2966128636479444, -1.6664992174359741, -1.1160282639782879, -2.1521429657299516, -0.10226320449636006, 2.6564497377286722], [], [], 3.0]
+  detect_plug_on_base4:
+    joint_names: ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint', 'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
+    waypoints:
+    - [[-0.93288189556249468, 1.2471248336318386, -1.8460966229702469, -1.4811399980875448, -2.0038230347887143, -0.47787571171615917, 3.1994845694917098], [], [], 3.0]
+  detect_plug_on_base5:
+    joint_names: ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint', 'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
+    waypoints:
+    - [[-0.15347678578947149, 0.35143378780187234, -1.8587646542534677, -2.0531290787638627, -1.4652666552789957, -0.58416800351946896, 3.3579005475743324], [], [], 3.0]
   grasp_plug:
     joint_names: ['r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint', 'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
     waypoints:
