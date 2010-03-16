@@ -53,10 +53,16 @@ def execute_cb(goal):
 
     # call vision plug detection
     rospy.loginfo("Detecting plug...")
+    detect_plug_goal = VisionPlugDetectionGoal()
+    detect_plug_goal.camera_name = "/forearm_camera_r"
+    detect_plug_goal.prior = PoseStampedMath().fromEuler(0.075, 0.03, 0.24, pi/2, 0, pi/2).msg
+    detect_plug_goal.prior.header.frame_id = "base_link"
+    detect_plug_goal.origin_on_right = False
     detect_plug_goal.prior.header.stamp = rospy.Time.now()
     if detect_plug_client.send_goal_and_wait(detect_plug_goal, rospy.Duration(5.0), preempt_timeout) == GoalStatus.SUCCEEDED:
       to_init_position()
       server.set_succeeded(DetectPlugOnBaseResult(detect_plug_client.get_result().plug_pose))      
+      server.set_succeeded(plug_on_base_result)            
       rospy.loginfo("Action server goal finished")  
       return
 
@@ -83,11 +89,6 @@ if __name__ == '__main__':
 
   detect_plug_client = actionlib.SimpleActionClient('vision_plug_detection', VisionPlugDetectionAction)
   detect_plug_client.wait_for_server()
-  detect_plug_goal = VisionPlugDetectionGoal()
-  detect_plug_goal.camera_name = "/forearm_camera_r"
-  detect_plug_goal.prior = PoseStampedMath().fromEuler(0.075, 0.03, 0.24, pi/2, 0, pi/2).msg
-  detect_plug_goal.prior.header.frame_id = "base_link"
-  detect_plug_goal.origin_on_right = True
 
   rospy.loginfo('Connected to action clients')
 
