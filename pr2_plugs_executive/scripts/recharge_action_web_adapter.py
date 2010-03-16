@@ -84,6 +84,9 @@ class RechargeActionWebAdapter:
       self.recharge_client.send_goal(
           RechargeSMGoal(command = msg),
           done_cb = self.action_done_cb)
+
+      # Store recharge command
+      self.recharge_command = msg
     else:
       rospy.logerr("Invalid command for the current recharge state.")
 
@@ -91,7 +94,14 @@ class RechargeActionWebAdapter:
     rospy.loginfo("Recharge action completed.")
 
     # Store result
-    self.recharge_state = result.state
+    if result.smach.terminal_state == "SUCCEEDED":
+      if self.recharge_command == RechargeCommand.PLUG_IN:
+        self.recharge_state.state = RechargeState.PLUGGED_IN
+      elif self.recharge_command == RechargeCommand.UNPLUG:
+        self.recharge_state.state = RechargeState.UNPLUGGED
+    else:
+      self.recharge_state.state = RechargeState.FAILED
+
     # Publish result to the web
     self.recharge_state_pub.publish(self.recharge_state)
 
