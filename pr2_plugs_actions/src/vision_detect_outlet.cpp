@@ -65,6 +65,17 @@ public:
     as_.registerPreemptCallback(boost::bind(&DetectOutletAction::preemptCb, this));
   }
 
+  void timeoutCb(const ros::TimerEvent& e)
+  {
+    if(sub_.getNumPublishers() == 0)
+      ROS_INFO("%s: Aborted, there are no publishers on goal topic.", action_name_.c_str());    
+    else
+      ROS_INFO("%s: Aborted, there are publishers on goal topic, but detection took too long.", action_name_.c_str());    
+
+    sub_.shutdown();
+    as_.setAborted();
+  }
+
   void goalCb()
   {
     ROS_INFO("%s: Received new goal", action_name_.c_str());
@@ -80,20 +91,8 @@ public:
     std::string image_topic = goal->camera_name + "/image_rect_color";
     sub_ = it_.subscribeCamera(image_topic, 1, &DetectOutletAction::detectCb, this);
 
-    // Abort if no one is publishing images 
-    ros::Duration timeout = ros::Duration(0);
-    ros::Time start = ros::Time::now();
-    while(timeout<ros::Duration(5.0))
-    {
-      if(sub_.getNumPublishers()>0)
-        return;
-      ros::Duration(0.05).sleep();
-      timeout = ros::Time::now() - start;
-    }
-
-    as_.setAborted();
-    ROS_INFO("%s: Aborted, there are no publishers on %s topic", action_name_.c_str(), goal->camera_name.c_str());    
-    sub_.shutdown();
+    //create a timer for how long we can actually transform images before we have to abort
+    pub_timer_ = nh_.createTimer(tf_listener_.getCacheLength() - ros::Duration(1.0), boost::bind(&DetectOutletAction::timeoutCb, this, _1), true);
   }
 
   void preemptCb()
@@ -216,6 +215,8 @@ protected:
 
   // Subscriptions
   image_transport::CameraSubscriber sub_;
+
+  ros::Timer pub_timer_;
 
   // Publications
   image_transport::Publisher display_pub_;

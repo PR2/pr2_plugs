@@ -24,6 +24,19 @@ public:
     // Register the goal and preempt callbacks
     as_.registerGoalCallback(boost::bind(&DetectPlugAction::goalCb, this));
     as_.registerPreemptCallback(boost::bind(&DetectPlugAction::preemptCb, this));
+    
+    ROS_INFO("Finished registering callbacks");
+  }
+
+  void timeoutCb(const ros::TimerEvent& e)
+  {
+    if(sub_.getNumPublishers() == 0)
+      ROS_INFO("%s: Aborted, there are no publishers on goal topic.", name_.c_str());    
+    else
+      ROS_INFO("%s: Aborted, there are publishers on goal topic, but detection took too long.", name_.c_str());    
+
+    sub_.shutdown();
+    as_.setAborted();
   }
 
   void goalCb()
@@ -42,20 +55,8 @@ public:
     std::string image_topic = goal->camera_name + "/image_rect";
     sub_ = it_.subscribeCamera(image_topic, 1, &DetectPlugAction::detectCb, this);
 
-    // Abort if no one is publishing images    
-    ros::Duration timeout;
-    ros::Time start = ros::Time::now();
-    while(timeout<ros::Duration(5.0))
-    {
-      if(sub_.getNumPublishers()>0)
-        return;
-      ros::Duration(0.05).sleep();
-      timeout = ros::Time::now() - start;
-    }
-
-    as_.setAborted();
-    ROS_INFO("%s: Aborted, there are no publishers on %s topic", name_.c_str(), goal->camera_name.c_str());
-    sub_.shutdown();
+    //create a timer for how long we can actually transform images before we have to abort
+    pub_timer_ = nh_.createTimer(tf_listener_.getCacheLength() - ros::Duration(1.0), boost::bind(&DetectPlugAction::timeoutCb, this, _1), true);
   }
 
   void preemptCb()
@@ -92,6 +93,7 @@ protected:
   tf::TransformListener tf_listener_;
   tf::Stamped<tf::Pose> plug_prior_;
   checkerboard_pose_estimation::RosDetector detector_;
+  ros::Timer pub_timer_;
 };
 
 int main(int argc, char** argv)
