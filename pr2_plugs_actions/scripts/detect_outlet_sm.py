@@ -17,6 +17,7 @@ from geometry_msgs.msg import *
 from trajectory_msgs.msg import *
 from move_base_msgs.msg import *
 
+import dynamic_reconfigure.client
 from executive_python import *
 from pr2_arm_ik_action.tools import *
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
