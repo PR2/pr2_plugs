@@ -30,6 +30,7 @@ from smach.simple_action_state import *
 from smach.joint_trajectory_state import *
 
 import actionlib
+import dynamic_reconfigure.client
 
 class TFUtil():
   transformer = None

@@ -38,6 +38,7 @@ import rospy
 
 import actionlib
 from pr2_plugs_msgs.msg import *
+from pr2_plugs_msgs.srv import *
 
 class RechargeActionWebAdapter:
   def __init__(self):
@@ -58,6 +59,11 @@ class RechargeActionWebAdapter:
 
     # Construct subscriber for recharge commands
     self.recharge_command_sub = rospy.Subscriber("recharge_command", RechargeCommand, self.recharge_command_cb)
+    self.recharge_request_srv = rospy.Service('recharge_request', RechargeRequest, self.recharge_request_cb)
+
+
+  def recharge_request_cb(self, req):
+    self.recharge_command_cb(req.command)
 
   def recharge_command_cb(self,msg):
     if self.recharge_state.state == RechargeState.WAITING_FOR_STATE:
