@@ -148,13 +148,13 @@ def main():
         goal = open_gripper_goal),
 
       # Grasp the plug
-      GraspPlugState('grasp_plug',aborted = 'recover_grasp_to_detect_pose'),
+      GraspPlugState('grasp_plug',aborted = 'detect_plug_on_base'),
 
       # Close the gripper
       SimpleActionState('close_gripper',
         'r_gripper_controller/gripper_action', Pr2GripperCommandAction,
         goal = close_gripper_goal,
-        succeeded='recover_grasp_to_detect_pose',
+        succeeded='detect_plug_on_base',
         aborted='move_arm_remove_plug')
       )
   sm.add_sequence(
