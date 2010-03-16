@@ -61,14 +61,12 @@ def execute_cb(goal):
     server.set_aborted()
     return
 
-
   # grasp plug
   cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/grasp_plug_seed')
-
-  pose_tf_plug = PoseStampedMath(detect_plug_client.get_result().plug_pose)
+  pose_tf_plug = PoseStampedMath(detect_plug_on_base_client.get_result().plug_pose)
   pose_plug_gripper = PoseStampedMath()
   pose_plug_gripper.fromEuler(-.03, 0, .01, pi/2, 0, -pi/9)
-  pose_tf_plug = detect_plug_client.get_result().plug_pose
+  pose_tf_plug = detect_plug_on_base_client.get_result().plug_pose
   try:
     transformer.waitForTransform("base_link", pose_tf_plug.header.frame_id, pose_tf_plug.header.stamp, rospy.Duration(2.0))
   except rospy.ServiceException, e:
@@ -150,10 +148,6 @@ if __name__ == '__main__':
   cart_space_client = actionlib.SimpleActionClient('r_arm_ik', PR2ArmIKAction)
   cart_space_client.wait_for_server()
   cart_space_goal = PR2ArmIKGoal()
-
-  detect_plug_client = actionlib.SimpleActionClient('vision_plug_detection', VisionPlugDetectionAction)
-  detect_plug_client.wait_for_server()
-  detect_plug_goal = VisionPlugDetectionGoal()
   rospy.loginfo('Connected to action clients')
 
   # create action server
