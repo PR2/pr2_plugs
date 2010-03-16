@@ -127,7 +127,7 @@ def main():
   if(not sim):
     #this ensures that the forearm camera triggers when the texture projector is off
     projector_client = dynamic_reconfigure.client.Client('camera_synchronizer_node')
-    forearm_projector_off = {'forearm_camera_r_trig_mode': 4} #off
+    forearm_projector_off = {'forearm_r_trig_mode': 4} #off
     projector_client.update_configuration(forearm_projector_off)
 
 
