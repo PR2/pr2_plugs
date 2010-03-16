@@ -62,7 +62,6 @@ def execute_cb(goal):
     if detect_plug_client.send_goal_and_wait(detect_plug_goal, rospy.Duration(5.0), preempt_timeout) == GoalStatus.SUCCEEDED:
       to_init_position()
       server.set_succeeded(DetectPlugOnBaseResult(detect_plug_client.get_result().plug_pose))      
-      server.set_succeeded(plug_on_base_result)            
       rospy.loginfo("Action server goal finished")  
       return
 
