@@ -88,7 +88,7 @@ def execute_cb(goal):
     cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout)
     plug_error = outlet_to_plug_error(goal)
     print math.fabs(plug_error.pose.position.z - start_error.pose.position.z)
-    if (math.fabs(plug_error.pose.position.z -start_error.pose.position.z) >= math.fabs(motion)) and (motion != 0.0 ):
+    if (math.fabs(plug_error.pose.position.z -start_error.pose.position.z) >= math.fabs(motion)/2) and (motion != 0.0 ):
       rospy.logerr("we're not in the outlet")
       pose_outlet_plug = PoseStampedMath().fromEuler(offset-0.05, 0, 0, 0, 0, 0)
       cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
