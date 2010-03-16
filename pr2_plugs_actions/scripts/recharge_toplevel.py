@@ -41,6 +41,7 @@ import threading
 import tf
 
 from pr2_plugs_msgs.msg import *
+from pr2_plugs_msgs.srv import *
 from actionlib_msgs.msg import *
 from move_base_msgs.msg import *
 from geometry_msgs.msg import *

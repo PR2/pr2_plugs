@@ -140,7 +140,7 @@ def main():
       # Detect the plug
       SimpleActionState('detect_plug_on_base',
         'vision_plug_detection',VisionPlugDetectionAction,
-        exec_timeout = rospy.Duration(5.0),
+        exec_timeout = rospy.Duration(9.0),
         aborted = 'move_arm_base_detect_pose',
         preempted = 'move_arm_base_detect_pose',
         goal_cb = get_detect_plug_goal,
