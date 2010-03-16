@@ -63,6 +63,7 @@ public:
   {
     ROS_INFO("%s: Preempted", name_.c_str());
     as_.setPreempted();
+    pub_timer_.stop();
     sub_.shutdown();
   }
 
@@ -78,6 +79,7 @@ public:
       pr2_plugs_msgs::VisionPlugDetectionResult result;
       tf::poseStampedTFToMsg(plug_pose, result.plug_pose);
       as_.setSucceeded(result);
+      pub_timer_.stop();
       
       // Shut down the camera subscription and wait for the next goal
       sub_.shutdown();

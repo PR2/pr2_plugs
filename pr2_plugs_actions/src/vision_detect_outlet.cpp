@@ -99,6 +99,7 @@ public:
   {
     ROS_INFO("%s: Preempted", action_name_.c_str());
     as_.setPreempted();
+    pub_timer_.stop();
     sub_.shutdown();
   }
 
@@ -158,6 +159,7 @@ public:
         ROS_ERROR("Wall normal differs from prior orientation by %f radians, threshold is %f. Aborting.",
                   angle, ANGLE_THRESHOLD);
         as_.setAborted();
+        pub_timer_.stop();
         sub_.shutdown();
         return;
       }
@@ -182,6 +184,7 @@ public:
     result.outlet_pose.header.stamp = image_msg->header.stamp;
     result.outlet_pose.header.frame_id = cam_model_.tfFrame();
     as_.setSucceeded(result);
+    pub_timer_.stop();
 
     // Publish visualization messages
     tf_broadcaster_.sendTransform(tf::StampedTransform(prior_, prior_.stamp_,
