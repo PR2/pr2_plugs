@@ -105,7 +105,7 @@ def store_detect_plug_result(state, result_state, result):
     state.sm_userdata.sm_result.plug_on_base_pose = TFUtil.wait_and_transform('base_link',result.plug_pose) 
 
 def main():
-  rospy.init_node("fetch_plug_sm")#,log_level=rospy.DEBUG)
+  rospy.init_node("fetch_plug_sm",log_level=rospy.DEBUG)
 
   TFUtil()
   # Define fixed goals
