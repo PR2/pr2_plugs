@@ -99,7 +99,7 @@ void MoveBaseOmnidirectionalAction::execute(const move_base_msgs::MoveBaseGoalCo
   ros::Time goal_reached_time = ros::Time::now();
   while (goal_reached_time + ros::Duration(0.5) > ros::Time::now()) {
     diff = diff2D(desired_pose, robot_pose);
-    ROS_INFO("Angular error: %f", fabs(diff.angular.z));
+    ROS_DEBUG("Angular error: %f", fabs(diff.angular.z));
     // check for bounds
     if (fabs(diff.linear.x) > tolerance_trans || fabs(diff.linear.y) > tolerance_trans || fabs(diff.angular.z) > tolerance_rot)
       goal_reached_time = ros::Time::now();
@@ -154,7 +154,7 @@ geometry_msgs::Twist MoveBaseOmnidirectionalAction::limitTwist(const geometry_ms
   if (fabs(res.linear.y) > 0.1) res.linear.y = 0.1 * res.linear.y / fabs(res.linear.y);
   if (fabs(res.angular.z) > 0.2) res.angular.z = 0.2 * res.angular.z / fabs(res.angular.z);
 
-  ROS_INFO("Angular command %f", res.angular.z);
+  ROS_DEBUG("Angular command %f", res.angular.z);
   return res;
 }
 
