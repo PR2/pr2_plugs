@@ -61,7 +61,7 @@ public:
 
 private:
   void lockWheels();
-  geometry_msgs::Twist diff2D(const tf::Pose& pose1, const tf::Pose& pose2, double K_trans, double K_rot);
+  geometry_msgs::Twist diff2D(const tf::Pose& pose1, const tf::Pose& pose2);
   geometry_msgs::Twist limitTwist(const geometry_msgs::Twist& twist);
   std::vector<geometry_msgs::Point> getOrientedFootprint(const tf::Vector3 pos, double theta_cost);
 

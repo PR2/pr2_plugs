@@ -93,14 +93,15 @@ void MoveBaseOmnidirectionalAction::execute(const move_base_msgs::MoveBaseGoalCo
   ROS_INFO("MoveBaseOmnidirectionalAction: desired robot pose %f %f ==> %f", desired_pose.getOrigin().x(), desired_pose.getOrigin().y(), tf::getYaw(desired_pose.getRotation()));
 
   // command base to desired pose
-  geometry_msgs::Twist diff = diff2D(desired_pose, robot_pose, K_trans, K_rot);
+  geometry_msgs::Twist diff = diff2D(desired_pose, robot_pose);
   ROS_INFO("MoveBaseOmnidirectionalAction: diff %f %f ==> %f", diff.linear.x, diff.linear.y, diff.angular.z);
-  diff = limitTwist(diff);
   ROS_INFO("MoveBaseOmnidirectionalAction: diff limit %f %f ==> %f", diff.linear.x, diff.linear.y, diff.angular.z);
   ros::Time goal_reached_time = ros::Time::now();
   while (goal_reached_time + ros::Duration(0.5) > ros::Time::now()) {
+    diff = diff2D(desired_pose, robot_pose);
+    ROS_INFO("Angular error: %f", fabs(diff.angular.z));
     // check for bounds
-    if (fabs(diff.linear.x) > tolerance_trans || abs(diff.linear.y) > tolerance_trans || abs(diff.angular.z) > tolerance_rot)
+    if (fabs(diff.linear.x) > tolerance_trans || fabs(diff.linear.y) > tolerance_trans || fabs(diff.angular.z) > tolerance_rot)
       goal_reached_time = ros::Time::now();
     // check for preemption
     if (action_server_.isPreemptRequested()){
@@ -109,12 +110,10 @@ void MoveBaseOmnidirectionalAction::execute(const move_base_msgs::MoveBaseGoalCo
       action_server_.setPreempted();
       return;
     }
-    base_pub_.publish(diff);
+    base_pub_.publish(limitTwist(diff));
     costmap_ros_.getRobotPose(robot_pose);
-    diff = limitTwist(diff2D(desired_pose, robot_pose, K_trans, K_rot));
     ros::Duration(0.01).sleep();
   }
-
   costmap_ros_.stop();
   lockWheels();
   action_server_.setSucceeded();
@@ -133,23 +132,29 @@ void MoveBaseOmnidirectionalAction::lockWheels()
   base_pub_.publish(twist);
 }
 
-geometry_msgs::Twist MoveBaseOmnidirectionalAction::diff2D(const tf::Pose& pose1, const tf::Pose& pose2, double K_trans, double K_rot)
+geometry_msgs::Twist MoveBaseOmnidirectionalAction::diff2D(const tf::Pose& pose1, const tf::Pose& pose2)
 {
   geometry_msgs::Twist res;
   tf::Pose diff = pose2.inverse() * pose1;
-  res.linear.x = diff.getOrigin().x() * K_trans;
-  res.linear.y = diff.getOrigin().y() * K_trans;
-  res.angular.z = tf::getYaw(diff.getRotation()) * K_rot;
+  res.linear.x = diff.getOrigin().x();
+  res.linear.y = diff.getOrigin().y();
+  res.angular.z = tf::getYaw(diff.getRotation());
   return res;
 }
 
 
 geometry_msgs::Twist MoveBaseOmnidirectionalAction::limitTwist(const geometry_msgs::Twist& twist)
 {
-  geometry_msgs::Twist res;
-  if (fabs(twist.linear.x) > 0.1) res.linear.x = 0.1 * twist.linear.x / fabs(twist.linear.x);
-  if (fabs(twist.linear.y) > 0.1) res.linear.y = 0.1 * twist.linear.y / fabs(twist.linear.y);
-  if (fabs(twist.angular.z) > 0.2) res.angular.z = 0.2 * twist.angular.z / fabs(twist.angular.z);
+  geometry_msgs::Twist res = twist;
+  res.linear.x *= K_trans;
+  res.linear.y *= K_trans;
+  res.angular.z *= K_rot;
+
+  if (fabs(res.linear.x) > 0.1) res.linear.x = 0.1 * res.linear.x / fabs(res.linear.x);
+  if (fabs(res.linear.y) > 0.1) res.linear.y = 0.1 * res.linear.y / fabs(res.linear.y);
+  if (fabs(res.angular.z) > 0.2) res.angular.z = 0.2 * res.angular.z / fabs(res.angular.z);
+
+  ROS_INFO("Angular command %f", res.angular.z);
   return res;
 }
 

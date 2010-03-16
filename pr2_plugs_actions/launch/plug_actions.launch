@@ -29,7 +29,7 @@
   <!-- move base omnidirectional action -->
   <node pkg="pr2_plugs_actions" type="move_base_omnidirectional" name="move_base_omnidirectional" output="screen">\
     <param name="k_trans" value="5.0" />
-    <param name="k_rot" value="2.0" />
+    <param name="k_rot" value="5.0" />
     <param name="tolerance_trans" value="0.02" />
     <param name="tolerance_rot" value="0.03" />
   </node>
@@ -87,12 +87,13 @@
   <node pkg="pr2_plugs_actions" type="wiggle_plug2.py" name="wiggle_plug2" output="screen"/>
 
 
-  <!-- tf frames for debugging -->
+  <!-- tf frames for debugging 
   <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_outlet_detection/goal VisionOutletDetectionActionGoal goal.prior outlet_detection_prior" name="tf_outlet_detection_prior" output="screen" />
   <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_outlet_detection/result VisionOutletDetectionActionResult result.outlet_pose outlet_detection_result" name="tf_outlet_detection_result" output="screen" />
   <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_plug_detection/goal VisionPlugDetectionActionGoal goal.prior plug_detection_prior" name="tf_plug_detection_prior" output="screen" />   
   <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_plug_detection/result VisionPlugDetectionActionResult result.plug_pose plug_detection_result" name="tf_plug_detection_result" output="screen" />
   <node pkg="pr2_plugs_actions" type="tf_publish.py" args="r_arm_ik/goal PR2ArmIKActionGoal goal.pose r_arm_ik_goal" name="tf_r_arm_ik_goal" output="screen" />        
+  -->
 
 </launch>
 
