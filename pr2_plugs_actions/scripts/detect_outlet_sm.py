@@ -121,6 +121,15 @@ def store_precise_outlet_result(state, result_state, result):
 def main():
   rospy.init_node("detect_outlet_sm")#,log_level=rospy.DEBUG)
 
+  #check to see if this is running in sim where the dynamic reconfigure doesn't exist
+  sim = rospy.get_param('~sim', False)
+  if(not sim):
+    #this ensures that the forearm camera triggers when the texture projector is off
+    projector_client = dynamic_reconfigure.client.Client('camera_synchronizer_node')
+    forearm_projector_off = {'forearm_camera_r_trig_mode': 4} #off
+    projector_client.update_configuration(forearm_projector_off)
+
+
   # Define fixed goals
   # Declare wall norm goal
   # This is the point at which we want the head to look
