@@ -152,7 +152,7 @@ if __name__ == '__main__':
   transformer = tf.TransformListener(True, rospy.Duration(60.0))  
 
   # create action clients we use
-  joint_space_client = actionlib.SimpleActionClient('r_arm_plugs_controller/joint_trajectory_action', JointTrajectoryAction)
+  joint_space_client = actionlib.SimpleActionClient('r_arm_plugs_controller/joint_trajectory_generator', JointTrajectoryAction)
   joint_space_client.wait_for_server()
 
   spine_client = actionlib.SimpleActionClient('torso_controller/position_joint_action', SingleJointPositionAction)

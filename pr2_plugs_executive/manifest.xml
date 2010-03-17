@@ -21,6 +21,7 @@
   <depend package="stereo_wall_detection"/>
   <depend package="executive_python"/>
   <depend package="actionlib"/>
+  <depend package="joint_trajectory_generator"/>
 
 </package>
 

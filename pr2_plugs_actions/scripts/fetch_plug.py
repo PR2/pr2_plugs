@@ -135,7 +135,7 @@ if __name__ == '__main__':
   gripper_client.wait_for_server()
   gripper_goal = Pr2GripperCommandGoal()
 
-  joint_space_client = actionlib.SimpleActionClient('r_arm_plugs_controller/joint_trajectory_action', JointTrajectoryAction)
+  joint_space_client = actionlib.SimpleActionClient('r_arm_plugs_controller/joint_trajectory_generator', JointTrajectoryAction)
   joint_space_client.wait_for_server()
 
   detect_plug_on_base_client = actionlib.SimpleActionClient('detect_plug_on_base', DetectPlugOnBaseAction)

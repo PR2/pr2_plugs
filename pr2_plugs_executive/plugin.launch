@@ -1,4 +1,7 @@
 <launch>
+  <!-- Trajectory generator -->
+  <node pkg="joint_trajectory_generator" type="joint_trajectory_generator" output="screen" name="r_arm_joint_trajectory_generator" ns="r_arm_plugs_controller" />
+
   <!-- machine file -->
   <include file="$(find pr2_machine)/$(env ROBOT).machine" />
 

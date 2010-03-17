@@ -66,7 +66,7 @@ TEST(ActionServerTest, detect_outlet)
 {
   ros::NodeHandle n;
   boost::thread spin_thread(&spinThread);
-  actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> arm_server(n, "r_arm_plugs_controller/joint_trajectory_action", boost::bind(&arm_execute, _1, &arm_server));
+  actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> arm_server(n, "r_arm_plugs_controller/joint_trajectory_generator", boost::bind(&arm_execute, _1, &arm_server));
   actionlib::SimpleActionServer<pr2_plugs_msgs::DetectWallNormAction> norm_server(n, "detect_wall_norm", boost::bind(&norm_execute, _1, &norm_server));
   actionlib::SimpleActionServer<pr2_plugs_msgs::VisionOutletDetectionAction> outlet_server(n, "vision_outlet_detection", boost::bind(&outlet_execute, _1, &outlet_server));
 
