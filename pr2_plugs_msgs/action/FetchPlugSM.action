@@ -4,3 +4,4 @@ executive_python_msgs/Smach smach_info
 geometry_msgs/PoseStamped plug_on_base_pose
 executive_python_msgs/Smach smach_info
 ---
+executive_python_msgs/Smach smach_info

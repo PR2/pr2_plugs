@@ -4,3 +4,4 @@ executive_python_msgs/Smach smach_info
 RechargeState state
 executive_python_msgs/Smach smach_info
 ---
+executive_python_msgs/Smach smach_info
