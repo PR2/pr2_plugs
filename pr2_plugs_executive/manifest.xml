@@ -20,6 +20,7 @@
   <depend package="visual_pose_estimation"/>
   <depend package="stereo_wall_detection"/>
   <depend package="executive_python"/>
+  <depend package="actionlib"/>
 
 </package>
 

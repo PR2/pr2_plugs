@@ -39,6 +39,7 @@ import rospy
 import actionlib
 from pr2_plugs_msgs.msg import *
 from pr2_plugs_msgs.srv import *
+from actionlib import GoalStatus
 
 class RechargeActionWebAdapter:
   def __init__(self):
@@ -91,10 +92,10 @@ class RechargeActionWebAdapter:
       rospy.logerr("Invalid command for the current recharge state.")
 
   def action_done_cb(self,result_state,result):
-    rospy.loginfo("Recharge action completed.")
+    rospy.loginfo("Recharge action completed with state: %d and result: %s" % (result_state, str(result)))
 
     # Store result
-    if result.smach.terminal_state == "SUCCEEDED":
+    if result_state == GoalStatus.SUCCEEDED:
       if self.recharge_command == RechargeCommand.PLUG_IN:
         self.recharge_state.state = RechargeState.PLUGGED_IN
       elif self.recharge_command == RechargeCommand.UNPLUG:
