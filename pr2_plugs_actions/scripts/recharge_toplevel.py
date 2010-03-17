@@ -182,8 +182,7 @@ def main():
         goal = TuckArmsGoal(False,True,True)),
       # Navigate to the requested outlet
       NavigateToOutletState('navigate_to_outlet',
-        exec_timeout = rospy.Duration(20*60.0),
-        aborted='navigate_to_outlet'),
+        exec_timeout = rospy.Duration(20*60.0)),
       # Untuck the arms
       SimpleActionState('untuck','tuck_arms',TuckArmsAction,
         goal = TuckArmsGoal(True,True,True),

@@ -131,7 +131,6 @@ def main():
     forearm_projector_off = {'forearm_r_trig_mode': 4} #off
     projector_client.update_configuration(forearm_projector_off)
 
-
   # Define fixed goals
   # Declare wall norm goal
   # This is the point at which we want the head to look
@@ -181,8 +180,7 @@ def main():
 
       # Search side-to-side for the outlet
       OutletSearchState('outlet_search',
-        offsets = (0.0, 0.1, -0.2, 0.3, -0.4),
-        aborted = 'recover_move_arm_outlet_to_free'),
+        offsets = (0.0, 0.1, -0.2, 0.3, -0.4)),
 
       # Align precisely
       SimpleActionState('precise_align_base',
