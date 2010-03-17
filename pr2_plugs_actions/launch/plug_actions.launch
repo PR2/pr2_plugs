@@ -80,7 +80,6 @@
 
   <!-- wiggle plug action -->
   <node pkg="pr2_plugs_actions" type="wiggle_plug.py" name="wiggle_plug" output="screen"/>
-  <node pkg="pr2_plugs_actions" type="wiggle_plug2.py" name="wiggle_plug2" output="screen"/>
 
 
   <!-- tf frames for debugging 
