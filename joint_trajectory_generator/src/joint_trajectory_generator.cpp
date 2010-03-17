@@ -57,6 +57,8 @@ namespace joint_trajectory_generator {
           ac_("joint_trajectory_action"),
           got_state_(false)
       {
+        printf("Here\n");
+        ROS_INFO("Here");
         ros::NodeHandle n;
         state_sub_ = n.subscribe("state", 1, &JointTrajectoryGenerator::jointStateCb, this);
 
@@ -65,8 +67,11 @@ namespace joint_trajectory_generator {
         pn.param("max_vel", max_vel_, 5.0);
 
         ros::Rate r(10.0);
-        while(!got_state_)
+        while(!got_state_){
+          ROS_INFO("Here");
+          ros::spinOnce();
           r.sleep();
+        }
 
         ac_.waitForServer();
         as_.start();
@@ -86,6 +91,7 @@ namespace joint_trajectory_generator {
         new_goal.trajectory.joint_names = goal.trajectory.joint_names;
         new_goal.trajectory.set_points_size(goal.trajectory.points.size() + 1);
 
+        new_goal.trajectory.points[0].set_positions_size(new_goal.trajectory.joint_names.size());
 
         {
           boost::mutex::scoped_lock lock(mutex_);
@@ -166,7 +172,8 @@ namespace joint_trajectory_generator {
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "joint_trajectory_generator_node");
-  joint_trajectory_generator::JointTrajectoryGenerator jtg();
+  ROS_INFO("Here");
+  joint_trajectory_generator::JointTrajectoryGenerator jtg;
 
   ros::spin();
 
