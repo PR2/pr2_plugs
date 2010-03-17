@@ -87,7 +87,7 @@ class RechargeActionWebAdapter:
           done_cb = self.action_done_cb)
 
       # Store recharge command
-      self.recharge_command = msg
+      self.recharge_command = msg.command
     else:
       rospy.logerr("Invalid command for the current recharge state.")
 
