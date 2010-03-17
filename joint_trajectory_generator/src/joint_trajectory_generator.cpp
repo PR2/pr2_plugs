@@ -126,29 +126,43 @@ namespace joint_trajectory_generator {
 
         ac_.sendGoal(full_goal, JTAC::SimpleDoneCallback(), JTAC::SimpleActiveCallback(), boost::bind(&JointTrajectoryGenerator::feedbackCb, this, _1)); 
 
-        while(!ac_.waitForResult(ros::Duration(0.05))){
+        while(ros::ok() && !ac_.waitForResult(ros::Duration(0.05))){
           if(as_.isPreemptRequested()){
             if(as_.isNewGoalAvailable()){
+              ROS_INFO("Preempted by new goal");
               boost::shared_ptr<const pr2_controllers_msgs::JointTrajectoryGoal> new_goal = as_.acceptNewGoal();
               full_goal = createGoal(*new_goal);
               ac_.sendGoal(full_goal, JTAC::SimpleDoneCallback(), 
                   JTAC::SimpleActiveCallback(), 
                   boost::bind(&JointTrajectoryGenerator::feedbackCb, this, _1)); 
             }
-            else
+            else{
+              ROS_INFO("Preempted by cancel");
               ac_.cancelGoal();
+            }
           }
+        }
+
+        if(!ros::ok()){
+          as_.setAborted();
+          return;
         }
 
         actionlib::SimpleClientGoalState state = ac_.getState();
         pr2_controllers_msgs::JointTrajectoryResultConstPtr result = ac_.getResult();
 
-        if(state == actionlib::SimpleClientGoalState::PREEMPTED)
+        if(state == actionlib::SimpleClientGoalState::PREEMPTED){
+          ROS_INFO("Preempted");
           as_.setPreempted(*result);
-        else if(state == actionlib::SimpleClientGoalState::SUCCEEDED)
+        }
+        else if(state == actionlib::SimpleClientGoalState::SUCCEEDED){
+          ROS_INFO("Succeeded ");
           as_.setSucceeded(*result);
-        else if(state == actionlib::SimpleClientGoalState::ABORTED)
+        }
+        else if(state == actionlib::SimpleClientGoalState::ABORTED){
+          ROS_INFO("Aborted ");
           as_.setAborted(*result);
+        }
         else
           as_.setAborted(*result, "Unknown result from joint_trajectory_action");
 
