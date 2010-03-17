@@ -18,30 +18,34 @@ def execute_cb(goal):
   rospy.loginfo("Action server received goal")
   preempt_timeout = rospy.Duration(5.0)
 
-  # move to joint space position
-  rospy.loginfo("Move in joint space to detect plug in gripper...")
-  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/detect_plug_in_gripper'), rospy.Duration(10.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr('Move to detect plug in gripper failed')
-    server.set_aborted()
-    return
+  for i in range(1,5):
+    rospy.loginfo('Detecting plug in gripper from position %i'%i)
 
-  # call vision plug detection
-  rospy.loginfo("Detecting plug...")
-  detect_plug_goal.camera_name = "/forearm_camera_r"
-  detect_plug_goal.prior = PoseStampedMath().fromEuler(-.03, 0, 0, pi/2, 0, -pi/9).inverse().msg
-  detect_plug_goal.prior.header.stamp = rospy.Time.now()
-  detect_plug_goal.prior.header.frame_id = "r_gripper_tool_frame"
-  detect_plug_goal.origin_on_right = True
-  if detect_plug_client.send_goal_and_wait(detect_plug_goal, rospy.Duration(10.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr('Vision plug detection failed')
-    server.set_aborted()
-    return
+    # move to joint space position
+    rospy.loginfo("Move in joint space...")
+    if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/detect_plug_in_gripper%i'%i), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+      rospy.logerr('Move retract in joint space failed')
+      server.set_aborted()
+      return
 
-  # return result
-  result = DetectPlugInGripperResult()
-  result.plug_pose = detect_plug_client.get_result().plug_pose
-  server.set_succeeded(result)
-  rospy.loginfo("Action server goal finished")  
+    # call vision plug detection
+    rospy.loginfo("Detecting plug...")
+    detect_plug_goal = VisionPlugDetectionGoal()
+    detect_plug_goal.camera_name = "/forearm_camera_r"
+    detect_plug_goal.prior = PoseStampedMath().fromEuler(-.03, 0, 0, pi/2, 0, -pi/9).inverse().msg
+    detect_plug_goal.prior.header.stamp = rospy.Time.now()
+    detect_plug_goal.prior.header.frame_id = "r_gripper_tool_frame"
+    detect_plug_goal.origin_on_right = True
+    detect_plug_goal.prior.header.stamp = rospy.Time.now()
+    if detect_plug_client.send_goal_and_wait(detect_plug_goal, rospy.Duration(5.0), preempt_timeout) == GoalStatus.SUCCEEDED:
+      server.set_succeeded(DetectPlugInGripperResult(detect_plug_client.get_result().plug_pose))      
+      rospy.loginfo("Action server goal finished")  
+      return
+
+  # Failure
+  rospy.logerr("Failed to detect plug in gripper")      
+  server.set_aborted(DetectPlugInGripperResult(detect_plug_goal.prior))      
+
 
 
 if __name__ == '__main__':
