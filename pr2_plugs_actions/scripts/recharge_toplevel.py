@@ -153,6 +153,14 @@ class ProcessRechargeCommandState(State):
       self.next_state_label = "navigate_and_plug_in"
     elif command is RechargeCommand.UNPLUG:
       self.next_state_label = "unplug"
+    # Set the default result, which is error
+    self.sm_userdata.sm_result.state.state = RechargeState.FAILED
+
+class TrivialFailureState(State):
+  def enter(self):
+    self.sm_userdata.sm_result.state.state = RechargeState.UNPLUGGED
+    self.next_state_label = 'ABORTED'
+    
 
 def main():
   rospy.init_node("recharge_toplevel")
@@ -179,20 +187,22 @@ def main():
       EmptyState('navigate_and_plug_in'),
       # Tuck the arms
       SimpleActionState('tuck','tuck_arms',TuckArmsAction,
-        goal = TuckArmsGoal(False,True,True)),
+        goal = TuckArmsGoal(False,True,True),
+        aborted = 'fail_still_unplugged'),
       # Navigate to the requested outlet
       NavigateToOutletState('navigate_to_outlet',
-        exec_timeout = rospy.Duration(20*60.0)),
+        exec_timeout = rospy.Duration(20*60.0),
+        aborted = 'fail_still_unplugged'),
       # Untuck the arms
       SimpleActionState('untuck','tuck_arms',TuckArmsAction,
         goal = TuckArmsGoal(True,True,True),
-        aborted='untuck'),
+        aborted = 'fail_still_unplugged'),
       # Perform outlet detection
       SimpleActionState('detect_outlet','detect_outlet_sm',DetectOutletSMAction,
         exec_timeout = rospy.Duration(300.0),
         goal = DetectOutletSMGoal(),
         result_cb = store_outlet_result,
-        aborted="tuck"),
+        aborted = 'fail_still_unplugged'),
       # Once we have the outlet pose, we will fetch the plug and plug in
       SimpleActionState('fetch_plug','fetch_plug_sm',FetchPlugSMAction,
         exec_timeout=rospy.Duration(300.0),
@@ -217,6 +227,11 @@ def main():
       SimpleActionState('recover_stow_plug','stow_plug',StowPlugAction,
         goal_cb = get_stow_plug_goal,succeeded = 'detect_outlet')
       )
+
+  # Add some other terminal states
+  sm.add(TrivialFailureState('fail_still_unplugged'))
+
+
 
   # Define nominal unplug sequence
   sm.add_sequence(

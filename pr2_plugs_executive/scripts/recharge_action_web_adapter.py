@@ -36,16 +36,15 @@ roslib.load_manifest('pr2_plugs_executive')
 
 import rospy
 
-import actionlib
+from actionlib import *
 from pr2_plugs_msgs.msg import *
 from pr2_plugs_msgs.srv import *
-from actionlib import GoalStatus
 
 class RechargeActionWebAdapter:
   def __init__(self):
     # Construct action client
-    self.recharge_client = actionlib.SimpleActionClient('recharge',RechargeSMAction)
-    if self.recharge_client.wait_for_server(rospy.Duration(60.0)):
+    self.recharge_client = SimpleActionClient('recharge',RechargeSMAction)
+    if self.recharge_client.wait_for_server(rospy.Duration(120.0)):
       rospy.loginfo("Recharge action web adapter connected to recharge action server.")
     else:
       rospy.logerr("Recharge action web adapter timed out while waiting for recharge action server.")
@@ -95,13 +94,7 @@ class RechargeActionWebAdapter:
     rospy.loginfo("Recharge action completed with state: %d and result: %s" % (result_state, str(result)))
 
     # Store result
-    if result_state == GoalStatus.SUCCEEDED:
-      if self.recharge_command == RechargeCommand.PLUG_IN:
-        self.recharge_state.state = RechargeState.PLUGGED_IN
-      elif self.recharge_command == RechargeCommand.UNPLUG:
-        self.recharge_state.state = RechargeState.UNPLUGGED
-    else:
-      self.recharge_state.state = RechargeState.FAILED
+    self.recharge_state.state = result.state.state
 
     # Publish result to the web
     self.recharge_state_pub.publish(self.recharge_state)
