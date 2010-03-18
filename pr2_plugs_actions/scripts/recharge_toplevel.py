@@ -199,7 +199,6 @@ def main():
         aborted = 'fail_still_unplugged'),
       # Perform outlet detection
       SimpleActionState('detect_outlet','detect_outlet_sm',DetectOutletSMAction,
-        exec_timeout = rospy.Duration(300.0),
         goal = DetectOutletSMGoal(),
         result_cb = store_outlet_result,
         aborted = 'fail_still_unplugged'),
@@ -211,7 +210,6 @@ def main():
         aborted='fetch_plug' ),
       # Re-detect the plug in the gripper, plug, and wiggle in
       SimpleActionState('plug_in','plug_in_sm',PlugInSMAction,
-        exec_timeout = rospy.Duration(100.0),
         goal = PluginGoal(),
         goal_cb = get_plug_in_goal,
         result_cb = store_plug_in_result,

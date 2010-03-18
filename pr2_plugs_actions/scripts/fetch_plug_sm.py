@@ -131,7 +131,6 @@ def main():
       # Detect the plug
       SimpleActionState('detect_plug_on_base',
         'detect_plug_on_base',DetectPlugOnBaseAction,
-        exec_timeout = rospy.Duration(120.0),
         aborted = 'move_arm_base_detect_pose',
         goal = DetectPlugOnBaseGoal(),
         result_cb = store_detect_plug_result),
