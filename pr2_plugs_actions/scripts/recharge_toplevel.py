@@ -156,10 +156,10 @@ class ProcessRechargeCommandState(State):
     # Set the default result, which is error
     self.sm_userdata.sm_result.state.state = RechargeState.FAILED
 
-class TrivialFailureState(State):
+class RemainUnpluggedState(State):
   def enter(self):
     self.sm_userdata.sm_result.state.state = RechargeState.UNPLUGGED
-    self.next_state_label = 'ABORTED'
+    self.next_state_label = self.succeeded_label
     
 
 def main():
@@ -169,6 +169,10 @@ def main():
   close_gripper_goal = Pr2GripperCommandGoal()
   close_gripper_goal.command.position = 0.0
   close_gripper_goal.command.max_effort = 99999
+
+  open_gripper_goal = Pr2GripperCommandGoal()
+  open_gripper_goal.command.position = 0.07
+  open_gripper_goal.command.max_effort = 99999
 
   # Construct state machine
   sm = StateMachine('recharge',RechargeSMAction)
@@ -207,12 +211,14 @@ def main():
         exec_timeout=rospy.Duration(300.0),
         goal = FetchPlugSMGoal(),
         result_cb = store_fetch_plug_result,
-        aborted='fetch_plug' ),
+        aborted = 'fail_open_gripper'
+        ),
       # Re-detect the plug in the gripper, plug, and wiggle in
       SimpleActionState('plug_in','plug_in_sm',PlugInSMAction,
         goal = PluginGoal(),
         goal_cb = get_plug_in_goal,
         result_cb = store_plug_in_result,
+        exec_timeout = rospy.Duration(5*60.0),
         aborted = 'recover_stow_plug')
       )
 
@@ -220,14 +226,36 @@ def main():
   sm.add_sequence(
       # Move the arm back from the outlet so we don't scratch the wall
       JointTrajectoryState('recover_move_arm_remove_plug',
-        'r_arm_plugs_controller','pr2_plugs_configuration/recover_remove_plug_from_outlet'),
+        'r_arm_plugs_controller',
+        'pr2_plugs_configuration/recover_remove_plug_from_outlet'
+        ),
       # Stow the plug
       SimpleActionState('recover_stow_plug','stow_plug',StowPlugAction,
-        goal_cb = get_stow_plug_goal,succeeded = 'detect_outlet')
+        goal_cb = get_stow_plug_goal,
+        succeeded = 'detect_outlet',
+        aborted = 'fail_open_gripper'
+        )
       )
 
-  # Add some other terminal states
-  sm.add(TrivialFailureState('fail_still_unplugged'))
+  # Add failure states
+  sm.add(
+      # State to fail to if we're still unplugged
+      RemainUnpluggedState('fail_still_unplugged',
+        succeeded='fail_lower_spine'),
+
+      # Make sure we're not holding onto the plug
+      SimpleActionState('fail_open_gripper',
+        'r_gripper_controller/gripper_action', Pr2GripperCommandAction,
+        goal = open_gripper_goal,
+        succeeded='fail_lower_spine'),
+      
+      # Lower the spine on cleanup
+      SimpleActionState('fail_lower_spine',
+        'torso_controller/position_joint_action', SingleJointPositionAction,
+        goal = SingleJointPositionGoal(position=0.01),
+        succeeded = 'ABORTED')
+      )
+
 
 
 
@@ -245,11 +273,13 @@ def main():
   sm.add_sequence(
       # Wiggle plug out
       SimpleActionState('wiggle_out','wiggle_plug',WigglePlugAction,
-        goal_cb = get_wiggle_out_goal),
+        goal_cb = get_wiggle_out_goal,
+        aborted = 'fail_open_gripper'),
       # Stow plug
       SimpleActionState('stow_plug','stow_plug',StowPlugAction,
         goal_cb = get_stow_plug_goal,
-        result_cb = set_unplug_result)
+        result_cb = set_unplug_result,
+        aborted = 'fail_open_gripper' )
       )
 
   # Populate the sm database with some stubbed out results

@@ -176,38 +176,39 @@ def main():
       # Move arm so that it can view the outlet
       JointTrajectoryState('move_arm_detect_outlet',
         'r_arm_plugs_controller','pr2_plugs_configuration/detect_outlet',
-        aborted = 'recover_move_arm_outlet_to_free'),
+        aborted = 'fail_move_arm_outlet_to_free'),
 
       # Search side-to-side for the outlet
       OutletSearchState('outlet_search',
-        offsets = (0.0, 0.1, -0.2, 0.3, -0.4)),
+        offsets = (0.0, 0.1, -0.2, 0.3, -0.4),
+        aborted = 'fail_move_arm_outlet_to_free'),
 
       # Align precisely
       SimpleActionState('precise_align_base',
         'align_base', AlignBaseAction,
         goal = AlignBaseGoal(offset = 0,look_point=look_point),
         goal_cb = get_precise_align_goal,
-        aborted = 'recover_move_arm_outlet_to_free'),
+        aborted = 'fail_move_arm_outlet_to_free'),
 
       # Detect the wall norm
       SimpleActionState('detect_wall_norm',
         'detect_wall_norm', DetectWallNormAction,
         goal_cb = get_wall_norm_goal,
         result_cb = store_wall_norm_result,
-        aborted = 'recover_move_arm_outlet_to_free'),
+        aborted = 'fail_move_arm_outlet_to_free'),
       
       # Precise detection
       SimpleActionState('vision_outlet_detection',
         'vision_outlet_detection', VisionOutletDetectionAction,
         goal_cb = get_vision_detect_goal,
         result_cb = store_precise_outlet_result,
-        aborted = 'recover_move_arm_outlet_to_free')
+        aborted = 'fail_move_arm_outlet_to_free')
       )
 
   # Define recovery states
-  sm.add(JointTrajectoryState('recover_move_arm_outlet_to_free',
+  sm.add(JointTrajectoryState('fail_move_arm_outlet_to_free',
     'r_arm_plugs_controller','pr2_plugs_configuration/recover_outlet_to_free',
-    succeeded = 'rough_align_base'))
+    succeeded = 'ABORTED'))
 
   # Populate the sm database with some stubbed out results
   # Run state machine action server with default state
