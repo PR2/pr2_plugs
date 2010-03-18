@@ -11,6 +11,7 @@ rosbuild_gensrv ()
 rosbuild_add_executable (wall_extractor src/wall_extractor.cpp)
 rosbuild_add_executable (service_trigger src/service_trigger.cpp)
 target_link_libraries (wall_extractor cloud_geometry ANN cloud_kdtree sample_consensus)
+rosbuild_link_boost(wall_extractor thread)
 
 
 rosbuild_add_library (cloud_kdtree

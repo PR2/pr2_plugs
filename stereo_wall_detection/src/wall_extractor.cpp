@@ -43,6 +43,8 @@
 @b wall_extractor attempts to find the best fit plane to a given PointCloud message extracted from a stereo camera.
  **/
 
+#include <boost/thread/mutex.hpp>
+
 // ROS core
 #include <ros/node_handle.h>
 // ROS messages
@@ -76,6 +78,7 @@ class PlanarFit
   public:
     // ROS messages
     sensor_msgs::PointCloud::ConstPtr cloud_msg_;
+    boost::mutex cloud_msg_mutex_;
     sensor_msgs::PointCloud cloud_down_;
     ros::ServiceServer serv_;
     ros::Publisher plane_normal_pub_;
@@ -136,6 +139,7 @@ class PlanarFit
     void
       cloud_cb (const sensor_msgs::PointCloud::ConstPtr& cloud)
     {
+      boost::mutex::scoped_lock(cloud_msg_mutex_);
       cloud_msg_ = cloud;
     }
 
@@ -146,26 +150,44 @@ class PlanarFit
     {
       // subscribe to point cloud and wait for message to come in
       ros::NodeHandle nh_toplevel;
+      cloud_msg_mutex_.lock();
       cloud_msg_.reset();
+      cloud_msg_mutex_.unlock();
       ros::Subscriber cloud_sub = nh_toplevel.subscribe<sensor_msgs::PointCloud> (cloud_topic_, 1, &PlanarFit::cloud_cb, this);
       ros::Time start = ros::Time::now();
-      while (!cloud_msg_ || cloud_msg_->points.size() < 50000){
-	ros::Duration(0.1).sleep();
-	if (ros::Time::now() > start + ros::Duration(10.0)){
-	  if (!cloud_msg_)
-	    ROS_ERROR("Timed out waiting for point cloud");
-	  else
-	    ROS_ERROR("Only received a point cloud of size %d", (int)cloud_msg_->points.size());
-	  return false;
-	}
+      bool have_cloud = false;
+      bool received_cloud = false;
+      sensor_msgs::PointCloud cloud_msg_local;
+      while (!have_cloud){
+        boost::mutex::scoped_lock(cloud_msg_mutex_);
+        if (cloud_msg_)
+        {
+          received_cloud = true;
+          if(cloud_msg_->points.size() >= 50000){
+            // make a copy for our own use
+            cloud_msg_local = *cloud_msg_;
+            have_cloud = true;
+          }
+        }
+        else
+        {
+          ros::Duration(0.1).sleep();
+          if (ros::Time::now() > start + ros::Duration(10.0)){
+            if (!received_cloud)
+              ROS_ERROR("Timed out waiting for point cloud");
+            else
+              ROS_ERROR("Only received a point cloud of size %d", (int)cloud_msg_local.points.size());
+            return false;
+          }
+        }
       }
 
-      ROS_INFO("point cloud of size %u", (unsigned int)(cloud_msg_->points.size()));
-      if (cloud_msg_->points.size () == 0){
+      ROS_INFO("point cloud of size %u", (unsigned int)(cloud_msg_local.points.size()));
+      if (cloud_msg_local.points.size () == 0){
 	ROS_ERROR("Received point cloud of size zero");
         return (false);
       }
-      cloud_down_.header = cloud_msg_->header;
+      cloud_down_.header = cloud_msg_local.header;
       cloud_down_.channels.clear();
 
       ros::Time ts = ros::Time::now ();
@@ -175,9 +197,9 @@ class PlanarFit
 
       // Downsample addon for points in the stereo frame (z = distance)
       int nrp = 0;
-      vector<int> indices_down (cloud_msg_->points.size ());
+      vector<int> indices_down (cloud_msg_local.points.size ());
       for (size_t i = 0; i < indices_down.size (); ++i)
-        if (cloud_msg_->points[i].z < max_dist_)
+        if (cloud_msg_local.points[i].z < max_dist_)
           indices_down[nrp++] = i;
       indices_down.resize (nrp);
 
@@ -188,7 +210,7 @@ class PlanarFit
       try
       {
         // We sacrifice functionality for speed. Use a fixed 3D grid to downsample the data instead of an octree structure
-        cloud_geometry::downsamplePointCloud (*cloud_msg_, indices_down, cloud_down_, leaf_width_, leaves_, -1);  // -1 means use all data
+        cloud_geometry::downsamplePointCloud (cloud_msg_local, indices_down, cloud_down_, leaf_width_, leaves_, -1);  // -1 means use all data
       }
       catch (std::bad_alloc)
       {
@@ -197,7 +219,7 @@ class PlanarFit
       }
 
       if (normals_fidelity_)
-        cloud_geometry::nearest::computePointCloudNormals (cloud_down_, *cloud_msg_, radius_, viewpoint_cloud);  // Estimate point normals in the original point cloud using a fixed radius search
+        cloud_geometry::nearest::computePointCloudNormals (cloud_down_, cloud_msg_local, radius_, viewpoint_cloud);  // Estimate point normals in the original point cloud using a fixed radius search
       else
         cloud_geometry::nearest::computePointCloudNormals (cloud_down_, radius_, viewpoint_cloud);          // Estimate point normals in the downsampled point cloud using a fixed radius search
 
@@ -213,7 +235,7 @@ class PlanarFit
       // Flip normal to be "inside the wall"
       coeff[0] = -coeff[0]; coeff[1] = -coeff[1]; coeff[2] = -coeff[2];
       
-      resp.wall_norm.header = cloud_msg_->header;
+      resp.wall_norm.header = cloud_msg_local.header;
       resp.wall_norm.vector.x = coeff[0];  
       resp.wall_norm.vector.y = coeff[1];  
       resp.wall_norm.vector.z = coeff[2];   
@@ -224,7 +246,7 @@ class PlanarFit
       //ROS_INFO ("Planar model with %d / %d inliers, coefficients: [%g, %g, %g, %g] found in %g seconds.", (int)inliers.size (), (int)cloud_down_.points.size (),
       //    coeff[0], coeff[1], coeff[2], coeff[3], (ros::Time::now () - ts).toSec ());
 
-      resp.wall_point.header = cloud_msg_->header;
+      resp.wall_point.header = cloud_msg_local.header;
       resp.wall_point.point.x = centroid.x;
       resp.wall_point.point.y = centroid.y;
       resp.wall_point.point.z = centroid.z;
@@ -232,11 +254,11 @@ class PlanarFit
       Eigen::AngleAxis<float> aa (acos (coeff[0]), Eigen::Vector3f (0, -coeff[2], coeff[1]));
       Eigen::Quaternion<float> q (aa);
 
-      publishNormal (centroid, q, cloud_msg_->header, 0.1);
+      publishNormal (centroid, q, cloud_msg_local.header, 0.1);
       ROS_INFO("Found wall at %f %f %f with normal: %f %f %f in frame %s",
-	       centroid.x, centroid.y, centroid.z, coeff[0], coeff[1], coeff[2], cloud_msg_->header.frame_id.c_str());
+	       centroid.x, centroid.y, centroid.z, coeff[0], coeff[1], coeff[2], cloud_msg_local.header.frame_id.c_str());
 
-      cloud_msg_.reset ();
+      //cloud_msg_.reset ();
       return (true);
     }
 
