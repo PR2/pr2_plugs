@@ -52,6 +52,7 @@ public:
     tf::poseStampedMsgToTF(goal->prior, plug_prior_);
 
     // Subscribe to the streams from the requested camera
+    ros::Duration(1.0).sleep();
     std::string image_topic = goal->camera_name + "/image_rect";
     sub_ = it_.subscribeCamera(image_topic, 1, &DetectPlugAction::detectCb, this);
 
