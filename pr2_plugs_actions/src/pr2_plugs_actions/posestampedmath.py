@@ -61,7 +61,10 @@ class PoseStampedMath(object):
         self.msg.pose.position.z = z
         return self
 
-
+    def toEuler(self):
+      tmp = transformations.euler_from_quaternion((self.msg.pose.orientation.x, self.msg.pose.orientation.y, self.msg.pose.orientation.z, self.msg.pose.orientation.w))
+      return self.msg.pose.position.x, self.msg.pose.position.y, self.msg.pose.position.z, tmp[0], tmp[1], tmp[2]
+    
     def fromTf(self, tf):
         position, quaternion = tf
         self.msg.pose.orientation.x = quaternion[0]
