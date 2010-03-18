@@ -64,27 +64,25 @@ def execute_cb(goal):
   current_error = outlet_to_plug_error(goal)
   forward_start = current_error.pose.position.x
   if goal.insert == 1:
-    forward_stop = current_error.pose.position.x + 0.015
+    forward_stop = current_error.pose.position.x + 0.02
     forward_step = 0.0005
   else:
     forward_stop = current_error.pose.position.x - 0.04
     forward_step = 0.001
 
-  wiggle_direction = 1.0
-  wiggle = 0.0
-  wiggle_step = 0.5
+  wiggle = 1.0
   for offset in drange(forward_start, forward_stop, forward_step):
     pose_outlet_plug = PoseStampedMath().fromEuler(offset, 0, 0, 0, math.pi/30*wiggle, 0)
     cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
     cart_space_goal.pose.header.stamp = rospy.Time.now()
     cart_space_goal.pose.header.frame_id = 'base_link'
-    cart_space_goal.move_duration = rospy.Duration(0.5)
+    cart_space_goal.move_duration = rospy.Duration(0.0)
     cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout)
-    rate.sleep()
-    wiggle = wiggle + (wiggle_direction * wiggle_step)
-    if math.fabs(wiggle) >= 1:
-      wiggle_direction = wiggle_direction * -1
-      
+    wiggle = wiggle * -1
+    control_error = (PoseStampedMath(outlet_to_plug_error(goal)) * pose_outlet_plug.inverse()).msg
+#    rospy.loginfo('Control error in x direction is %f' %control_error.pose.position.x)
+#    rospy.loginfo('Current commanded depth is %f'%offset)
+#    rospy.loginfo('Measured depth is %f' %outlet_to_plug_error(goal).pose.position.x)
 
   pose_outlet_plug = PoseStampedMath().fromEuler(offset, 0, 0, 0, 0, 0)
   cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
