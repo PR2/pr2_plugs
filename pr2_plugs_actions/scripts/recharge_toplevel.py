@@ -232,7 +232,7 @@ def main():
       # Stow the plug
       SimpleActionState('recover_stow_plug','stow_plug',StowPlugAction,
         goal_cb = get_stow_plug_goal,
-        succeeded = 'detect_outlet',
+        succeeded = 'fail_still_unplugged',
         aborted = 'fail_open_gripper'
         )
       )
