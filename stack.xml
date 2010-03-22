@@ -9,12 +9,12 @@
   <depend stack="driver_common" /> <!-- dynamic_reconfigure -->
   <depend stack="geometry" /> <!-- tf, kdl, eigen, angles -->
   <depend stack="image_common" /> <!-- image_transport -->
-  <depend stack="navigation" /> <!-- base_local_planner, costmap_2d -->
+  <depend stack="navigation" /> <!-- move_base_msgs, base_local_planner, costmap_2d -->
   <depend stack="pr2_common" /> <!-- pr2_msgs -->
   <depend stack="pr2_common_actions" /> <!-- joint_trajectory_action_tools, pr2_arm_ik_action, pr2_common_action_msgs, pr2_tuck_arms_action -->
-  <depend stack="pr2_controllers" /> <!-- pr2_controllers_msgs -->
+  <depend stack="pr2_controllers" /> <!-- trajectory_msgs, joint_trajectory_action, pr2_controllers_msgs -->
   <depend stack="pr2_mechanism" /> <!-- pr2_controller_manager -->
-  <depend stack="ros" /> <!-- std_srvs, std_msgs, roscpp, rospy -->
+  <depend stack="ros" /> <!-- rospy, rostest, std_msgs, roscpp, std_srvs -->
   <depend stack="vision_opencv" /> <!-- opencv2, image_geometry, cv_bridge -->
   <depend stack="visualization_common" /> <!-- visualization_msgs -->
 
