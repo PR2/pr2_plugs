@@ -1,6 +1,0 @@
-<launch>
-   
-  <node pkg="pr2_plugs_actions" type="detect_outlet.py" name="detect_outlet" output="screen"/>
-  <test test-name="detect_outlet_test" pkg="pr2_plugs_actions" type="detect_outlet_test"/>
-
-</launch>

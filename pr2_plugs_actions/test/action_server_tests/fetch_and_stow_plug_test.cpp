@@ -36,7 +36,8 @@
 #include <actionlib/client/simple_action_client.h>
 #include <pr2_plugs_msgs/FetchPlugAction.h>
 #include <pr2_plugs_msgs/StowPlugAction.h>
-#include <pr2_plugs_msgs/VisionPlugDetectionAction.h>
+#include <pr2_plugs_msgs/DetectPlugOnBaseAction.h>
+#include <pr2_controllers_msgs/SingleJointPositionAction.h>
 #include <pr2_controllers_msgs/JointTrajectoryAction.h>
 #include <pr2_controllers_msgs/Pr2GripperCommandAction.h>
 #include <pr2_common_action_msgs/PR2ArmIKAction.h>
@@ -63,7 +64,12 @@ void ik_execute(const pr2_common_action_msgs::PR2ArmIKGoalConstPtr& goal, action
   as->setSucceeded();
 }
 
-void plug_execute(const pr2_plugs_msgs::VisionPlugDetectionGoalConstPtr& goal, actionlib::SimpleActionServer<pr2_plugs_msgs::VisionPlugDetectionAction>* as)
+void plug_execute(const pr2_plugs_msgs::DetectPlugOnBaseGoalConstPtr& goal, actionlib::SimpleActionServer<pr2_plugs_msgs::DetectPlugOnBaseAction>* as)
+{
+  as->setSucceeded();
+}
+
+void spine_execute(const pr2_controllers_msgs::SingleJointPositionGoalConstPtr& goal, actionlib::SimpleActionServer<pr2_controllers_msgs::SingleJointPositionAction>* as)
 {
   as->setSucceeded();
 }
@@ -75,8 +81,10 @@ TEST(ActionServerTest, fetch_plug)
   boost::thread spin_thread(&spinThread);
   actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> arm_server(n, "r_arm_plugs_controller/joint_trajectory_generator", boost::bind(&arm_execute, _1, &arm_server));
   actionlib::SimpleActionServer<pr2_common_action_msgs::PR2ArmIKAction> ik_server(n, "r_arm_ik", boost::bind(&ik_execute, _1, &ik_server));
-  actionlib::SimpleActionServer<pr2_plugs_msgs::VisionPlugDetectionAction> plug_server(n, "vision_plug_detection", boost::bind(&plug_execute, _1, &plug_server));
+  actionlib::SimpleActionServer<pr2_plugs_msgs::DetectPlugOnBaseAction> plug_server(n, "detect_plug_on_base", boost::bind(&plug_execute, _1, &plug_server));
   actionlib::SimpleActionServer<pr2_controllers_msgs::Pr2GripperCommandAction> gripper_server(n, "r_gripper_controller/gripper_action", boost::bind(&gripper_execute, _1, &gripper_server));
+  actionlib::SimpleActionServer<pr2_controllers_msgs::SingleJointPositionAction> spine_server(n, "torso_controller/position_joint_action", boost::bind(&spine_execute, _1, &spine_server));
+
 
   actionlib::SimpleActionClient<pr2_plugs_msgs::FetchPlugAction> ac("fetch_plug");
 
@@ -93,8 +101,9 @@ TEST(ActionServerTest, stow_plug)
   boost::thread spin_thread(&spinThread);
   actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> arm_server(n, "r_arm_plugs_controller/joint_trajectory_generator", boost::bind(&arm_execute, _1, &arm_server));
   actionlib::SimpleActionServer<pr2_common_action_msgs::PR2ArmIKAction> ik_server(n, "r_arm_ik", boost::bind(&ik_execute, _1, &ik_server));
-  actionlib::SimpleActionServer<pr2_plugs_msgs::VisionPlugDetectionAction> plug_server(n, "vision_plug_detection", boost::bind(&plug_execute, _1, &plug_server));
+  actionlib::SimpleActionServer<pr2_plugs_msgs::DetectPlugOnBaseAction> plug_server(n, "detect_plug_on_base", boost::bind(&plug_execute, _1, &plug_server));
   actionlib::SimpleActionServer<pr2_controllers_msgs::Pr2GripperCommandAction> gripper_server(n, "r_gripper_controller/gripper_action", boost::bind(&gripper_execute, _1, &gripper_server));
+  actionlib::SimpleActionServer<pr2_controllers_msgs::SingleJointPositionAction> spine_server(n, "torso_controller/position_joint_action", boost::bind(&spine_execute, _1, &spine_server));
 
   actionlib::SimpleActionClient<pr2_plugs_msgs::StowPlugAction> ac("stow_plug");
 

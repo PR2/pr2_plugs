@@ -50,10 +50,6 @@ rosbuild_add_executable(detect_plug_test EXCLUDE_FROM_ALL test/action_server_tes
 rosbuild_add_gtest_build_flags(detect_plug_test)
 rosbuild_add_rostest(test/action_server_tests/detect_plug_test.launch)
 
-rosbuild_add_executable(detect_outlet_test EXCLUDE_FROM_ALL test/action_server_tests/detect_outlet_test.cpp)
-rosbuild_add_gtest_build_flags(detect_outlet_test)
-rosbuild_add_rostest(test/action_server_tests/detect_outlet_test.launch)
-
 rosbuild_add_executable(detect_wall_norm_test EXCLUDE_FROM_ALL test/action_server_tests/detect_wall_norm_test.cpp)
 rosbuild_add_gtest_build_flags(detect_wall_norm_test)
 rosbuild_add_rostest(test/action_server_tests/detect_wall_norm_test.launch)
