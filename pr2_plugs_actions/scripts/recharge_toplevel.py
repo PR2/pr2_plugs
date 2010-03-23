@@ -49,7 +49,6 @@ from pr2_controllers_msgs.msg import *
 from pr2_common_action_msgs.msg import *
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
 from std_srvs.srv import *
-from executive_python import *
 
 # State machine classes
 from smach.state import *

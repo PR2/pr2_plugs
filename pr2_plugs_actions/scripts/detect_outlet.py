@@ -13,7 +13,6 @@ from actionlib_msgs.msg import *
 from joint_trajectory_action_tools.tools import *
 from trajectory_msgs.msg import JointTrajectoryPoint
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
-from executive_python import *
 from math import pi
 
 def wait_and_transform(frame_id,pose):
