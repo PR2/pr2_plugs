@@ -10,9 +10,9 @@ import yaml
 
 def main():
     rospy.init_node('plugin_calibration_loader')
-    param_ns = 'vision_plug_detection'
+    param_ns = None
     param_x = 'plug_position_x'
-    param_y = 'plug_position_y'
+    param_z = 'plug_position_z'
 
     if len(sys.argv) != 2:
         print 'Usage: ./load_plugin_calibration.py file.yaml'
@@ -22,17 +22,21 @@ def main():
     config = None
     try:
         config = yaml.load(open(sys.argv[1]))
+        for ns in config:
+            param_ns = ns
+        config = config[param_ns]
     except:
         print 'Could not load yaml file %s'%sys.argv[1]
         return 1
+
 
     # runnin on HW
     if os.getenv('ROBOT') == 'pr2':
         try:
             offset = yaml.load(open('/etc/ros/plugs/calibration.yaml'))
-            config[param_ns][param_x] = config[param_ns][param_x] + offset[param_x]
-            config[param_ns][param_y] = config[param_ns][param_y] + offset[param_y]
-            rospy.set_param('', config)
+            config[param_x] = config[param_x] + offset[param_x]
+            config[param_z] = config[param_z] + offset[param_z]
+            rospy.set_param(param_ns, config)
             print 'loaded plug calibraiton offset parameters from /etc/ros/plugs/calibration.yaml'
         except:
             print 'cannot load yaml /etc/ros/plugs/calibration.yaml'
