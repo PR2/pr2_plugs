@@ -57,8 +57,6 @@ namespace joint_trajectory_generator {
           ac_("joint_trajectory_action"),
           got_state_(false)
       {
-        printf("Here\n");
-        ROS_INFO("Here");
         ros::NodeHandle n;
         state_sub_ = n.subscribe("state", 1, &JointTrajectoryGenerator::jointStateCb, this);
 
@@ -68,7 +66,6 @@ namespace joint_trajectory_generator {
 
         ros::Rate r(10.0);
         while(!got_state_){
-          ROS_INFO("Here");
           ros::spinOnce();
           r.sleep();
         }
@@ -186,7 +183,6 @@ namespace joint_trajectory_generator {
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "joint_trajectory_generator_node");
-  ROS_INFO("Here");
   joint_trajectory_generator::JointTrajectoryGenerator jtg;
 
   ros::spin();
