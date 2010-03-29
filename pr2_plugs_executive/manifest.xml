@@ -21,6 +21,7 @@
   <depend package="stereo_wall_detection"/>
   <depend package="actionlib"/>
   <depend package="joint_trajectory_generator"/>
+  <depend package="wg_pr2_2dnav"/>
 
 </package>
 
