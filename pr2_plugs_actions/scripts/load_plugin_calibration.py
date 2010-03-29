@@ -44,7 +44,7 @@ def main():
 
     # running in SIM
     elif os.getenv('ROBOT')== 'sim':
-        print 'set plug calibration offset to 0'
+        rospy.set_param(param_ns, config)
 
     # robot env variable not set
     else:
