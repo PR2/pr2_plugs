@@ -54,7 +54,7 @@ def execute_cb(goal):
     # call vision plug detection
     rospy.loginfo("Detecting plug...")
     detect_plug_goal = VisionPlugDetectionGoal()
-    detect_plug_goal.camera_name = "/forearm_camera_r"
+    detect_plug_goal.camera_name = "/r_forearm_cam"
     detect_plug_goal.prior = PoseStampedMath().fromEuler(0.080, 0.026, 0.23, pi/2, 0, pi/2).msg
     detect_plug_goal.prior.header.frame_id = "base_link"
     detect_plug_goal.origin_on_right = False

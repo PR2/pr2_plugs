@@ -53,7 +53,7 @@ TEST(ActionServerTest, vision_plug_detection)
   goal.prior.header.stamp = ros::Time::now();
   goal.prior.header.frame_id = "base_link";
   goal.origin_on_right = false;
-  goal.camera_name = "forearm_camera_l";
+  goal.camera_name = "l_forearm_cam";
 
   ASSERT_TRUE(ac.waitForServer(ros::Duration(100.0)));
 
@@ -74,7 +74,7 @@ TEST(ActionServerTest, vision_outlet_detection)
   pr2_plugs_msgs::VisionOutletDetectionGoal goal;
   goal.prior.header.stamp = ros::Time::now();
   goal.prior.header.frame_id = "base_link";
-  goal.camera_name = "forearm_camera_l";
+  goal.camera_name = "l_forearm_cam";
 
   ASSERT_TRUE(ac.waitForServer(ros::Duration(100.0)));
 

@@ -31,7 +31,7 @@ def execute_cb(goal):
     # call vision plug detection
     rospy.loginfo("Detecting plug...")
     detect_plug_goal = VisionPlugDetectionGoal()
-    detect_plug_goal.camera_name = "/forearm_camera_r"
+    detect_plug_goal.camera_name = "/r_forearm_cam"
     detect_plug_goal.prior = PoseStampedMath().fromEuler(-.03, 0, 0, pi/2, 0, -pi/9).inverse().msg
     detect_plug_goal.prior.header.stamp = rospy.Time.now()
     detect_plug_goal.prior.header.frame_id = "r_gripper_tool_frame"

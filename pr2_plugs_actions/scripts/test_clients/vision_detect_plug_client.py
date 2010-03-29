@@ -9,7 +9,7 @@ from math import pi
 
 def plug_on_base_goal():
     goal = pr2_plugs_msgs.msg.VisionPlugDetectionGoal()
-    goal.camera_name = '/forearm_camera_l'
+    goal.camera_name = '/l_forearm_cam'
 
     goal.prior.header.stamp = rospy.Time.now()
     goal.prior.header.frame_id = 'base_link'
@@ -26,7 +26,7 @@ def plug_on_base_goal():
 
 def plug_on_side_goal():
     goal = pr2_plugs_msgs.msg.VisionPlugDetectionGoal()
-    goal.camera_name = '/forearm_camera_r'
+    goal.camera_name = '/r_forearm_cam'
 
     goal.prior = PoseStampedMath().fromEuler(-0.31, -0.24, 0.56, pi, -pi/2, pi).msg
     goal.prior.header.stamp = rospy.Time.now()
@@ -36,7 +36,7 @@ def plug_on_side_goal():
 
 def plug_in_gripper_goal():
     goal = pr2_plugs_msgs.msg.VisionPlugDetectionGoal()
-    goal.camera_name = "/forearm_camera_r"
+    goal.camera_name = "/r_forearm_cam"
     goal.prior = PoseStampedMath().fromEuler(-.03, 0, 0, pi/2, 0, -pi/6).inverse().msg
     goal.prior.header.stamp = rospy.Time.now()
     goal.prior.header.frame_id = "r_gripper_tool_frame"
@@ -45,7 +45,7 @@ def plug_in_gripper_goal():
 
 def new_plug_on_base_goal():
     goal = pr2_plugs_msgs.msg.VisionPlugDetectionGoal()
-    goal.camera_name = '/forearm_camera_r'
+    goal.camera_name = '/r_forearm_cam'
 
     goal.prior.header.stamp = rospy.Time.now()
     goal.prior.header.frame_id = 'base_link'

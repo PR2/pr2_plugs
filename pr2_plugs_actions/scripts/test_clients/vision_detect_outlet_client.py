@@ -12,7 +12,7 @@ def facing_outlet_goal():
     time = rospy.Time.now()
 
     goal = pr2_plugs_msgs.msg.VisionOutletDetectionGoal()
-    goal.camera_name = '/forearm_camera_r'
+    goal.camera_name = '/r_forearm_cam'
 
     goal.prior = PoseStampedMath().fromEuler(0.6, -0.15, 0.29, 0.0, 0.0, 0.0).msg
     goal.prior.header.stamp = time
@@ -32,7 +32,7 @@ def side_outlet_goal():
     time = rospy.Time.now()
 
     goal = pr2_plugs_msgs.msg.VisionOutletDetectionGoal()
-    goal.camera_name = '/forearm_camera_r'
+    goal.camera_name = '/r_forearm_cam'
 
     goal.prior = PoseStampedMath().fromEuler(-0.14, -0.82, 0.29, 0, 0, -pi/2).msg
     goal.prior.header.stamp = time

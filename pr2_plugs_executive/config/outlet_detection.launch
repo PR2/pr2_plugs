@@ -6,7 +6,7 @@
     output=outlet_detector/pose
   -->
   <node machine="c2" ns="outlet_detector" name="outlet_node" pkg="outlet_detection" type="outlet_node" respawn="false" output="screen">
-    <remap from="image" to="/forearm_camera_r/image_rect_color" />
+    <remap from="image" to="/r_forearm_cam/image_rect_color" />
     <param name="outlet_template" type="str" value="$(find outlet_detection)/outlet_templates/configs/green_2x1white"/>
   </node>
 

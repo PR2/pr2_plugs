@@ -146,7 +146,7 @@ def main():
   align_base_goal.look_point = look_point
 
   vision_detect_outlet_goal = VisionOutletDetectionGoal()
-  vision_detect_outlet_goal.camera_name = "/forearm_camera_r"
+  vision_detect_outlet_goal.camera_name = "/r_forearm_cam"
   vision_detect_outlet_goal.prior = PoseStampedMath().fromEuler(-0.14, -0.82, 0.29, 0, 0, -pi/2).msg
   vision_detect_outlet_goal.prior.header.frame_id = "base_link"
 
