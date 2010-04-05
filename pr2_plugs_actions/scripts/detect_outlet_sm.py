@@ -31,14 +31,15 @@ from smach.joint_trajectory_state import *
 import actionlib
 import dynamic_reconfigure.client
 
+
 class TFUtil():
   transformer = None
-    
+  def __init__(self):
+    if not TFUtil.transformer:
+      TFUtil.transformer = tf.TransformListener(True, rospy.Duration(60.0))
+
   @staticmethod
   def wait_and_transform(frame_id,pose):
-    if not TFUtil.transformer:
-      TFUtil.transformer = tf.TransformListener(True, rospy.Duration(60.0))  
-
     try:
       TFUtil.transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
     except rospy.ServiceException, e:
@@ -121,9 +122,11 @@ def store_precise_outlet_result(state, result_state, result):
 
 def main():
   rospy.init_node("detect_outlet_sm")#,log_level=rospy.DEBUG)
-
+  
+  TFUtil()
   #check to see if this is running in sim where the dynamic reconfigure doesn't exist
   sim = rospy.get_param('~sim', False)
+  rospy.logerr('sim is %s', sim)
   if(not sim):
     #this ensures that the forearm camera triggers when the texture projector is off
     projector_client = dynamic_reconfigure.client.Client('camera_synchronizer_node')
