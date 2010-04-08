@@ -5,11 +5,14 @@
 import roslib; roslib.load_manifest('pr2_plugs_actions')
 import sys
 import os
-import rospy
 import yaml
+def save_config(filename, config):
+    file = open(filename, "w")
+    for k,v in config.items():
+        file.write(" " + k + ": " + str(v) + "\r\n")
+    file.close()
 
 def main():
-    rospy.init_node('plugin_calibration_loader')
     param_ns = None
     param_x = 'plug_position_x'
     param_z = 'plug_position_z'
@@ -36,7 +39,7 @@ def main():
             offset = yaml.load(open('/etc/ros/plugs/calibration.yaml'))
             config[param_x] = config[param_x] + offset[param_x]
             config[param_z] = config[param_z] + offset[param_z]
-            rospy.set_param(param_ns, config)
+            save_config("/tmp/plugs_config.yaml", config)
             print 'loaded plug calibraiton offset parameters from /etc/ros/plugs/calibration.yaml'
         except:
             print 'cannot load yaml /etc/ros/plugs/calibration.yaml'
@@ -44,13 +47,15 @@ def main():
 
     # running in SIM
     elif os.getenv('ROBOT')== 'sim':
-        rospy.set_param(param_ns, config)
+        print "Using sim config"
+        save_config("/tmp/plugs_config.yaml", config)
 
     # robot env variable not set
     else:
         print 'no ROBOT env set, cannot load plug calibration offset'
         return 1
-
+    
+    
     return 0
 
 
