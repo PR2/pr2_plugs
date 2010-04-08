@@ -1,8 +1,9 @@
 <launch>
    
 
-  <!-- Plug calibration -->
-  <rosparam command="load" file="$(find pr2_plugs_actions)/config/pr2_plug_description.yaml" />
+ <!-- Plug to checkerboard -->
+ <param name="vision_plug_detection/output" type="string" command="$(find pr2_plugs_actions)/scripts/load_plugin_calibration.py $(find pr2_plugs_actions)/config/plug_description.yaml"/>
+
 
   <!-- The plug finding action -->
   <node pkg="pr2_plugs_actions" type="vision_detect_plug" name="vision_plug_detection" output="screen">
