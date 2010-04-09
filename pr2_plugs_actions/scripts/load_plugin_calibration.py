@@ -25,9 +25,6 @@ def main():
     config = None
     try:
         config = yaml.load(open(sys.argv[1]))
-        for ns in config:
-            param_ns = ns
-        config = config[param_ns]
     except:
         print 'Could not load yaml file %s'%sys.argv[1]
         return 1

@@ -1,14 +1,13 @@
-vision_plug_detection:
-  square_size: 0.006
-  board_width: 4
-  board_height: 5
+square_size: 0.006
+board_width: 4
+board_height: 5
 # DO NOT CHANGE THE VALUES BELOW
 # TO CALIBRATE PLUGGING IN, EDIT /etc/ros/plugs/calibration.yaml
-  plug_position_x: 0.017
-  plug_position_y: 0.036
-  plug_position_z: 0.019
-  plug_orientation_x: 0.5
-  plug_orientation_y: 0.5
-  plug_orientation_z: -0.5
-  plug_orientation_w: -0.5
+plug_position_x: 0.017
+plug_position_y: 0.036
+plug_position_z: 0.019
+plug_orientation_x: 0.5
+plug_orientation_y: 0.5
+plug_orientation_z: -0.5
+plug_orientation_w: -0.5
 
