@@ -126,7 +126,7 @@ def main():
   TFUtil()
   #check to see if this is running in sim where the dynamic reconfigure doesn't exist
   sim = rospy.get_param('~sim', False)
-  rospy.logerr('sim is %s', sim)
+  rospy.logdebug('sim is %s', sim)
   if(not sim):
     #this ensures that the forearm camera triggers when the texture projector is off
     projector_client = dynamic_reconfigure.client.Client('camera_synchronizer_node')
