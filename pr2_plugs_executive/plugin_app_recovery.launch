@@ -7,11 +7,6 @@
   <include file="$(find wg_pr2_2dnav)/pr2_2dnav.launch" />
 
   <!-- plugs executive -->
-  <!--node pkg="pr2_plugs_executive" type="executive_with_recovery.py" name="plugs_executive" output="screen" /-->
   <node pkg="pr2_plugs_executive" type="recharge_action_web_adapter.py" name="recharge_action_web_adapter" output="screen" />
-  <node pkg="pr2_plugs_actions" type="recharge_toplevel.py" name="recharge_toplevel" output="screen" />
-  <node pkg="pr2_plugs_actions" type="detect_outlet_sm.py" name="detect_outlet_sm" output="screen" />
-  <node pkg="pr2_plugs_actions" type="fetch_plug_sm.py" name="fetch_plug_sm" output="screen" />
-  <node pkg="pr2_plugs_actions" type="plug_in_sm.py" name="plug_in_sm" output="screen" />
 
 </launch>
