@@ -53,9 +53,9 @@ namespace joint_trajectory_generator {
       typedef actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> JTAS;
       typedef actionlib::SimpleActionClient<pr2_controllers_msgs::JointTrajectoryAction> JTAC;
     public:
-      JointTrajectoryGenerator() : as_(ros::NodeHandle(), 
-          "joint_trajectory_generator", 
-          boost::bind(&JointTrajectoryGenerator::executeCb, this, _1), 
+      JointTrajectoryGenerator() : as_(ros::NodeHandle(),
+          "joint_trajectory_generator",
+          boost::bind(&JointTrajectoryGenerator::executeCb, this, _1),
           false),
           ac_("joint_trajectory_action"),
           got_state_(false)
@@ -70,9 +70,21 @@ namespace joint_trajectory_generator {
 
         if(unwrap_)
         {
-          // Load Robot Model                                                                                                    
+          // Load Robot Model
           ROS_DEBUG("Loading robot model");
-          robot_model_.initParam(std::string("robot_description"));
+          std::string xml_string;
+          if (!n.getParam(std::string("robot_description"), xml_string))
+          {
+            ROS_ERROR("Could not find parameter robot_description on parameter server.");
+            ros::shutdown();
+            exit(1);                 
+          }
+          if(!robot_model_.initString(xml_string))
+          {
+            ROS_ERROR("Could not load robot model.");
+            ros::shutdown();
+            exit(1);
+          } 
         }
 
         ros::Rate r(10.0);
@@ -120,7 +132,7 @@ namespace joint_trajectory_generator {
 
         if(unwrap_)
         {
-          //unwrap angles                                                                                                        
+          //unwrap angles
           trajectory_unwrap::unwrap(robot_model_, new_goal.trajectory,new_goal.trajectory);
         }
 
@@ -138,7 +150,7 @@ namespace joint_trajectory_generator {
 
         pr2_controllers_msgs::JointTrajectoryGoal full_goal = createGoal(*goal);
 
-        ac_.sendGoal(full_goal, JTAC::SimpleDoneCallback(), JTAC::SimpleActiveCallback(), boost::bind(&JointTrajectoryGenerator::feedbackCb, this, _1)); 
+        ac_.sendGoal(full_goal, JTAC::SimpleDoneCallback(), JTAC::SimpleActiveCallback(), boost::bind(&JointTrajectoryGenerator::feedbackCb, this, _1));
 
         while(ros::ok() && !ac_.waitForResult(ros::Duration(0.05))){
           if(as_.isPreemptRequested()){
@@ -146,9 +158,9 @@ namespace joint_trajectory_generator {
               ROS_INFO("Preempted by new goal");
               boost::shared_ptr<const pr2_controllers_msgs::JointTrajectoryGoal> new_goal = as_.acceptNewGoal();
               full_goal = createGoal(*new_goal);
-              ac_.sendGoal(full_goal, JTAC::SimpleDoneCallback(), 
-                  JTAC::SimpleActiveCallback(), 
-                  boost::bind(&JointTrajectoryGenerator::feedbackCb, this, _1)); 
+              ac_.sendGoal(full_goal, JTAC::SimpleDoneCallback(),
+                  JTAC::SimpleActiveCallback(),
+                  boost::bind(&JointTrajectoryGenerator::feedbackCb, this, _1));
             }
             else{
               ROS_INFO("Preempted by cancel");
@@ -185,7 +197,7 @@ namespace joint_trajectory_generator {
       void feedbackCb(const pr2_controllers_msgs::JointTrajectoryFeedbackConstPtr& feedback){
         as_.publishFeedback(feedback);
       }
-      
+
     private:
       JTAS as_;
       JTAC ac_;
