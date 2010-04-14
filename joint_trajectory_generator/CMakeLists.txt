@@ -26,5 +26,14 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #target_link_libraries(${PROJECT_NAME} another_library)
 #rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
-rosbuild_add_executable(joint_trajectory_generator src/joint_trajectory_generator.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
+
+rosbuild_add_library(${PROJECT_NAME} src/trajectory_generation.cpp)
+
+rosbuild_add_executable(joint_trajectory_generator src/joint_trajectory_generator.cpp include/joint_trajectory_generator/trajectory_unwrap.h)
+
+
+rosbuild_add_executable(trajectory_generation_test test/trajectory_generation_test.cpp src/trajectory_generation.cpp)
+
+rosbuild_add_executable(trajectory_unwrap_test EXCLUDE_FROM_ALL test/trajectory_unwrap_test.cpp include/joint_trajectory_generator/trajectory_unwrap.h)
+rosbuild_add_gtest_build_flags(trajectory_unwrap_test)
+rosbuild_add_rostest(test/trajectory_unwrap_test.launch)

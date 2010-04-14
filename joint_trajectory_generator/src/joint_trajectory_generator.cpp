@@ -43,8 +43,8 @@
 
 #include<urdf/model.h>
 
-#include <pr2_arm_ik_action/trajectory_unwrap.h>
-#include <pr2_arm_ik_action/trajectory_generation.h>
+#include <joint_trajectory_generator/trajectory_unwrap.h>
+#include <joint_trajectory_generator/trajectory_generation.h>
 
 namespace joint_trajectory_generator {
   class JointTrajectoryGenerator
@@ -53,8 +53,8 @@ namespace joint_trajectory_generator {
       typedef actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> JTAS;
       typedef actionlib::SimpleActionClient<pr2_controllers_msgs::JointTrajectoryAction> JTAC;
     public:
-      JointTrajectoryGenerator() : as_(ros::NodeHandle(),
-          "joint_trajectory_generator",
+    JointTrajectoryGenerator(std::string name) : as_(ros::NodeHandle(),
+          "generator_action_name",
           boost::bind(&JointTrajectoryGenerator::executeCb, this, _1),
           false),
           ac_("joint_trajectory_action"),
@@ -71,20 +71,21 @@ namespace joint_trajectory_generator {
         if(unwrap_)
         {
           // Load Robot Model
-          ROS_DEBUG("Loading robot model");
+          ROS_INFO("Loading robot model");
           std::string xml_string;
-          if (!n.getParam(std::string("robot_description"), xml_string))
+          ros::NodeHandle nh_toplevel;
+          if (!nh_toplevel.getParam(std::string("/robot_description"), xml_string))
           {
             ROS_ERROR("Could not find parameter robot_description on parameter server.");
             ros::shutdown();
-            exit(1);                 
+            exit(1);
           }
           if(!robot_model_.initString(xml_string))
           {
             ROS_ERROR("Could not load robot model.");
             ros::shutdown();
             exit(1);
-          } 
+          }
         }
 
         ros::Rate r(10.0);
@@ -95,6 +96,7 @@ namespace joint_trajectory_generator {
 
         ac_.waitForServer();
         as_.start();
+        ROS_INFO("%s: Initialized",name.c_str());
       }
 
       void jointStateCb(const pr2_controllers_msgs::JointTrajectoryControllerStateConstPtr& state){
@@ -214,7 +216,7 @@ namespace joint_trajectory_generator {
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "joint_trajectory_generator_node");
-  joint_trajectory_generator::JointTrajectoryGenerator jtg;
+  joint_trajectory_generator::JointTrajectoryGenerator jtg(ros::this_node::getName());
 
   ros::spin();
 

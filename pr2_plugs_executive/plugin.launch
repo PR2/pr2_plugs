@@ -1,19 +1,26 @@
 <launch>
-  <!-- Trajectory generator -->
-  <node pkg="joint_trajectory_generator" type="joint_trajectory_generator" output="screen" name="r_arm_joint_trajectory_generator" ns="r_arm_plugs_controller">
-    <param name="max_acc" value="2.0" />
-    <param name="max_vel" value="2.5" />
-  </node>
-
   <!-- machine file -->
   <include file="$(find pr2_machine)/$(env ROBOT).machine" />
 
   <!-- arm and head controllers -->
   <include file="$(find pr2_plugs_executive)/config/plugs_controllers.launch" />
-  
+
+  <!-- Trajectory generator -->
+  <node pkg="joint_trajectory_generator" type="joint_trajectory_generator" output="screen" name="joint_trajectory_generator" ns="r_arm_plugs_controller" args="generator_action_name:=joint_trajectory_generator">
+    <param name="max_acc" value="2.0" />
+    <param name="max_vel" value="2.5" />
+  </node>
+
   <!-- ik action -->
   <node pkg="pr2_arm_ik_action" type="arm_ik" name="r_arm_ik" output="screen">
     <rosparam command="load" file="$(find pr2_plugs_executive)/config/arm_ik_r_arm.yaml"/> 
+  </node>
+
+  <!-- Trajectory generator -->
+  <node pkg="joint_trajectory_generator" type="joint_trajectory_generator" output="screen" name="joint_trajectory_generator_unwrap" ns="r_arm_plugs_controller" args="generator_action_name:=joint_trajectory_generator_unwrap">
+    <param name="max_acc" value="2.0" />
+    <param name="max_vel" value="2.5" />
+    <param name="unwrap" value="true" />
   </node>
 
   <!-- tuckarm action -->
