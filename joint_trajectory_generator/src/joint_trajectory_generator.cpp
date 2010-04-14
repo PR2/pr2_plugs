@@ -41,6 +41,9 @@
 #include <pr2_controllers_msgs/JointTrajectoryAction.h>
 #include <pr2_controllers_msgs/JointTrajectoryControllerState.h>
 
+#include<urdf/model.h>
+
+#include <pr2_arm_ik_action/trajectory_unwrap.h>
 #include <pr2_arm_ik_action/trajectory_generation.h>
 
 namespace joint_trajectory_generator {
@@ -63,6 +66,14 @@ namespace joint_trajectory_generator {
         ros::NodeHandle pn("~");
         pn.param("max_acc", max_acc_, 0.5);
         pn.param("max_vel", max_vel_, 5.0);
+        pn.param("unwrap", unwrap_, false);
+
+        if(unwrap_)
+        {
+          // Load Robot Model                                                                                                    
+          ROS_DEBUG("Loading robot model");
+          robot_model_.initParam(std::string("robot_description"));
+        }
 
         ros::Rate r(10.0);
         while(!got_state_){
@@ -105,6 +116,12 @@ namespace joint_trajectory_generator {
         //push the rest of the points on
         for(unsigned int i = 0; i < goal.trajectory.points.size(); ++i){
           new_goal.trajectory.points[i + 1] = goal.trajectory.points[i];
+        }
+
+        if(unwrap_)
+        {
+          //unwrap angles                                                                                                        
+          trajectory_unwrap::unwrap(robot_model_, new_goal.trajectory,new_goal.trajectory);
         }
 
         //todo pass into trajectory generator here
@@ -177,6 +194,8 @@ namespace joint_trajectory_generator {
       ros::Subscriber state_sub_;
       bool got_state_;
       double max_acc_, max_vel_;
+      bool unwrap_;
+      urdf::Model robot_model_;
 
   };
 };

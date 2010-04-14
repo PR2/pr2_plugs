@@ -12,6 +12,7 @@
   <depend package="joint_trajectory_action"/>
   <depend package="pr2_arm_ik_action"/>
   <depend package="roscpp"/>
+  <depend package="urdf"/>
 
 </package>
 
