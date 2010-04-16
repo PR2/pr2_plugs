@@ -140,7 +140,7 @@ def main():
   look_point.header.frame_id = 'base_link'
   look_point.point.x = -0.14
   look_point.point.y = -0.82
-  look_point.point.z = 0.5
+  look_point.point.z = 0.3
 
   wall_norm_goal = DetectWallNormGoal()
   wall_norm_goal.look_point = look_point
