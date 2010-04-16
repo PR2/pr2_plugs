@@ -52,7 +52,7 @@ def main():
 
   rospy.sleep(10)
   recharge_goal = RechargeSMGoal(command = RechargeCommand(command = RechargeCommand.PLUG_IN, plug_id='phasespace'))
-  recharge_goal.smach_info.initial_state = 'detect_outlet'
+  recharge_goal.smach_info.initial_state = 'untuck'
   print 'sending goal'
   recharge_client.send_goal_and_wait(recharge_goal)
 
