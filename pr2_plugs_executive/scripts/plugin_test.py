@@ -56,5 +56,11 @@ def main():
   print 'sending goal'
   recharge_client.send_goal_and_wait(recharge_goal)
 
+  rospy.sleep(30)
+
+  recharge_goal.smach_info.initial_state = 'unplug'
+  recharge_client.send_goal_and_wait(recharge_goal)
+
+
 if __name__ == "__main__":
   main()
