@@ -57,6 +57,8 @@ MoveBaseOmnidirectionalAction::MoveBaseOmnidirectionalAction() :
   node_private.param("k_rot", K_rot, 1.0);
   node_private.param("tolerance_trans", tolerance_trans, 0.02);
   node_private.param("tolerance_rot", tolerance_rot, 0.04);
+  node_private.param("lock_wheels", lock_wheels_, true);
+  node_private.param("tolerance_timeout", tolerance_timeout_, 0.5);
 
   ros::NodeHandle node;
   base_pub_ = node.advertise<geometry_msgs::Twist>("base_controller/command", 10);
@@ -97,7 +99,7 @@ void MoveBaseOmnidirectionalAction::execute(const move_base_msgs::MoveBaseGoalCo
   ROS_INFO("MoveBaseOmnidirectionalAction: diff %f %f ==> %f", diff.linear.x, diff.linear.y, diff.angular.z);
   ROS_INFO("MoveBaseOmnidirectionalAction: diff limit %f %f ==> %f", diff.linear.x, diff.linear.y, diff.angular.z);
   ros::Time goal_reached_time = ros::Time::now();
-  while (goal_reached_time + ros::Duration(0.5) > ros::Time::now()) {
+  while (goal_reached_time + ros::Duration(tolerance_timeout_) > ros::Time::now()) {
     diff = diff2D(desired_pose, robot_pose);
     ROS_DEBUG("Angular error: %f", fabs(diff.angular.z));
     // check for bounds
@@ -106,7 +108,8 @@ void MoveBaseOmnidirectionalAction::execute(const move_base_msgs::MoveBaseGoalCo
     // check for preemption
     if (action_server_.isPreemptRequested()){
       ROS_WARN("MoveBaseOmnidirectionalAction: Preempted");
-      lockWheels();
+      if(lock_wheels_)
+        lockWheels();
       action_server_.setPreempted();
       return;
     }
@@ -115,7 +118,8 @@ void MoveBaseOmnidirectionalAction::execute(const move_base_msgs::MoveBaseGoalCo
     ros::Duration(0.01).sleep();
   }
   costmap_ros_.stop();
-  lockWheels();
+  if(lock_wheels_)
+    lockWheels();
   action_server_.setSucceeded();
 }
 

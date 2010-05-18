@@ -71,6 +71,8 @@ private:
   base_local_planner::CostmapModel costmap_model_;
   ros::Publisher base_pub_;
   double K_trans, K_rot, tolerance_trans, tolerance_rot;
+  double tolerance_timeout_;
+  bool lock_wheels_;
 
   actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction> action_server_;
   std::vector<geometry_msgs::Point> footprint_;
