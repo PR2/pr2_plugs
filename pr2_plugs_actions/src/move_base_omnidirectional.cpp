@@ -39,8 +39,6 @@
 using namespace ros;
 using namespace std;
 
-static const string fixed_frame = "odom_combined";
-
 namespace pr2_plugs_actions{
 
 MoveBaseOmnidirectionalAction::MoveBaseOmnidirectionalAction() :
@@ -59,6 +57,7 @@ MoveBaseOmnidirectionalAction::MoveBaseOmnidirectionalAction() :
   node_private.param("tolerance_rot", tolerance_rot, 0.04);
   node_private.param("lock_wheels", lock_wheels_, true);
   node_private.param("tolerance_timeout", tolerance_timeout_, 0.5);
+  node_private.param("fixed_frame", fixed_frame_, std::string("odom_combined"));
 
   ros::NodeHandle node;
   base_pub_ = node.advertise<geometry_msgs::Twist>("base_controller/command", 10);
@@ -86,12 +85,12 @@ void MoveBaseOmnidirectionalAction::execute(const move_base_msgs::MoveBaseGoalCo
   // get desired robot pose
   tf::Stamped<tf::Pose> desired_pose;
   tf::poseStampedMsgToTF(goal->target_pose, desired_pose);
-  if (!tf_.waitForTransform(fixed_frame, desired_pose.frame_id_, desired_pose.stamp_, ros::Duration(2.0))){
-    ROS_ERROR("MoveBaseOmnidirectionalAction: could not transform from %s to %s", fixed_frame.c_str(), desired_pose.frame_id_.c_str());
+  if (!tf_.waitForTransform(fixed_frame_, desired_pose.frame_id_, desired_pose.stamp_, ros::Duration(2.0))){
+    ROS_ERROR("MoveBaseOmnidirectionalAction: could not transform from %s to %s", fixed_frame_.c_str(), desired_pose.frame_id_.c_str());
     action_server_.setAborted();
     return;
   }
-  tf_.transformPose(fixed_frame, desired_pose, desired_pose);
+  tf_.transformPose(fixed_frame_, desired_pose, desired_pose);
   ROS_INFO("MoveBaseOmnidirectionalAction: desired robot pose %f %f ==> %f", desired_pose.getOrigin().x(), desired_pose.getOrigin().y(), tf::getYaw(desired_pose.getRotation()));
 
   // command base to desired pose
