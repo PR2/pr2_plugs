@@ -74,6 +74,7 @@ private:
   double tolerance_timeout_;
   bool lock_wheels_;
   std::string fixed_frame_;
+  double max_vel_x_, max_vel_y_, max_vel_th_;
 
   actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction> action_server_;
   std::vector<geometry_msgs::Point> footprint_;

@@ -58,6 +58,9 @@ MoveBaseOmnidirectionalAction::MoveBaseOmnidirectionalAction() :
   node_private.param("lock_wheels", lock_wheels_, true);
   node_private.param("tolerance_timeout", tolerance_timeout_, 0.5);
   node_private.param("fixed_frame", fixed_frame_, std::string("odom_combined"));
+  node_private.param("max_vel_x_", max_vel_x_, 0.5);
+  node_private.param("max_vel_y_", max_vel_y_, 0.5);
+  node_private.param("max_vel_th_", max_vel_th_, 1.0);
 
   ros::NodeHandle node;
   base_pub_ = node.advertise<geometry_msgs::Twist>("base_controller/command", 10);
@@ -100,7 +103,7 @@ void MoveBaseOmnidirectionalAction::execute(const move_base_msgs::MoveBaseGoalCo
   ros::Time goal_reached_time = ros::Time::now();
   while (goal_reached_time + ros::Duration(tolerance_timeout_) > ros::Time::now()) {
     diff = diff2D(desired_pose, robot_pose);
-    ROS_DEBUG("Angular error: %f", fabs(diff.angular.z));
+    ROS_DEBUG("X: %f Y: %f Angular error: %f", fabs(diff.linear.x), fabs(diff.linear.y), fabs(diff.angular.z));
     // check for bounds
     if (fabs(diff.linear.x) > tolerance_trans || fabs(diff.linear.y) > tolerance_trans || fabs(diff.angular.z) > tolerance_rot)
       goal_reached_time = ros::Time::now();
@@ -153,9 +156,9 @@ geometry_msgs::Twist MoveBaseOmnidirectionalAction::limitTwist(const geometry_ms
   res.linear.y *= K_trans;
   res.angular.z *= K_rot;
 
-  if (fabs(res.linear.x) > 0.1) res.linear.x = 0.1 * res.linear.x / fabs(res.linear.x);
-  if (fabs(res.linear.y) > 0.1) res.linear.y = 0.1 * res.linear.y / fabs(res.linear.y);
-  if (fabs(res.angular.z) > 0.2) res.angular.z = 0.2 * res.angular.z / fabs(res.angular.z);
+  if (fabs(res.linear.x) > max_vel_x_) res.linear.x = max_vel_x_ * res.linear.x / fabs(res.linear.x);
+  if (fabs(res.linear.y) > max_vel_y_) res.linear.y = max_vel_y_ * res.linear.y / fabs(res.linear.y);
+  if (fabs(res.angular.z) > max_vel_th_) res.angular.z = max_vel_th_ * res.angular.z / fabs(res.angular.z);
 
   ROS_DEBUG("Angular command %f", res.angular.z);
   return res;
