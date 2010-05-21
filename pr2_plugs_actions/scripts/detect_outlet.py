@@ -113,7 +113,8 @@ def get_vision_detect_goal(ud, goal):
 
 # Callback for storing the prcise detection result
 def store_precise_outlet_result(ud, result_state, result):
-    ud.sm_result.outlet_pose = TFUtil.wait_and_transform("base_link",result.outlet_pose)
+    if result_state == GoalStatus.SUCCEEDED:
+        ud.sm_result.outlet_pose = TFUtil.wait_and_transform("base_link",result.outlet_pose)
 
 def main():
     rospy.init_node("detect_outlet")#,log_level=rospy.DEBUG)
@@ -191,7 +192,7 @@ def main():
                                            goal_cb = get_wall_norm_goal,
                                            result_cb = store_wall_norm_result),
                          {'succeeded':'DETECT_OUTLET',
-                          'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
+                          'aborted':'DETECT_WALL_NORM'})
 
         # Precise detection
         StateMachine.add_state('DETECT_OUTLET',

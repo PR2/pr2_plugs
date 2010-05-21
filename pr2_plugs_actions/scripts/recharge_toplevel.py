@@ -138,6 +138,16 @@ def set_unplug_result(ud, result_state, result):
     if result_state is GoalStatus.SUCCEEDED:
         ud.sm_result.state.state = RechargeState.UNPLUGGED
 
+class GetNavGoalState(State):
+    def __init__(self):
+        State.__init__(self, outcomes=['local', 'non-local'])
+    def enter(self):
+        if self.userdata.sm_goal.command.plug_id == 'local':
+            return 'local'
+        else:
+            return 'non-local'
+
+
 # Define state to process the recharge goal
 class ProcessRechargeCommandState(State):
     def __init__(self):
@@ -193,44 +203,49 @@ def main():
         # Define navigation sm_recharge
         sm_nav = StateMachine(outcomes=['succeeded','aborted','preempted'])
         with sm_nav:
+            StateMachine.add_state('GET_NAV_GOAL', 
+                                   GetNavGoalState(),
+                                   {'local': 'UNTUCK_AT_OUTLET',
+                                    'non-local': 'SAFETY_TUCK'})
             StateMachine.add_state('SAFETY_TUCK', 
-                             SimpleActionState('tuck_arms', TuckArmsAction,
-                                               goal = TuckArmsGoal(False,True,True)),
-                             { 'succeeded':'NAVIGATE' })
+                                   SimpleActionState('tuck_arms', TuckArmsAction,
+                                                     goal = TuckArmsGoal(False,True,True)),
+                                   { 'succeeded':'NAVIGATE' })
             StateMachine.add_state('NAVIGATE', 
-                             NavigateToOutletState(exec_timeout = rospy.Duration(20*60.0)),
-                             { 'succeeded':'UNTUCK_AT_OUTLET' })
+                                   NavigateToOutletState(exec_timeout = rospy.Duration(20*60.0)),
+                                   { 'succeeded':'UNTUCK_AT_OUTLET' })
             StateMachine.add_state('UNTUCK_AT_OUTLET', 
-                             SimpleActionState('tuck_arms', TuckArmsAction,
-                                               goal = TuckArmsGoal(True,True,True)))
-            sm_nav.set_initial_state(['SAFETY_TUCK'])
+                                   SimpleActionState('tuck_arms', TuckArmsAction,
+                                                     goal = TuckArmsGoal(True,True,True)))
+            sm_nav.set_initial_state(['GET_NAV_GOAL'])
+            sm_nav.set_retrieve_keys(['sm_goal'])
 
         StateMachine.add_state('NAVIGATE_TO_OUTLET', sm_nav,
-                         {'succeeded':'DETECT_OUTLET',
-                          'aborted':'FAIL_STILL_UNPLUGGED'}),
+                               {'succeeded':'DETECT_OUTLET',
+                                'aborted':'FAIL_STILL_UNPLUGGED'}),
         
         StateMachine.add_state('DETECT_OUTLET', 
-                         SimpleActionState('detect_outlet', DetectOutletAction,
-                                           goal = DetectOutletGoal(),
-                                           result_cb = store_outlet_result),
-                         {'succeeded':'FETCH_PLUG',
-                          'aborted':'FAIL_STILL_UNPLUGGED'}),
+                               SimpleActionState('detect_outlet', DetectOutletAction,
+                                                 goal = DetectOutletGoal(),
+                                                 result_cb = store_outlet_result),
+                               {'succeeded':'FETCH_PLUG',
+                                'aborted':'FAIL_STILL_UNPLUGGED'}),
         StateMachine.add_state('FETCH_PLUG',
-                         SimpleActionState('fetch_plug',FetchPlugAction,
-                                           exec_timeout=rospy.Duration(300.0),
-                                           goal = FetchPlugGoal(),
-                                           result_cb = store_fetch_plug_result),
-                         {'succeeded':'PLUG_IN',
-                          'aborted':'FAIL_OPEN_GRIPPER'}),
+                               SimpleActionState('fetch_plug',FetchPlugAction,
+                                                 exec_timeout=rospy.Duration(300.0),
+                                                 goal = FetchPlugGoal(),
+                                                 result_cb = store_fetch_plug_result),
+                               {'succeeded':'PLUG_IN',
+                                'aborted':'FAIL_OPEN_GRIPPER'}),
         
         StateMachine.add_state('PLUG_IN',
-                         SimpleActionState('plug_in',PlugInAction,
-                                           goal = PluginGoal(),
-                                           goal_cb = get_plug_in_goal,
-                                           result_cb = store_plug_in_result,
-                                           exec_timeout = rospy.Duration(5*60.0)),
-                         { 'succeeded':'plugged_in',
-                           'aborted':'RECOVER_STOW_PLUG'})
+                               SimpleActionState('plug_in',PlugInAction,
+                                                 goal = PluginGoal(),
+                                                 goal_cb = get_plug_in_goal,
+                                                 result_cb = store_plug_in_result,
+                                                 exec_timeout = rospy.Duration(5*60.0)),
+                               { 'succeeded':'plugged_in',
+                                 'aborted':'RECOVER_STOW_PLUG'})
         
         # Define unplug sub-state machine
         sm_unplug = StateMachine(outcomes = ['succeeded','aborted','preempted'])

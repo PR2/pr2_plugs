@@ -47,8 +47,8 @@ def main():
 
   # Set initial state
   injected_ud = smach.UserData()
-  init_set = intro_client.set_initial_state('/recharge','/RECHARGE',['NAVIGATE_TO_OUTLET'],injected_ud,timeout = rospy.Duration(10.0))
-  init_set = intro_client.set_initial_state('/recharge','/RECHARGE/NAVIGATE_TO_OUTLET',['UNTUCK_AT_OUTLET'],injected_ud,timeout = rospy.Duration(10.0))
+#  init_set = intro_client.set_initial_state('/recharge','/RECHARGE',['NAVIGATE_TO_OUTLET'],injected_ud)
+#  init_set = intro_client.set_initial_state('/recharge','/RECHARGE/NAVIGATE_TO_OUTLET',['UNTUCK_AT_OUTLET'],injected_ud)
 
   # publisher for commands
   pub = rospy.Publisher('recharge_command', RechargeCommand)
@@ -56,7 +56,8 @@ def main():
 
   cmd = RechargeCommand()
   #cmd.plug_id = 'phasespace'
-  cmd.plug_id = 'whiteboard'
+  #cmd.plug_id = 'whiteboard'
+  cmd.plug_id = 'local'
   cmd.command = RechargeCommand.PLUG_IN
   pub.publish(cmd)
   

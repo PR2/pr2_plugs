@@ -93,7 +93,7 @@ if __name__ == '__main__':
   # transform listener
   transformer = tf.TransformListener()
 
-  joint_space_client = actionlib.SimpleActionClient('r_arm_plugs_controller/joint_trajectory_generator', JointTrajectoryAction)
+  joint_space_client = actionlib.SimpleActionClient('r_arm_plugs_controller/joint_trajectory_generator_unwrap', JointTrajectoryAction)
   joint_space_client.wait_for_server()
   joint_space_goal = JointTrajectoryGoal()
 
