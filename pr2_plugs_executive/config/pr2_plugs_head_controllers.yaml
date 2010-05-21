@@ -1,0 +1,11 @@
+head_traj_controller:
+  joint_trajectory_action_node:
+    joints:
+      - head_pan_joint
+      - head_tilt_joint
+    constraints:
+      goal_time: 0.6
+      head_pan_joint:
+        goal: 0.05
+      head_tilt_joint:
+        goal: 0.05

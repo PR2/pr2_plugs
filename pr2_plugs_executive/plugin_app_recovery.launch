@@ -1,0 +1,12 @@
+<launch>
+
+  <!-- plugging in -->
+  <include file="$(find pr2_plugs_executive)/plugin.launch" />
+  
+  <!-- navstack -->
+  <include file="$(find wg_pr2_2dnav)/pr2_2dnav.launch" />
+
+  <!-- plugs executive -->
+  <node pkg="pr2_plugs_executive" type="recharge_action_web_adapter.py" name="recharge_action_web_adapter" output="screen" />
+
+</launch>

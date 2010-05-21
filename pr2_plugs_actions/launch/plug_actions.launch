@@ -1,0 +1,107 @@
+<launch>
+  <rosparam command="load" file="$(find pr2_plugs_actions)/config/joint_trajectories.yaml" />
+  <rosparam command="load" file="$(find pr2_plugs_actions)/config/cart_ik_seeds.yaml" />
+
+  <!-- detect wall norm action -->
+  <include file="$(find stereo_wall_detection)/wall_extractor.launch"/>
+
+  <!-- wall norm action -->
+  <node pkg="pr2_plugs_actions" type="detect_wall_norm.py" name="detect_wall_norm" output="screen"/>
+
+  <!-- vision detect outlet action -->
+  <include file="$(find pr2_plugs_actions)/launch/detect_outlet.launch"/>
+  <!--node pkg="pr2_plugs_actions" type="vision_detect_outlet.py" name="vision_detect_outlet" output="screen"/-->
+
+  <!-- vision detect plug action -->
+  <include file="$(find pr2_plugs_actions)/launch/detect_plug.launch"/>
+  <!--node pkg="pr2_plugs_actions" type="vision_detect_plug.py" name="vision_detect_plug" output="screen"/-->
+
+  <!-- detect plug action -->
+  <node pkg="pr2_plugs_actions" type="detect_plug.py" name="detect_plug" output="screen"/>
+
+  <!-- detect plug on base action -->
+  <node pkg="pr2_plugs_actions" type="detect_plug_on_base.py" name="detect_plug_on_base" output="screen"/>
+
+  <!-- align base action -->
+  <node pkg="pr2_plugs_actions" type="align_base" name="align_base" output="screen"/>
+
+  <!-- rechare toplevel action -->
+  <node pkg="pr2_plugs_actions" type="recharge_toplevel.py" name="recharge_toplevel" output="screen" />
+
+  <!-- detect outlet action -->
+  <node pkg="pr2_plugs_actions" type="detect_outlet.py" name="detect_outlet" output="screen" />
+
+  <!-- fetch plug action -->
+  <node pkg="pr2_plugs_actions" type="fetch_plug.py" name="fetch_plug" output="screen" />
+
+  <!-- plug in action -->
+  <node pkg="pr2_plugs_actions" type="plug_in.py" name="plug_in" output="screen" />
+  
+  <!-- move base omnidirectional action -->
+  <node pkg="pr2_plugs_actions" type="move_base_omnidirectional" name="move_base_omnidirectional" output="screen">\
+    <param name="k_trans" value="5.0" />
+    <param name="k_rot" value="5.0" />
+    <param name="tolerance_trans" value="0.02" />
+    <param name="tolerance_rot" value="0.03" />
+  </node>
+  <group ns="move_base_omnidirectional/costmap_move_base" >
+    <rosparam file="$(find pr2_plugs_actions)/launch/footprint.yaml" command="load" />
+    <!-- Start Costmap Parameters -->
+    <param name="global_frame" value="odom_combined" />
+    <param name="robot_base_frame" value="base_link" />
+    <param name="update_frequency" value="5.0" />
+    <param name="publish_frequency" value="1.0" />
+    <param name="obstacle_range" value="1.0" />
+    <param name="max_obstacle_height" value="2.0" />
+    <param name="raytrace_range" value="1.5" />
+    <param name="observation_sources" value="base_scan" />
+    <param name="base_scan/observation_persistence" value="0.0" />
+    <param name="base_scan/expected_update_rate" value="0.2" />
+    <param name="base_scan/data_type" value="LaserScan" />
+    <param name="base_scan/clearing" value="true" />
+    <param name="base_scan/marking" value="false" />
+    <param name="base_scan_marking/observation_persistence" value="0.0" />
+    <param name="base_scan_marking/expected_update_rate" value="0.2" />
+    <param name="base_scan_marking/data_type" value="PointCloud" />
+    <param name="base_scan_marking/clearing" value="false" />
+    <param name="base_scan_marking/marking" value="true" />
+    <param name="rolling_window" value="true" />
+    <param name="static_map" value="false" />
+    <!-- begin only used if static map is set to false -->
+    <param name="width" value="5.0" />
+    <param name="height" value="5.0" />
+    <param name="origin_x" value="-2.5" />
+    <param name="origin_y" value="-2.5" />
+    <param name="resolution" value="0.01" />
+    <!-- end only used if static map is set to false -->
+    <param name="cost_scaling_factor" value="1.0" />
+    <param name="lethal_cost_threshold" value="100" />
+    <!-- End Costmap Parameters -->
+    <remap from="obstacles" to="~obstacles" />
+    <remap from="inflated_obstacles" to="~inflated_obstacles" />
+  </group>
+
+  <!-- stow plug action -->
+  <node pkg="pr2_plugs_actions" type="stow_plug.py" name="stow_plug" output="screen"/>
+
+  <!-- plugin action -->
+  <node pkg="pr2_plugs_actions" type="plugin.py" name="plugin" output="screen"/>
+
+  <!-- calibration action -->
+  <node pkg="pr2_plugs_actions" type="calibration_plugin.py" name="calibration_plugin" output="screen"/>
+
+  <!-- wiggle plug action -->
+  <node pkg="pr2_plugs_actions" type="wiggle_plug.py" name="wiggle_plug" output="screen"/>
+
+
+  <!-- tf frames for debugging 
+  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_outlet_detection/goal VisionOutletDetectionActionGoal goal.prior outlet_detection_prior" name="tf_outlet_detection_prior" output="screen" />
+  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_outlet_detection/result VisionOutletDetectionActionResult result.outlet_pose outlet_detection_result" name="tf_outlet_detection_result" output="screen" />
+  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_plug_detection/goal VisionPlugDetectionActionGoal goal.prior plug_detection_prior" name="tf_plug_detection_prior" output="screen" />   
+  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_plug_detection/result VisionPlugDetectionActionResult result.plug_pose plug_detection_result" name="tf_plug_detection_result" output="screen" />
+  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="r_arm_ik/goal PR2ArmIKActionGoal goal.pose r_arm_ik_goal" name="tf_r_arm_ik_goal" output="screen" />        
+  -->
+
+</launch>
+
+

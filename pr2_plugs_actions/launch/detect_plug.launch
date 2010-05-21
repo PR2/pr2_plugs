@@ -1,0 +1,10 @@
+ <launch>
+
+  <!-- The plug finding action -->
+  <node pkg="pr2_plugs_actions" type="vision_detect_plug" name="vision_plug_detection" output="screen">
+    <param name="subpixel_corners" type="bool" value="true"/>		
+    <param name="loader_output" type="string" command="$(find pr2_plugs_actions)/scripts/load_plugin_calibration.py $(find pr2_plugs_actions)/config/plug_description.yaml" />
+    <rosparam command="load" file="/tmp/plugs_config.yaml" />
+  </node>
+
+</launch>

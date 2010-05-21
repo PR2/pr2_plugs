@@ -1,0 +1,7 @@
+<launch>
+   
+  <node pkg="pr2_plugs_actions" type="fetch_plug.py" name="fetch_plug" output="screen"/>
+  <node pkg="pr2_plugs_actions" type="stow_plug.py" name="stow_plug" output="screen"/>
+  <test test-name="fetch_and_stow_plug_test" pkg="pr2_plugs_actions" type="fetch_and_stow_plug_test"/>
+
+</launch>

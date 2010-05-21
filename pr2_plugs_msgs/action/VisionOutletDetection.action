@@ -1,0 +1,6 @@
+string camera_name
+geometry_msgs/PoseStamped prior
+geometry_msgs/Vector3Stamped wall_normal
+---
+geometry_msgs/PoseStamped outlet_pose
+---

@@ -1,0 +1,21 @@
+<package>
+  <description brief="visual_pose_estimation">
+
+     visual_pose_estimation
+
+  </description>
+  <author>Patrick Mihelich</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/visual_pose_estimation</url>
+
+  <depend package="roscpp"/>
+  <depend package="opencv2"/>
+  <depend package="image_geometry"/>
+  <depend package="tf"/>
+
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lvisual_pose_estimation"/>
+  </export>
+
+</package>
