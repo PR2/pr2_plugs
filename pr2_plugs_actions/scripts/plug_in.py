@@ -73,19 +73,19 @@ def main():
 
     # Define nominal sequence
     with sm:
-        StateMachine.add('DETECT_PLUG_IN_GRIPPER',
+        StateMachine.add_state('DETECT_PLUG_IN_GRIPPER',
                          SimpleActionState('detect_plug',
                                            DetectPlugInGripperAction,
                                            goal = DetectPlugInGripperGoal(),
                                            result_cb = store_detect_plug_result),
                          {'succeeded':'INSERT_PLUG'})
 
-        StateMachine.add('INSERT_PLUG',
+        StateMachine.add_state('INSERT_PLUG',
                          SimpleActionState('plugin', PluginAction,
                                            goal_cb = get_plugin_goal),
                          {'succeeded':'WIGGLE_IN'})
 
-        StateMachine.add('WIGGLE_IN',
+        StateMachine.add_state('WIGGLE_IN',
                          SimpleActionState('wiggle_plug',
                                            WigglePlugAction,
                                            goal_cb = get_wiggle_goal),

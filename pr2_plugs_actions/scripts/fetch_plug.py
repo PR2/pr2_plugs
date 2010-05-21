@@ -112,20 +112,20 @@ def main():
 
     # Define nominal sequence
     with sm:
-        StateMachine.add('RAISE_SPINE',
+        StateMachine.add_state('RAISE_SPINE',
                          SimpleActionState('torso_controller/position_joint_action',
                                            SingleJointPositionAction,
                                            goal = SingleJointPositionGoal(position=0.16)),
                          {'succeeded':'MOVE_ARM_BASE_DETECT_POSE'})
 
         # Move arm to detect the plug on the base
-        StateMachine.add('MOVE_ARM_BASE_DETECT_POSE',
+        StateMachine.add_state('MOVE_ARM_BASE_DETECT_POSE',
                          JointTrajectoryState('r_arm_plugs_controller',
                                               'pr2_plugs_configuration/detect_plug_on_base'),
                          {'succeeded':'DETECT_PLUG_ON_BASE'})
 
         # Detect the plug
-        StateMachine.add('DETECT_PLUG_ON_BASE',
+        StateMachine.add_state('DETECT_PLUG_ON_BASE',
                          SimpleActionState('detect_plug_on_base',DetectPlugOnBaseAction,
                                            goal = DetectPlugOnBaseGoal(),
                                            result_cb = store_detect_plug_result),
@@ -133,43 +133,43 @@ def main():
                           'aborted':'MOVE_ARM_BASE_DETECT_POSE'})
 
         # Move arm to the grasp pose
-        StateMachine.add('MOVE_ARM_BASE_GRASP_POSE',
+        StateMachine.add_state('MOVE_ARM_BASE_GRASP_POSE',
                          JointTrajectoryState('r_arm_plugs_controller',
                                               'pr2_plugs_configuration/grasp_plug'),
                          {'succeeded':'OPEN_GRIPPER',
                           'aborted':'RECOVER_GRASP_TO_DETECT_POSE'})
 
-        StateMachine.add('OPEN_GRIPPER',
+        StateMachine.add_state('OPEN_GRIPPER',
                          SimpleActionState('r_gripper_controller/gripper_action',
                                            Pr2GripperCommandAction,
                                            goal = open_gripper_goal),
                     {'succeeded':'GRASP_PLUG'})
 
-        StateMachine.add('GRASP_PLUG',
+        StateMachine.add_state('GRASP_PLUG',
                          GraspPlugState(),
                          {'succeeded':'CLOSE_GRIPPER',
                           'aborted':'DETECT_PLUG_ON_BASE'})
 
-        StateMachine.add('CLOSE_GRIPPER',
+        StateMachine.add_state('CLOSE_GRIPPER',
                          SimpleActionState('r_gripper_controller/gripper_action',
                                            Pr2GripperCommandAction,
                                            goal = close_gripper_goal),
                          { 'succeeded':'DETECT_PLUG_ON_BASE',
                            'aborted':'REMOVE_PLUG'})
 
-        StateMachine.add('REMOVE_PLUG',
+        StateMachine.add_state('REMOVE_PLUG',
                          JointTrajectoryState('r_arm_plugs_controller',
                                               'pr2_plugs_configuration/remove_plug'),
                          {'succeeded':'LOWER_SPINE'})
             
-        StateMachine.add('LOWER_SPINE',
+        StateMachine.add_state('LOWER_SPINE',
                          SimpleActionState('torso_controller/position_joint_action',
                                            SingleJointPositionAction,
                                            goal = SingleJointPositionGoal(position=0.01)),
                          {'succeeded':'succeeded'})
         
         # Define recovery states
-        States.add('RECOVER_GRASP_TO_DETECT_POSE',
+        States.add_state('RECOVER_GRASP_TO_DETECT_POSE',
                    JointTrajectoryState('r_arm_plugs_controller',
                                         'pr2_plugs_configuration/recover_grasp_to_detect'),
                    { 'succeeded':'DETECT_PLUG_ON_BASE',
