@@ -69,7 +69,7 @@ def execute_cb(goal):
         return
       pose_base_plug= PoseStampedMath(transformer.transformPose("base_link", pose_detect_plug))
       error = (pose_base_plug.inverse()*PoseStampedMath(detect_plug_goal.prior)).toEuler()
-      if (math.fabs(error[3]) < 0.08) and (math.fabs(error[4]) < 0.08) and (math.fabs(error[5]) < 0.90) and (math.fabs(error[0]) < 0.1) and (math.fabs(error[1]) < 0.1) and (math.fabs(error[2]) < 0.1):
+      if (math.fabs(error[3]) < 0.8) and (math.fabs(error[4]) < 0.8) and (math.fabs(error[5]) < 0.8) and (math.fabs(error[0]) < 0.1) and (math.fabs(error[1]) < 0.1) and (math.fabs(error[2]) < 0.1):
         to_init_position()
         server.set_succeeded(DetectPlugOnBaseResult(detect_plug_client.get_result().plug_pose))      
         rospy.loginfo("Action server goal finished")  
