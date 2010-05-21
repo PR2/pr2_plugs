@@ -10,3 +10,6 @@ outlet_approach_poses:
   whiteboard:
     position: [20.714, 23.834, 0.048]
     orientation: [0.001, -0.001, 0.978, 0.208]
+  local:
+    position: [0, 0, 0]
+    orientation: [0, 0, 0, 1]
