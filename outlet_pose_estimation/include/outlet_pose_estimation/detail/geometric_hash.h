@@ -13,7 +13,6 @@
 #include <math.h>
 
 #include <cv.h>
-#include <cv.hpp>
 
 #include <vector>
 #include <map>
@@ -181,8 +180,8 @@ public:
     struct PointMatcherParams
     {
         PointMatcherParams(float _min_angle = 0.5f, float _max_basis_length = 100.0f, float _min_basis_length = 10.0f,
-            int _min_hash_votes = 3, float _min_validated_votes = 5.0f, float _min_distortion_ratio = 0.8f) : 
-            min_angle(_min_angle), max_basis_length(_max_basis_length), min_basis_length(_min_basis_length), 
+            int _min_hash_votes = 3, float _min_validated_votes = 5.0f, float _min_distortion_ratio = 0.8f) :
+            min_angle(_min_angle), max_basis_length(_max_basis_length), min_basis_length(_min_basis_length),
             min_hash_votes(_min_hash_votes), min_validated_votes(_min_validated_votes), min_distortion_ratio(_min_distortion_ratio) {};
 
         float min_angle;
