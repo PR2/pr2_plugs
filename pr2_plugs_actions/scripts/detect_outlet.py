@@ -160,34 +160,34 @@ def main():
 
     # Define nominal sequence
     with sm:
-        StateMachine.add_state('LOWER_SPINE',
+        StateMachine.add('LOWER_SPINE',
                          SimpleActionState('torso_controller/position_joint_action', SingleJointPositionAction,
                                            goal = SingleJointPositionGoal(position=0.01)),
                          {'succeeded':'ROUGH_ALIGN_BASE'})
 
-        StateMachine.add_state('ROUGH_ALIGN_BASE',
+        StateMachine.add('ROUGH_ALIGN_BASE',
                          SimpleActionState('align_base', AlignBaseAction,
                                            goal = AlignBaseGoal(offset = 0,look_point=look_point)),
                          {'succeeded':'MOVE_ARM_DETECT_OUTLET'})
 
-        StateMachine.add_state('MOVE_ARM_DETECT_OUTLET',
+        StateMachine.add('MOVE_ARM_DETECT_OUTLET',
                          JointTrajectoryState('r_arm_plugs_controller','pr2_plugs_configuration/detect_outlet'),
                          {'succeeded':'OUTLET_LATERAL_SEARCH',
                           'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'}),
 
-        StateMachine.add_state('OUTLET_LATERAL_SEARCH',
+        StateMachine.add('OUTLET_LATERAL_SEARCH',
                          OutletSearchState(offsets = (0.0, 0.1, -0.2, 0.3, -0.4)),
                          {'succeeded':'PRECISE_ALIGN_BASE',
                           'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
 
-        StateMachine.add_state('PRECISE_ALIGN_BASE',
+        StateMachine.add('PRECISE_ALIGN_BASE',
                          SimpleActionState('align_base', AlignBaseAction,
                                            goal = AlignBaseGoal(offset = 0,look_point=look_point),
                                            goal_cb = get_precise_align_goal),
                          {'succeeded':'DETECT_WALL_NORM',
                           'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
 
-        StateMachine.add_state('DETECT_WALL_NORM',
+        StateMachine.add('DETECT_WALL_NORM',
                          SimpleActionState('detect_wall_norm', DetectWallNormAction,
                                            goal_cb = get_wall_norm_goal,
                                            result_cb = store_wall_norm_result),
@@ -195,7 +195,7 @@ def main():
                           'aborted':'DETECT_WALL_NORM'})
 
         # Precise detection
-        StateMachine.add_state('DETECT_OUTLET',
+        StateMachine.add('DETECT_OUTLET',
                          SimpleActionState('vision_outlet_detection', VisionOutletDetectionAction,
                                            goal_cb = get_vision_detect_goal,
                                            result_cb = store_precise_outlet_result),
@@ -204,19 +204,16 @@ def main():
 
 
         # Define recovery states
-        StateMachine.add_state('FAIL_MOVE_ARM_OUTLET_TO_FREE',
+        StateMachine.add('FAIL_MOVE_ARM_OUTLET_TO_FREE',
                          JointTrajectoryState('r_arm_plugs_controller','pr2_plugs_configuration/recover_outlet_to_free'),
                          {'succeeded':'aborted'})
-
-        # Set the initial state
-        sm.set_initial_state(['LOWER_SPINE'])
 
     # Construct introspection server
     intro_server = smach.IntrospectionServer('detect_outlet',sm,'/RECHARGE/DETECT_OUTLET')
     intro_server.start()
 
     # Run state machine action server 
-    sms = ActionServerStateMachine(
+    sms = ActionServerWrapper(
             'detect_outlet', DetectOutletAction, sm,
             succeeded_outcomes = ['succeeded'],
             aborted_outcomes = ['aborted'],

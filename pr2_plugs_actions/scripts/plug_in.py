@@ -73,33 +73,30 @@ def main():
 
     # Define nominal sequence
     with sm:
-        StateMachine.add_state('DETECT_PLUG_IN_GRIPPER',
+        StateMachine.add('DETECT_PLUG_IN_GRIPPER',
                          SimpleActionState('detect_plug',
                                            DetectPlugInGripperAction,
                                            goal = DetectPlugInGripperGoal(),
                                            result_cb = store_detect_plug_result),
                          {'succeeded':'INSERT_PLUG'})
 
-        StateMachine.add_state('INSERT_PLUG',
+        StateMachine.add('INSERT_PLUG',
                          SimpleActionState('plugin', PluginAction,
                                            goal_cb = get_plugin_goal),
                          {'succeeded':'WIGGLE_IN'})
 
-        StateMachine.add_state('WIGGLE_IN',
+        StateMachine.add('WIGGLE_IN',
                          SimpleActionState('wiggle_plug',
                                            WigglePlugAction,
                                            goal_cb = get_wiggle_goal),
                          {'succeeded':'succeeded'})
-
-        # Set the initial state
-        sm.set_initial_state(['DETECT_PLUG_IN_GRIPPER'])
 
     # Run state machine introspection server
     intro_server = smach.IntrospectionServer('plug_in',sm,'/RECHARGE/PLUG_IN')
     intro_server.start()
 
     # Run state machine action server 
-    sms = ActionServerStateMachine(
+    sms = ActionServerWrapper(
             'plug_in', PlugInAction, sm,
             succeeded_outcomes = ['succeeded'],
             aborted_outcomes = ['aborted'],
