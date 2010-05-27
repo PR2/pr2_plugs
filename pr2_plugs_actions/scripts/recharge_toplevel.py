@@ -37,6 +37,8 @@ roslib.load_manifest('pr2_plugs_actions')
 import rospy
 
 import threading
+
+import actionlib
 import tf
 
 from pr2_plugs_msgs.msg import *
@@ -52,7 +54,7 @@ from std_srvs.srv import *
 # State machine classes
 from smach import *
 
-import actionlib
+import sm from detect_outlet as detect_outlet_sm
 
 class TFUtil():
     transformer = None
@@ -187,14 +189,10 @@ def main():
                                                goal = TuckArmsGoal(True,True,True)))
 
         # Detect the outlet
-        def store_outlet_result(ud, result_state, result):
-            ud.outlet_pose = result.outlet_pose
         StateMachine.add('DETECT_OUTLET', 
-                         SimpleActionState('detect_outlet', DetectOutletAction,
-                                           goal = DetectOutletGoal(),
-                                           result_cb = store_outlet_result),
-                         {'succeeded':'FETCH_PLUG',
-                          'aborted':'FAIL_STILL_UNPLUGGED'}),
+                detect_outlet_sm,
+                {'succeeded':'FETCH_PLUG',
+                    'aborted':'FAIL_STILL_UNPLUGGED'}),
 
         # Fetch plug
         def store_fetch_plug_result(ud, result_state, result):

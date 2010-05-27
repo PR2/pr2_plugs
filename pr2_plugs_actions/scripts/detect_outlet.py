@@ -27,6 +27,7 @@ from smach import *
 import actionlib
 import dynamic_reconfigure.client
 
+__all__ = ['sm']
 
 class TFUtil():
     transformer = None
@@ -88,144 +89,116 @@ class OutletSearchState(SPAState):
         rospy.logerr("Could not find outlet in search")
         return 'aborted'
 
-class AbortedState(State):
-    def __init__(self):
-        State.__init__(self, default_outcome='aborted')
+TFUtil()
 
-# Callback to store the plug detection result
-def get_precise_align_goal(ud, goal):
-    goal.offset = ud.outlet_rough_pose.pose.position.y
-    return goal
+# Check to see if this is running in sim where the dynamic reconfigure doesn't exist
+sim = rospy.get_param('~sim', False)
+rospy.logdebug('sim is %s', sim)
+if(not sim):
+    #this ensures that the forearm camera triggers when the texture projector is off
+    projector_client = dynamic_reconfigure.client.Client('camera_synchronizer_node')
+    forearm_projector_off = {'forearm_r_trig_mode': 4} #off
+    projector_client.update_configuration(forearm_projector_off)
 
-# Callbacks for wall norm
-def get_wall_norm_goal(ud, goal):
-    ud.wall_norm_goal.look_point.header.stamp = rospy.Time.now()
-    return ud.wall_norm_goal
+# Define fixed goals
+# Declare wall norm goal
+# This is the point at which we want the head to look
+look_point = PointStamped()
+look_point.header.frame_id = 'base_link'
+look_point.point.x = -0.14
+look_point.point.y = -0.82
+look_point.point.z = 0.3
 
-def store_wall_norm_result(ud, result_state, result):
-    ud.vision_detect_outlet_goal.wall_normal = result.wall_norm
+wall_norm_goal = DetectWallNormGoal()
+wall_norm_goal.look_point = look_point
 
-# Callback for resetting timestamp in vision detection goal
-def get_vision_detect_goal(ud, goal):
-    ud.vision_detect_outlet_goal.wall_normal.header.stamp = rospy.Time.now()
-    ud.vision_detect_outlet_goal.prior.header.stamp = rospy.Time.now()
-    return ud.vision_detect_outlet_goal
+align_base_goal = AlignBaseGoal()
+align_base_goal.look_point = look_point
 
-# Callback for storing the prcise detection result
-def store_precise_outlet_result(ud, result_state, result):
-    if result_state == GoalStatus.SUCCEEDED:
-        ud.sm_result.outlet_pose = TFUtil.wait_and_transform("base_link",result.outlet_pose)
+vision_detect_outlet_goal = VisionOutletDetectionGoal()
+vision_detect_outlet_goal.camera_name = "/r_forearm_cam"
+vision_detect_outlet_goal.prior = PoseStampedMath().fromEuler(-0.14, -0.82, 0.29, 0, 0, -pi/2).msg
+vision_detect_outlet_goal.prior.header.frame_id = "base_link"
 
-def main():
-    rospy.init_node("detect_outlet")#,log_level=rospy.DEBUG)
-    
-    TFUtil()
-    #check to see if this is running in sim where the dynamic reconfigure doesn't exist
-    sim = rospy.get_param('~sim', False)
-    rospy.logdebug('sim is %s', sim)
-    if(not sim):
-        #this ensures that the forearm camera triggers when the texture projector is off
-        projector_client = dynamic_reconfigure.client.Client('camera_synchronizer_node')
-        forearm_projector_off = {'forearm_r_trig_mode': 4} #off
-        projector_client.update_configuration(forearm_projector_off)
+# Construct state machine
+sm = StateMachine(outcomes=['succeeded','aborted','preempted'])
 
-    # Define fixed goals
-    # Declare wall norm goal
-    # This is the point at which we want the head to look
-    look_point = PointStamped()
-    look_point.header.frame_id = 'base_link'
-    look_point.point.x = -0.14
-    look_point.point.y = -0.82
-    look_point.point.z = 0.3
+# Default userdata
+sm.local_userdata.wall_norm_goal = wall_norm_goal
+sm.local_userdata.align_base_goal = align_base_goal
+sm.local_userdata.vision_detect_outlet_goal = vision_detect_outlet_goal
+sm.local_userdata.outlet_rough_pose = PoseStamped()
 
-    wall_norm_goal = DetectWallNormGoal()
-    wall_norm_goal.look_point = look_point
+# Define nominal sequence
+with sm:
+    # Define SMACH interface
+    Container.map_parent_ud_keys('outlet_pose':'outlet_pose'})
 
-    align_base_goal = AlignBaseGoal()
-    align_base_goal.look_point = look_point
+    StateMachine.add('LOWER_SPINE',
+            SimpleActionState('torso_controller/position_joint_action', SingleJointPositionAction,
+                goal = SingleJointPositionGoal(position=0.01)),
+            {'succeeded':'ROUGH_ALIGN_BASE'})
 
-    vision_detect_outlet_goal = VisionOutletDetectionGoal()
-    vision_detect_outlet_goal.camera_name = "/r_forearm_cam"
-    vision_detect_outlet_goal.prior = PoseStampedMath().fromEuler(-0.14, -0.82, 0.29, 0, 0, -pi/2).msg
-    vision_detect_outlet_goal.prior.header.frame_id = "base_link"
+    StateMachine.add('ROUGH_ALIGN_BASE',
+            SimpleActionState('align_base', AlignBaseAction,
+                goal = AlignBaseGoal(offset = 0,look_point=look_point)),
+            {'succeeded':'MOVE_ARM_DETECT_OUTLET'})
 
-    # Construct state machine
-    sm = StateMachine(outcomes=['succeeded','aborted','preempted'])
+    StateMachine.add('MOVE_ARM_DETECT_OUTLET',
+            JointTrajectoryState('r_arm_plugs_controller','pr2_plugs_configuration/detect_outlet'),
+            {'succeeded':'OUTLET_LATERAL_SEARCH',
+                'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'}),
 
-    # Default userdata
-    sm.local_userdata.wall_norm_goal = wall_norm_goal
-    sm.local_userdata.align_base_goal = align_base_goal
-    sm.local_userdata.vision_detect_outlet_goal = vision_detect_outlet_goal
-    sm.local_userdata.outlet_rough_pose = PoseStamped()
+    StateMachine.add('OUTLET_LATERAL_SEARCH',
+            OutletSearchState(offsets = (0.0, 0.1, -0.2, 0.3, -0.4)),
+            {'succeeded':'PRECISE_ALIGN_BASE',
+                'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
 
-    # Define nominal sequence
-    with sm:
-        StateMachine.add('LOWER_SPINE',
-                         SimpleActionState('torso_controller/position_joint_action', SingleJointPositionAction,
-                                           goal = SingleJointPositionGoal(position=0.01)),
-                         {'succeeded':'ROUGH_ALIGN_BASE'})
+    # Align the base precisely
+    def get_precise_align_goal(ud, goal):
+        goal.offset = ud.outlet_rough_pose.pose.position.y
+        return goal
+    StateMachine.add('PRECISE_ALIGN_BASE',
+            SimpleActionState('align_base', AlignBaseAction,
+                goal = AlignBaseGoal(offset = 0,look_point=look_point),
+                goal_cb = get_precise_align_goal),
+            {'succeeded':'DETECT_WALL_NORM',
+                'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
 
-        StateMachine.add('ROUGH_ALIGN_BASE',
-                         SimpleActionState('align_base', AlignBaseAction,
-                                           goal = AlignBaseGoal(offset = 0,look_point=look_point)),
-                         {'succeeded':'MOVE_ARM_DETECT_OUTLET'})
+    # Get wall norm
+    def get_wall_norm_goal(ud, goal):
+        ud.wall_norm_goal.look_point.header.stamp = rospy.Time.now()
+        return ud.wall_norm_goal
 
-        StateMachine.add('MOVE_ARM_DETECT_OUTLET',
-                         JointTrajectoryState('r_arm_plugs_controller','pr2_plugs_configuration/detect_outlet'),
-                         {'succeeded':'OUTLET_LATERAL_SEARCH',
-                          'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'}),
+    def store_wall_norm_result(ud, result_state, result):
+        ud.vision_detect_outlet_goal.wall_normal = result.wall_norm
 
-        StateMachine.add('OUTLET_LATERAL_SEARCH',
-                         OutletSearchState(offsets = (0.0, 0.1, -0.2, 0.3, -0.4)),
-                         {'succeeded':'PRECISE_ALIGN_BASE',
-                          'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
+    StateMachine.add('DETECT_WALL_NORM',
+            SimpleActionState('detect_wall_norm', DetectWallNormAction,
+                goal_cb = get_wall_norm_goal,
+                result_cb = store_wall_norm_result),
+            {'succeeded':'DETECT_OUTLET',
+                'aborted':'DETECT_WALL_NORM'})
 
-        StateMachine.add('PRECISE_ALIGN_BASE',
-                         SimpleActionState('align_base', AlignBaseAction,
-                                           goal = AlignBaseGoal(offset = 0,look_point=look_point),
-                                           goal_cb = get_precise_align_goal),
-                         {'succeeded':'DETECT_WALL_NORM',
-                          'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
+    # Precise detection
+    def get_vision_detect_goal(ud, goal):
+        ud.vision_detect_outlet_goal.wall_normal.header.stamp = rospy.Time.now()
+        ud.vision_detect_outlet_goal.prior.header.stamp = rospy.Time.now()
+        return ud.vision_detect_outlet_goal
 
-        StateMachine.add('DETECT_WALL_NORM',
-                         SimpleActionState('detect_wall_norm', DetectWallNormAction,
-                                           goal_cb = get_wall_norm_goal,
-                                           result_cb = store_wall_norm_result),
-                         {'succeeded':'DETECT_OUTLET',
-                          'aborted':'DETECT_WALL_NORM'})
+    def store_precise_outlet_result(ud, result_state, result):
+        if result_state == GoalStatus.SUCCEEDED:
+            ud.outlet_pose = TFUtil.wait_and_transform("base_link",result.outlet_pose)
 
-        # Precise detection
-        StateMachine.add('DETECT_OUTLET',
-                         SimpleActionState('vision_outlet_detection', VisionOutletDetectionAction,
-                                           goal_cb = get_vision_detect_goal,
-                                           result_cb = store_precise_outlet_result),
-                         {'succeeded':'succeeded',
-                          'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
+    StateMachine.add('DETECT_OUTLET',
+            SimpleActionState('vision_outlet_detection', VisionOutletDetectionAction,
+                goal_cb = get_vision_detect_goal,
+                result_cb = store_precise_outlet_result),
+            {'succeeded':'succeeded',
+                'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
 
 
-        # Define recovery states
-        StateMachine.add('FAIL_MOVE_ARM_OUTLET_TO_FREE',
-                         JointTrajectoryState('r_arm_plugs_controller','pr2_plugs_configuration/recover_outlet_to_free'),
-                         {'succeeded':'aborted'})
-
-    # Construct introspection server
-    intro_server = smach.IntrospectionServer('detect_outlet',sm,'/RECHARGE/DETECT_OUTLET')
-    intro_server.start()
-
-    # Run state machine action server 
-    sms = ActionServerWrapper(
-            'detect_outlet', DetectOutletAction, sm,
-            succeeded_outcomes = ['succeeded'],
-            aborted_outcomes = ['aborted'],
-            preempted_outcomes = ['preempted']
-            )
-    sms.run_server()
-
-    rospy.spin()
-
-    intro_server.stop()
-
-
-if __name__ == "__main__":
-    main()
-
+    # Define recovery states
+    StateMachine.add('FAIL_MOVE_ARM_OUTLET_TO_FREE',
+            JointTrajectoryState('r_arm_plugs_controller','pr2_plugs_configuration/recover_outlet_to_free'),
+            {'succeeded':'aborted'})
