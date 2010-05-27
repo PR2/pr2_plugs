@@ -95,14 +95,14 @@ protected:
 // An image patch is rotated on angle phi (in degrees), then scaled lambda1 times
 // along horizontal and lambda2 times along vertical direction, and then rotated again
 // on angle (theta - phi).
-/*class CvAffinePose
+class CvAffinePose
 {
 public:
     float phi;
     float theta;
     float lambda1;
     float lambda2;
-};*/
+};
 
 // AffineTransformPatch: generates an affine transformed image patch.
 // - src: source image (roi is supported)
