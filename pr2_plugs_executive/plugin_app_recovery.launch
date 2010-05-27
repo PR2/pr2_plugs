@@ -9,4 +9,6 @@
   <!-- plugs executive -->
   <node pkg="pr2_plugs_executive" type="recharge_action_web_adapter.py" name="recharge_action_web_adapter" output="screen" />
 
+  <!-- motor restarter -->
+  <node pkg="pr2_plugs_executive" type="dangerous_auto_restarter.py" name="dangerous_auto_restarter" output="screen" />
 </launch>

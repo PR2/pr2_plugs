@@ -23,6 +23,9 @@
   <depend package="joint_trajectory_generator"/>
   <depend package="wg_pr2_2dnav"/>
 
+  <depend package="std_msgs"/>
+  <depend package="std_srvs"/>
+
 </package>
 
 
