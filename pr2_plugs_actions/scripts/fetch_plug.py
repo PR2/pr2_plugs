@@ -28,6 +28,8 @@ from smach import *
 
 import actionlib
 
+__all__ == ['construct_sm']
+
 class TFUtil():
     transformer = None
     def __init__(self):
@@ -52,7 +54,7 @@ class GraspPlugState(SPAState):
 
         preempt_timeout = rospy.Duration(5.0)
         # Grab relevant user data
-        pose_tf_plug = self.userdata.sm_result.plug_on_base_pose
+        pose_tf_plug = self.userdata.plug_on_base_pose
 
         # Get grasp plug IK seed
         cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/grasp_plug_seed')
@@ -83,14 +85,7 @@ class GraspPlugState(SPAState):
 
         return 'succeeded'
 
-# Callback to store the plug detection result
-def store_detect_plug_result(ud, result_state, result):
-    if result_state == actionlib.GoalStatus.SUCCEEDED:
-        ud.sm_result.plug_on_base_pose = TFUtil.wait_and_transform('base_link',result.plug_pose) 
-
-def main():
-    rospy.init_node("fetch_plug")#,log_level=rospy.DEBUG)
-
+def construct_sm():
     TFUtil()
     # Define fixed goals
 
@@ -112,6 +107,8 @@ def main():
 
     # Define nominal sequence
     with sm:
+        Container.map_parent_ud_keys({'plug_on_base_pose':'plug_on_base_pose'})
+
         StateMachine.add('RAISE_SPINE',
                 SimpleActionState('torso_controller/position_joint_action',
                     SingleJointPositionAction,
@@ -125,6 +122,9 @@ def main():
                 {'succeeded':'DETECT_PLUG_ON_BASE'})
 
         # Detect the plug
+        def store_detect_plug_result(ud, result_state, result):
+            if result_state == actionlib.GoalStatus.SUCCEEDED:
+                ud.plug_on_base_pose = TFUtil.wait_and_transform('base_link',result.plug_pose) 
         StateMachine.add('DETECT_PLUG_ON_BASE',
                 SimpleActionState('detect_plug_on_base',DetectPlugOnBaseAction,
                     goal = DetectPlugOnBaseGoal(),
@@ -174,24 +174,4 @@ def main():
                     'pr2_plugs_configuration/recover_grasp_to_detect'),
                 { 'succeeded':'DETECT_PLUG_ON_BASE',
                     'aborted':'RECOVER_GRASP_TO_DETECT_POSE'})
-
-    # Run state machine introspection server
-    intro_server = smach.IntrospectionServer('fetch_plug',sm,'/RECHARGE/FETCH_PLUG')
-    intro_server.start()
-
-    # Run state machine action server 
-    sms = ActionServerWrapper(
-            'fetch_plug', FetchPlugAction, sm,
-            succeeded_outcomes = ['succeeded'],
-            aborted_outcomes = ['aborted'],
-            preempted_outcomes = ['preempted']
-            )
-    sms.run_server()
-
-    rospy.spin()
-
-    intro_server.stop()
-
-if __name__ == "__main__":
-    main()
-
+    return sm

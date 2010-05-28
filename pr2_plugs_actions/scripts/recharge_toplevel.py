@@ -54,7 +54,8 @@ from std_srvs.srv import *
 # State machine classes
 from smach import *
 
-import sm from detect_outlet as detect_outlet_sm
+from detect_outlet import construct_sm as construct_detect_outlet_sm
+from fetch_plug import construct_sm as construct_fetch_plug_sm
 
 class TFUtil():
     transformer = None
@@ -139,7 +140,7 @@ class AbortedState(State):
         State.__init__(self, default_outcome='aborted')
 
 def main():
-    rospy.init_node("recharge_toplevel",log_level=rospy.DEBUG)
+    rospy.init_node("recharge_toplevel")#,log_level=rospy.INFO)
 
     # Close gripper goal
     close_gripper_goal = Pr2GripperCommandGoal()
@@ -161,49 +162,44 @@ def main():
     # Define entry states
     with sm_recharge:
         StateMachine.add('PROCESS_RECHARGE_COMMAND',
-                         ProcessRechargeCommandState(),
-                         { 'nav_plug_in':'NAVIGATE_TO_OUTLET',
-                           'unplug':'UNPLUG'})
+                ProcessRechargeCommandState(),
+                { 'nav_plug_in':'NAVIGATE_TO_OUTLET',
+                    'unplug':'UNPLUG'})
         
         # Define navigation sm
         sm_nav = StateMachine(outcomes=['succeeded','aborted','preempted'])
         StateMachine.add('NAVIGATE_TO_OUTLET', sm_nav,
-                         {'succeeded':'DETECT_OUTLET',
-                          'aborted':'FAIL_STILL_UNPLUGGED'}),
+                {'succeeded':'DETECT_OUTLET',
+                    'aborted':'FAIL_STILL_UNPLUGGED'}),
         with sm_nav:
             Container.set_retrieve_keys(['sm_goal'])
 
             StateMachine.add('GET_NAV_GOAL', 
-                             GetNavGoalState(),
-                             {'local': 'UNTUCK_AT_OUTLET',
-                              'non-local': 'SAFETY_TUCK'})
+                    GetNavGoalState(),
+                    {'local': 'UNTUCK_AT_OUTLET',
+                        'non-local': 'SAFETY_TUCK'})
             StateMachine.add('SAFETY_TUCK', 
-                             SimpleActionState('tuck_arms', TuckArmsAction,
-                                               goal = TuckArmsGoal(False,True,True)),
-                             { 'succeeded':'NAVIGATE' })
+                    SimpleActionState('tuck_arms', TuckArmsAction,
+                        goal = TuckArmsGoal(False,True,True)),
+                    { 'succeeded':'NAVIGATE' })
             StateMachine.add('NAVIGATE', 
-                             NavigateToOutletState(exec_timeout = rospy.Duration(20*60.0)),
-                             { 'succeeded':'UNTUCK_AT_OUTLET' })
+                    NavigateToOutletState(exec_timeout = rospy.Duration(20*60.0)),
+                    { 'succeeded':'UNTUCK_AT_OUTLET' })
             StateMachine.add('UNTUCK_AT_OUTLET', 
-                             SimpleActionState('tuck_arms', TuckArmsAction,
-                                               goal = TuckArmsGoal(True,True,True)))
+                    SimpleActionState('tuck_arms', TuckArmsAction,
+                        goal = TuckArmsGoal(True,True,True)))
 
         # Detect the outlet
         StateMachine.add('DETECT_OUTLET', 
-                detect_outlet_sm,
+                construct_detect_outlet_sm(),
                 {'succeeded':'FETCH_PLUG',
                     'aborted':'FAIL_STILL_UNPLUGGED'}),
 
         # Fetch plug
-        def store_fetch_plug_result(ud, result_state, result):
-            ud.plug_on_base_pose = result.plug_on_base_pose
         StateMachine.add('FETCH_PLUG',
-                         SimpleActionState('fetch_plug',FetchPlugAction,
-                                           exec_timeout=rospy.Duration(300.0),
-                                           goal = FetchPlugGoal(),
-                                           result_cb = store_fetch_plug_result),
-                         {'succeeded':'PLUG_IN',
-                          'aborted':'FAIL_OPEN_GRIPPER'}),
+                construct_fetch_plug_sm,
+                {'succeeded':'PLUG_IN',
+                    'aborted':'FAIL_OPEN_GRIPPER'}),
         
         # Plug in
         def get_plug_in_goal(ud, goal):
@@ -215,19 +211,19 @@ def main():
                 ud.sm_result.state.state = RechargeState.PLUGGED_IN
         
         StateMachine.add('PLUG_IN',
-                         SimpleActionState('plug_in',PlugInAction,
-                                           goal = PluginGoal(),
-                                           goal_cb = get_plug_in_goal,
-                                           result_cb = store_plug_in_result,
-                                           exec_timeout = rospy.Duration(5*60.0)),
-                         { 'succeeded':'plugged_in',
-                           'aborted':'RECOVER_STOW_PLUG'})
+                SimpleActionState('plug_in',PlugInAction,
+                    goal = PluginGoal(),
+                    goal_cb = get_plug_in_goal,
+                    result_cb = store_plug_in_result,
+                    exec_timeout = rospy.Duration(5*60.0)),
+                { 'succeeded':'plugged_in',
+                    'aborted':'RECOVER_STOW_PLUG'})
         
         # Define unplug sm
         sm_unplug = StateMachine(outcomes = ['succeeded','aborted','preempted'])
         StateMachine.add('UNPLUG', sm_unplug,
-                         { 'succeeded':'unplugged',
-                           'aborted':'FAIL_OPEN_GRIPPER'})
+                { 'succeeded':'unplugged',
+                    'aborted':'FAIL_OPEN_GRIPPER'})
         with sm_unplug:
             unplug_keys = ('sm_result','plug_in_gripper_pose','plug_on_base_pose','outlet_pose')
             # Set userdata keys
@@ -275,42 +271,42 @@ def main():
                              {'succeeded':'succeeded'})
 
     # Add recovery states
-    with sm_recharge
+    with sm_recharge:
         StateMachine.add('RECOVER_STOW_PLUG',
-                         SimpleActionState('stow_plug',StowPlugAction,
-                                           goal_cb = get_stow_plug_goal),
-                         { 'succeeded':'FAIL_STILL_UNPLUGGED',
-                           'aborted':'FAIL_OPEN_GRIPPER'})
+                SimpleActionState('stow_plug',StowPlugAction,
+                    goal_cb = get_stow_plug_goal),
+                { 'succeeded':'FAIL_STILL_UNPLUGGED',
+                    'aborted':'FAIL_OPEN_GRIPPER'})
 
         # Add failure states
         # State to fail to if we're still unplugged
         StateMachine.add('FAIL_STILL_UNPLUGGED', 
-                         RemainUnpluggedState(),
-                         {'done':'FAIL_LOWER_SPINE'})
+                RemainUnpluggedState(),
+                {'done':'FAIL_LOWER_SPINE'})
         
         # Make sure we're not holding onto the plug
         StateMachine.add('FAIL_OPEN_GRIPPER',
-                         SimpleActionState('r_gripper_controller/gripper_action', Pr2GripperCommandAction,
-                                           goal = open_gripper_goal),
-                         {'succeeded':'FAIL_UNTUCK'})
+                SimpleActionState('r_gripper_controller/gripper_action', Pr2GripperCommandAction,
+                    goal = open_gripper_goal),
+                {'succeeded':'FAIL_UNTUCK'})
         
         StateMachine.add('FAIL_UNTUCK',
-                         SimpleActionState('tuck_arms',TuckArmsAction,
-                                           goal = TuckArmsGoal(True,True,True)),
-                         {'succeeded':'FAIL_LOWER_SPINE'})
+                SimpleActionState('tuck_arms',TuckArmsAction,
+                    goal = TuckArmsGoal(True,True,True)),
+                {'succeeded':'FAIL_LOWER_SPINE'})
         
         # Lower the spine on cleanup
         StateMachine.add('FAIL_LOWER_SPINE',
-                         SimpleActionState('torso_controller/position_joint_action', SingleJointPositionAction,
-                                           goal = SingleJointPositionGoal(position=0.01)),
-                         {'succeeded':'aborted'})
+                SimpleActionState('torso_controller/position_joint_action', SingleJointPositionAction,
+                    goal = SingleJointPositionGoal(position=0.01)),
+                {'succeeded':'aborted'})
 
         # Set the initial state explicitly
         sm_recharge.set_initial_state(['PROCESS_RECHARGE_COMMAND'])
 
 
     # Run state machine introspection server
-    intro_server = smach.IntrospectionServer('recharge',sm_recharge,'/RECHARGE')
+    intro_server = IntrospectionServer('recharge',sm_recharge,'/RECHARGE')
     intro_server.start()
 
     # Run state machine action server 
