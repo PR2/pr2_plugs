@@ -26,6 +26,11 @@ from smach import *
 
 import actionlib
 
+def drange(start, stop, step):
+  r = start
+  while r < stop:
+    yield r
+    r += step
 
 class TFUtil():
     transformer = None
@@ -41,10 +46,6 @@ class TFUtil():
             rospy.logerr('Could not transform between %s and %s' % (frame_id,pose.header.frame_id))
             raise e
         return TFUtil.transformer.transformPose(frame_id, pose)
-
-# Callback to store the plug detection result
-def store_detect_plug_result(ud, result_state, result):
-    ud.sm_result.gripper_to_plug = TFUtil.wait_and_transform('r_gripper_tool_frame',result.plug_pose)
 
 def get_plugin_goal(ud,goal):
     goal = PluginGoal()
@@ -64,121 +65,32 @@ def get_wiggle_goal(ud,goal):
     goal.insert = 1
     return goal
 
-class Plugin:
-    def __init__(self, name):
-        # transform listener
-        self.transformer = tf.TransformListener()
+def get_outlet_to_plug(pose_base_outlet, pose_plug_gripper):
+    """Get the pose from the outlet to the plug."""
+    time = rospy.Time.now()
 
-        # create action clients we use
-        self.cart_space_client = actionlib.SimpleActionClient('r_arm_ik', PR2ArmIKAction)
-        self.cart_space_client.wait_for_server()
+    TFUtil.transformer.waitForTransform("base_link", "r_gripper_tool_frame", time, rospy.Duration(2.0))
+    pose_base_gripper = PoseStampedMath().fromTf(TFUtil.transformer.lookupTransform("base_link","r_gripper_tool_frame", time))
 
-        self.spine_client = actionlib.SimpleActionClient('torso_controller/position_joint_action', SingleJointPositionAction)
-        self.spine_client.wait_for_server()
+    pose_outlet_base = PoseStampedMath(pose_base_outlet).inverse()
+    pose_gripper_plug = PoseStampedMath(pose_plug_gripper).inverse()
+    outlet_to_plug = (pose_outlet_base*pose_base_gripper*pose_gripper_plug).msg
 
-        rospy.loginfo('Connected to action clients')
+    return outlet_to_plug
 
-        self.jnt_effort = 0.0
-        self.jnt_counter = 0
-        self.preempt_timeout = rospy.Duration(5.0)
+def get_outlet_to_plug_ik_goal(ud, pose):
+    """Get an IK goal for a pose in the frame of the outlet"""
+    pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.transformer.lookupTransform("r_gripper_tool_frame", "r_wrist_roll_link", time))
+    pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
+    pose_plug_gripper = PoseStampedMath(ud.gripper_to_plug).inverse()
 
-        # create action server
-        self.server = actionlib.simple_action_server.SimpleActionServer(name, PluginAction, self.execute_cb)
-        rospy.loginfo('%s: Action server running', name)
+    goal = PR2ArmIKGoal()
+    goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
+    goal.pose = (pose_base_outlet * pose * pose_plug_gripper * pose_gripper_wrist).msg
+    goal.pose.header.stamp = rospy.Time.now()
+    goal.pose.header.frame_id = 'base_link'
 
-    def outlet_to_plug_error(self):
-        time = rospy.Time.now()
-        try:
-            self.transformer.waitForTransform("base_link", "r_gripper_tool_frame", time, rospy.Duration(2.0))
-        except rospy.ServiceException, e:
-            rospy.logerr('Could not transform between gripper and wrist at time %f' %time.to_sec())
-            self.server.set_aborted()
-            return
-        pose_base_gripper= PoseStampedMath().fromTf(self.transformer.lookupTransform("base_link","r_gripper_tool_frame", time))
-        pose_outlet_base = self.pose_base_outlet.inverse()
-        pose_gripper_plug = self.pose_plug_gripper.inverse()
-        outlet_to_plug = (pose_outlet_base*pose_base_gripper*pose_gripper_plug).msg
-        return outlet_to_plug
-
-    def move_outlet_plug(self, pose):
-        cart_space_goal = PR2ArmIKGoal()
-        cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
-        cart_space_goal.pose = (self.pose_base_outlet * pose * self.pose_plug_gripper * self.pose_gripper_wrist).msg
-        cart_space_goal.pose.header.stamp = rospy.Time.now()
-        cart_space_goal.pose.header.frame_id = 'base_link'
-        cart_space_goal.move_duration = rospy.Duration(1.5)
-        return self.cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), self.preempt_timeout)
-
-    def js_cb(self, msg):
-        for name,effort in zip(msg.name, msg.effort):
-            if name == 'r_wrist_roll_joint':
-                self.jnt_effort = effort
-                self.jnt_counter = self.jnt_counter+1
-
-    def execute_cb(self, goal):
-        rospy.loginfo("Action server received goal")
-
-        # subscribing to joint state messages
-        sub = rospy.Subscriber("joint_states", JointState, self.js_cb)
-
-        """
-        # make sure spine is down
-        rospy.loginfo("Make sure spine is down...")
-        spine_goal = SingleJointPositionGoal()
-        spine_goal.position = 0.01
-        if self.spine_client.send_goal_and_wait(spine_goal, rospy.Duration(20.0), self.preempt_timeout) != GoalStatus.SUCCEEDED:
-            rospy.logerr('Moving down spine failed')
-            sub.unregister()
-            self.server.set_aborted()
-            return
-        """
-
-        # get poses for later use
-        time = rospy.Time.now()
-        try:
-            self.transformer.waitForTransform("r_wrist_roll_link", "r_gripper_tool_frame", time, rospy.Duration(2.0))
-        except rospy.ServiceException, e:
-            rospy.logerr('Could not transform between gripper and wrist at time %f' %time.to_sec())
-            sub.unregister()
-            self.server.set_aborted()
-            return
-        self.pose_gripper_wrist= PoseStampedMath().fromTf(self.transformer.lookupTransform("r_gripper_tool_frame", "r_wrist_roll_link", time))
-        self.pose_base_outlet = PoseStampedMath(goal.base_to_outlet)
-        self.pose_plug_gripper = PoseStampedMath(goal.gripper_to_plug).inverse()
-
-        # approach outlet
-        step = 0.005
-        for offset in drange(-0.07, 0.09, step):
-            desired_pose = PoseStampedMath().fromEuler(offset, 0, 0, 0, 0, 0)
-            self.move_outlet_plug(desired_pose)
-            measured_pose = self.outlet_to_plug_error()
-            if math.fabs(measured_pose.pose.position.x - desired_pose.msg.pose.position.x) > 0.002:
-                rospy.loginfo("hit the wall or inserted into outlet")
-                break
-
-        # get current error 
-        initial_pose = self.outlet_to_plug_error()    
-        motion_list = drange(0, 0.25, 0.025)
-        for motion in motion_list:
-            pose_outlet_plug = PoseStampedMath(initial_pose) * PoseStampedMath().fromEuler(0, 0, 0, motion, 0, 0)
-            self.move_outlet_plug(pose_outlet_plug)
-            # wait for effort measurement to come in
-            self.jnt_counter = 0
-            while self.jnt_counter == 0:
-                rospy.sleep(0.01)
-            rospy.loginfo('Measured effort of %f Nm when turned %f radians', self.jnt_effort, motion)
-            if math.fabs(self.jnt_effort) > 1.0:
-                # we are in the outlet
-                rospy.loginfo("Action server goal finished")
-                sub.unregister()
-                self.server.set_succeeded(PluginResult())
-                return
-            
-        # we are not in the outlet
-        self.move_outlet_plug(PoseStampedMath(initial_pose) * PoseStampedMath().fromEuler(-0.05, 0, 0, 0, 0, 0))
-        rospy.logerr('We are not in the outlet')
-        sub.unregister()
-        self.server.set_aborted()
+    return goal
 
 def construct_sm():
     TFUtil()
@@ -188,6 +100,12 @@ def construct_sm():
 
     # Define nominal sequence
     with sm:
+        Container.map_parent_ud_keys(['base_to_outlet','base_to_plug'])
+
+        # Callback to store the plug detection result
+        def store_detect_plug_result(ud, result_state, result):
+            ud.sm_result.gripper_to_plug = TFUtil.wait_and_transform('r_gripper_tool_frame',result.plug_pose)
+
         StateMachine.add('DETECT_PLUG_IN_GRIPPER',
                 SimpleActionState('detect_plug',
                     DetectPlugInGripperAction,
@@ -200,14 +118,111 @@ def construct_sm():
                     goal = SingleJointPositionGoal(position=0.01)),
                 {'succeeded':'aborted'})
 
-        class ApproachOutletState(SPAState):
-            def enter():
+        # Approach plug
+        approach_it = Iterator(['succeeded','preempted','aborted'], drange(-0.07, 0.09, 0.005),'approach_offset')
+        approach_it.map_parent_ud_keys([
+            'base_to_outlet',
+            'base_to_plug',
+            'outlet_to_plug_contact'])
+        with approach_it:
+            approach_sm = StateMachine(['succeeded','preempted','aborted','keep_moving'])
+            approach_sm.map_parent_ud_keys([
+                'base_to_outlet',
+                'base_to_plug',
+                'outlet_to_plug_contact',
+                'approach_offset'])
+            with approach_sm:
+                # Move closer
+                def get_move_closer_goal(ud, goal):
+                    """Generate an ik goal to move along the local x axis of the outlet."""
+                    approach_pose = PoseStampedMath().fromEuler(ud.approach_offset, 0, 0, 0, 0, 0)
 
+                    goal = get_outlet_to_plug_ik_goal(ud, approach_pose)
+                    goal.move_duration = rospy.Duration(0.5)
+                    return goal
 
-        StateMachine.add('INSERT_PLUG',
-                SimpleActionState('plugin', PluginAction,
-                    goal_cb = get_plugin_goal),
-                {'succeeded':'WIGGLE_IN'})
+                StateMachine.add('MOVE_CLOSER',
+                        SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_move_closer_goal),
+                        {'succeeded':'CHECK_CONTACT','aborted':'CHECK_CONTACT'})
+
+                # Check for contact
+                def plug_in_contact(ud):
+                    """Returns true if the plug is in contact with something."""
+                    outlet_to_plug = get_outlet_to_plug(ud.base_to_outlet, ud.gripper_to_plug)
+                    in_contact = math.fabs(outlet_to_plug.pose.position.x - ud.approach_offset) > 0.002
+
+                    # Store the offset from the plug where we actually made contact
+                    if in_contact:
+                        ud.outlet_to_plug_contact = outlet_to_plug
+                        return True
+
+                    return False
+
+                StateMachine.add('CHECK_FOR_CONTACT',
+                    ConditionState(cond_cb = plug_in_contact),
+                    {'true':'succeeded','false':'keep_moving'})
+
+            Iterator.set_contained_state('APPROACH',approach_sm,
+                loop_outcomes=['keep_moving'])
+
+        # Twist the plug to check if it's in the outlet
+        twist_it = Iterator(['succeeded','preempted','aborted'], drange(0.0, 0.25, 0.025),'twist_angle')
+        twist_it.map_parent_ud_keys([
+            'base_to_outlet',
+            'base_to_plug',
+            'outlet_to_plug_contact'])
+        with twist_it:
+            twist_sm = StateMachine(['succeeded','preempted','aborted','keep_moving'])
+            twist_sm.map_parent_ud_keys([
+                'base_to_outlet',
+                'base_to_plug',
+                'outlet_to_plug_contact',
+                'twist_angle'])
+            with twist_sm:
+                def get_twist_goal(ud, goal):
+                    """Generate an ik goal to rotate the plug"""
+                    twist_pose = PoseStampedMath(initial_pose) * PoseStampedMath().fromEuler(0, 0, 0, motion, 0, 0)
+
+                    goal = get_outlet_to_plug_ik_goal(ud, twist_pose)
+                    goal.move_duration = rospy.Duration(0.5)
+                    return goal
+
+                StateMachine.add('TWIST_PLUG',
+                        SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_move_closer_goal),
+                        {'succeeded':'PLUG_IN_SOCKET','aborted':'PLUG_IN_SOCKET'})
+
+                # Check for mate
+                def plug_in_socket(ud):
+                    """Determine if the plug is in the socket yet"""
+
+                    MIN_EFFORT = 1.0
+                    roll_effort = None
+
+                    # Local cb
+                    def joint_states_cb(self, msg):
+                        roll_effort = dict(zip(msg.name, msg.effort))['r_wrist_roll_joint']
+
+                    # Subscribe to joint state messages
+                    joint_sub = rospy.Subscriber("joint_states", JointState, joint_states_cb)
+
+                    # Wait for effort
+                    while roll_effort is None:
+                        rospy.sleep(0.05)
+
+                    joint_sub.unregister()
+                    
+                    if roll_effort > MIN_EFFORT:
+                        return True
+                    
+                    return False
+
+                StateMachine.add('CHECK_PLUG_IN_SOCKET',
+                    ConditionState(cond_cb = plug_in_socket),
+                    {'true':'succeeded','false':'keep_moving'})
+
+            Iterator.set_contained_state('APPROACH',
+                    twist_sm,
+                    loop_outcomes=['keep_moving'])
 
         StateMachine.add('WIGGLE_IN',
                 SimpleActionState('wiggle_plug',
@@ -215,3 +230,4 @@ def construct_sm():
                     goal_cb = get_wiggle_goal),
                 {'succeeded':'succeeded'})
     return sm
+
