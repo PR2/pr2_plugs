@@ -57,20 +57,7 @@ from smach import *
 from detect_outlet import construct_sm as construct_detect_outlet_sm
 from fetch_plug import construct_sm as construct_fetch_plug_sm
 
-class TFUtil():
-    transformer = None
-        
-    @staticmethod
-    def wait_and_transform(frame_id,pose):
-        if not TFUtil.transformer:
-            TFUtil.transformer = tf.TransformListener(True, rospy.Duration(60.0))    
-
-        try:
-            TFUtil.transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
-        except rospy.ServiceException, ex:
-            rospy.logerr('Could not transform between %s and %s' % (frame_id,pose.header.frame_id))
-            raise ex
-        return TFUtil.transformer.transformPose(frame_id, pose)
+from executive_python_common.tf_util import TFUtil
 
 class NavigateToOutletState(SimpleActionState):
     def __init__(self,*args,**kwargs):
@@ -140,7 +127,7 @@ class AbortedState(State):
         State.__init__(self, default_outcome='aborted')
 
 def main():
-    rospy.init_node("recharge_toplevel")#,log_level=rospy.INFO)
+    rospy.init_node("recharge_toplevel",log_level=rospy.INFO)
 
     # Close gripper goal
     close_gripper_goal = Pr2GripperCommandGoal()
@@ -197,7 +184,7 @@ def main():
 
         # Fetch plug
         StateMachine.add('FETCH_PLUG',
-                construct_fetch_plug_sm,
+                construct_fetch_plug_sm(),
                 {'succeeded':'PLUG_IN',
                     'aborted':'FAIL_OPEN_GRIPPER'}),
         
@@ -221,9 +208,6 @@ def main():
         
         # Define unplug sm
         sm_unplug = StateMachine(outcomes = ['succeeded','aborted','preempted'])
-        StateMachine.add('UNPLUG', sm_unplug,
-                { 'succeeded':'unplugged',
-                    'aborted':'FAIL_OPEN_GRIPPER'})
         with sm_unplug:
             unplug_keys = ('sm_result','plug_in_gripper_pose','plug_on_base_pose','outlet_pose')
             # Set userdata keys
@@ -232,10 +216,10 @@ def main():
 
             # Make sure the gripper is held tightly
             StateMachine.add('CLOSE_GRIPPER',
-                             SimpleActionState('r_gripper_controller/gripper_action', Pr2GripperCommandAction,
-                                               goal = close_gripper_goal),
-                             { 'succeeded':'aborted',
-                               'aborted':'WIGGLE_OUT'})
+                    SimpleActionState('r_gripper_controller/gripper_action', Pr2GripperCommandAction,
+                        goal = close_gripper_goal),
+                    { 'succeeded':'aborted',
+                        'aborted':'WIGGLE_OUT'})
             
             # Wiggle out
             def get_wiggle_out_goal(ud, goal):
@@ -250,9 +234,9 @@ def main():
                 goal.insert = 0
                 return goal
             StateMachine.add('WIGGLE_OUT',
-                             SimpleActionState('wiggle_plug',WigglePlugAction,
-                                               goal_cb = get_wiggle_out_goal),
-                             {'succeeded':'STOW_PLUG'})
+                    SimpleActionState('wiggle_plug',WigglePlugAction,
+                        goal_cb = get_wiggle_out_goal),
+                    {'succeeded':'STOW_PLUG'})
             
             # Stow plug
             def get_stow_plug_goal(ud, goal):
@@ -265,13 +249,15 @@ def main():
                 if result_state is GoalStatus.SUCCEEDED:
                     ud.sm_result.state.state = RechargeState.UNPLUGGED
             StateMachine.add('STOW_PLUG',
-                             SimpleActionState('stow_plug',StowPlugAction,
-                                               goal_cb = get_stow_plug_goal,
-                                               result_cb = set_unplug_result),
-                             {'succeeded':'succeeded'})
+                    SimpleActionState('stow_plug',StowPlugAction,
+                        goal_cb = get_stow_plug_goal,
+                        result_cb = set_unplug_result),
+                    {'succeeded':'succeeded'})
 
-    # Add recovery states
-    with sm_recharge:
+        StateMachine.add('UNPLUG', sm_unplug,
+                { 'succeeded':'unplugged',
+                    'aborted':'FAIL_OPEN_GRIPPER'})
+
         StateMachine.add('RECOVER_STOW_PLUG',
                 SimpleActionState('stow_plug',StowPlugAction,
                     goal_cb = get_stow_plug_goal),

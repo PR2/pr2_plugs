@@ -23,26 +23,12 @@ from joint_trajectory_action_tools.tools import *
 
 # State machine classes
 from smach import *
+from executive_python_common.tf_util import TFUtil
 
 import actionlib
 import dynamic_reconfigure.client
 
 __all__ = ['construct_sm']
-
-class TFUtil():
-    transformer = None
-    def __init__(self):
-        if not TFUtil.transformer:
-            TFUtil.transformer = tf.TransformListener(True, rospy.Duration(60.0))
-
-    @staticmethod
-    def wait_and_transform(frame_id,pose):
-        try:
-            TFUtil.transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
-        except rospy.ServiceException, ex:
-            rospy.logerr('Could not transform between %s and %s' % (frame_id,pose.header.frame_id))
-            raise ex
-        return TFUtil.transformer.transformPose(frame_id, pose)
 
 class OutletSearchState(SPAState):
     def __init__(self, offsets):
