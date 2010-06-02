@@ -6,7 +6,7 @@ roslib.load_manifest('pr2_plugs_actions')
 import rospy
 
 import os,sys,time
-from math import *
+import math
 import tf
 
 from actionlib_msgs.msg import *
@@ -16,6 +16,7 @@ from pr2_controllers_msgs.msg import *
 from geometry_msgs.msg import *
 from trajectory_msgs.msg import *
 from move_base_msgs.msg import *
+from sensor_msgs.msg import *
 
 from pr2_arm_ik_action.tools import *
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
@@ -42,9 +43,9 @@ class TFUtil():
     def wait_and_transform(frame_id,pose):
         try:
             TFUtil.transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
-        except rospy.ServiceException, e:
+        except rospy.ServiceException, ex:
             rospy.logerr('Could not transform between %s and %s' % (frame_id,pose.header.frame_id))
-            raise e
+            raise ex
         return TFUtil.transformer.transformPose(frame_id, pose)
 
 def get_plugin_goal(ud,goal):
@@ -102,7 +103,7 @@ def construct_sm():
     with sm:
         Container.map_parent_ud_keys(['base_to_outlet','base_to_plug'])
 
-        # Callback to store the plug detection result
+        # Detect the plug in the gripper
         def store_detect_plug_result(ud, result_state, result):
             ud.sm_result.gripper_to_plug = TFUtil.wait_and_transform('r_gripper_tool_frame',result.plug_pose)
 
@@ -120,18 +121,18 @@ def construct_sm():
 
         # Approach plug
         approach_it = Iterator(['succeeded','preempted','aborted'], drange(-0.07, 0.09, 0.005),'approach_offset')
-        approach_it.map_parent_ud_keys([
-            'base_to_outlet',
-            'base_to_plug',
-            'outlet_to_plug_contact'])
         with approach_it:
-            approach_sm = StateMachine(['succeeded','preempted','aborted','keep_moving'])
-            approach_sm.map_parent_ud_keys([
+            Container.map_parent_ud_keys([
                 'base_to_outlet',
                 'base_to_plug',
-                'outlet_to_plug_contact',
-                'approach_offset'])
+                'outlet_to_plug_contact'])
+            approach_sm = StateMachine(['succeeded','preempted','aborted','keep_moving'])
             with approach_sm:
+                Container.map_parent_ud_keys([
+                    'base_to_outlet',
+                    'base_to_plug',
+                    'outlet_to_plug_contact',
+                    'approach_offset'])
                 # Move closer
                 def get_move_closer_goal(ud, goal):
                     """Generate an ik goal to move along the local x axis of the outlet."""
@@ -141,11 +142,8 @@ def construct_sm():
                     goal.move_duration = rospy.Duration(0.5)
                     return goal
 
-                StateMachine.add('MOVE_CLOSER',
-                        SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_move_closer_goal),
-                        {'succeeded':'CHECK_CONTACT','aborted':'CHECK_CONTACT'})
+                StateMachine.add('MOVE_CLOSER',SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_move_closer_goal),{'succeeded':'CHECK_CONTACT','aborted':'CHECK_CONTACT'})
 
-                # Check for contact
                 def plug_in_contact(ud):
                     """Returns true if the plug is in contact with something."""
                     outlet_to_plug = get_outlet_to_plug(ud.base_to_outlet, ud.gripper_to_plug)
@@ -167,28 +165,28 @@ def construct_sm():
 
         # Twist the plug to check if it's in the outlet
         twist_it = Iterator(['succeeded','preempted','aborted'], drange(0.0, 0.25, 0.025),'twist_angle')
-        twist_it.map_parent_ud_keys([
-            'base_to_outlet',
-            'base_to_plug',
-            'outlet_to_plug_contact'])
         with twist_it:
-            twist_sm = StateMachine(['succeeded','preempted','aborted','keep_moving'])
-            twist_sm.map_parent_ud_keys([
+            Container.map_parent_ud_keys([
                 'base_to_outlet',
                 'base_to_plug',
-                'outlet_to_plug_contact',
-                'twist_angle'])
+                'outlet_to_plug_contact'])
+            twist_sm = StateMachine(['succeeded','preempted','aborted','keep_moving'])
             with twist_sm:
+                Container.map_parent_ud_keys([
+                    'base_to_outlet',
+                    'base_to_plug',
+                    'outlet_to_plug_contact',
+                    'twist_angle'])
                 def get_twist_goal(ud, goal):
                     """Generate an ik goal to rotate the plug"""
-                    twist_pose = PoseStampedMath(initial_pose) * PoseStampedMath().fromEuler(0, 0, 0, motion, 0, 0)
+                    twist_pose = PoseStampedMath(ud.outlet_to_plug_contact) * PoseStampedMath().fromEuler(0, 0, 0, ud.twist_angle, 0, 0)
 
                     goal = get_outlet_to_plug_ik_goal(ud, twist_pose)
                     goal.move_duration = rospy.Duration(0.5)
                     return goal
 
                 StateMachine.add('TWIST_PLUG',
-                        SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_move_closer_goal),
+                        SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_twist_goal),
                         {'succeeded':'PLUG_IN_SOCKET','aborted':'PLUG_IN_SOCKET'})
 
                 # Check for mate
@@ -224,6 +222,7 @@ def construct_sm():
                     twist_sm,
                     loop_outcomes=['keep_moving'])
 
+        # Wiggle the plug
         StateMachine.add('WIGGLE_IN',
                 SimpleActionState('wiggle_plug',
                     WigglePlugAction,
