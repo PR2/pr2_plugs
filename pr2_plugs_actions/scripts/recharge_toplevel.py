@@ -56,6 +56,7 @@ from smach import *
 
 from detect_outlet import construct_sm as construct_detect_outlet_sm
 from fetch_plug import construct_sm as construct_fetch_plug_sm
+from plug_in import construct_sm as construct_plug_in_sm
 
 from executive_python_common.tf_util import TFUtil
 
@@ -142,7 +143,7 @@ def main():
     sm_recharge = StateMachine(outcomes=['plugged_in','unplugged','aborted','preempted'])
 
     # Default userdata fields
-    sm_recharge.local_userdata.outlet_pose = PoseStamped()
+    sm_recharge.local_userdata.base_to_outlet = PoseStamped()
     sm_recharge.local_userdata.plug_on_base_pose = PoseStamped()
     sm_recharge.local_userdata.plug_in_gripper_pose = PoseStamped()
 
@@ -189,27 +190,20 @@ def main():
                     'aborted':'FAIL_OPEN_GRIPPER'}),
         
         # Plug in
-        def get_plug_in_goal(ud, goal):
-            ud.outlet_pose.header.stamp = rospy.Time.now()
-            return PlugInGoal(base_to_outlet = ud.outlet_pose)
-        def store_plug_in_result(ud, result_state, result):
-            ud.plug_in_gripper_pose = result.gripper_to_plug
-            if result_state is GoalStatus.SUCCEEDED:
+        plug_in_sm = construct_plug_in_sm()
+        def store_plug_in_result(ud, local_ud, terminal_states, container_outcome):
+            if container_outcome == 'succeeded':
                 ud.sm_result.state.state = RechargeState.PLUGGED_IN
-        
+        plug_in_sm.register_termination_cb(store_plug_in_result)
         StateMachine.add('PLUG_IN',
-                SimpleActionState('plug_in',PlugInAction,
-                    goal = PluginGoal(),
-                    goal_cb = get_plug_in_goal,
-                    result_cb = store_plug_in_result,
-                    exec_timeout = rospy.Duration(5*60.0)),
+                plug_in_sm,
                 { 'succeeded':'plugged_in',
                     'aborted':'RECOVER_STOW_PLUG'})
         
         # Define unplug sm
         sm_unplug = StateMachine(outcomes = ['succeeded','aborted','preempted'])
         with sm_unplug:
-            unplug_keys = ('sm_result','plug_in_gripper_pose','plug_on_base_pose','outlet_pose')
+            unplug_keys = ('sm_result','plug_in_gripper_pose','plug_on_base_pose','base_to_outlet')
             # Set userdata keys
             Container.set_retrieve_keys(unplug_keys)
             Container.set_return_keys(unplug_keys)
@@ -227,7 +221,7 @@ def main():
                 goal.gripper_to_plug = ud.plug_in_gripper_pose
                 goal.gripper_to_plug.header.stamp = rospy.Time.now()
 
-                goal.base_to_outlet = ud.outlet_pose
+                goal.base_to_outlet = ud.base_to_outlet
                 goal.base_to_outlet.header.stamp = rospy.Time.now()
 
                 goal.wiggle_period = rospy.Duration(0.5)

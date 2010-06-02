@@ -24,6 +24,7 @@ from joint_trajectory_action_tools.tools import *
 
 # State machine classes
 from smach import *
+from executive_python_common.tf_util import TFUtil
 
 import actionlib
 
@@ -32,21 +33,6 @@ def drange(start, stop, step):
   while r < stop:
     yield r
     r += step
-
-class TFUtil():
-    transformer = None
-    def __init__(self):
-        if not TFUtil.transformer:
-            TFUtil.transformer = tf.TransformListener(True, rospy.Duration(60.0))    
-        
-    @staticmethod
-    def wait_and_transform(frame_id,pose):
-        try:
-            TFUtil.transformer.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
-        except rospy.ServiceException, ex:
-            rospy.logerr('Could not transform between %s and %s' % (frame_id,pose.header.frame_id))
-            raise ex
-        return TFUtil.transformer.transformPose(frame_id, pose)
 
 def get_plugin_goal(ud,goal):
     goal = PluginGoal()
@@ -101,23 +87,23 @@ def construct_sm():
 
     # Define nominal sequence
     with sm:
-        Container.map_parent_ud_keys(['base_to_outlet','base_to_plug'])
+        Container.map_parent_ud_keys(['base_to_outlet','base_to_plug','gripper_to_plug'])
 
         # Detect the plug in the gripper
         def store_detect_plug_result(ud, result_state, result):
-            ud.sm_result.gripper_to_plug = TFUtil.wait_and_transform('r_gripper_tool_frame',result.plug_pose)
+            ud.gripper_to_plug = TFUtil.wait_and_transform('r_gripper_tool_frame',result.plug_pose)
 
         StateMachine.add('DETECT_PLUG_IN_GRIPPER',
                 SimpleActionState('detect_plug',
                     DetectPlugInGripperAction,
                     goal = DetectPlugInGripperGoal(),
                     result_cb = store_detect_plug_result),
-                {'succeeded':'INSERT_PLUG'})
+                {'succeeded':'LOWER_SPINE'})
 
         StateMachine.add('LOWER_SPINE',
                 SimpleActionState('torso_controller/position_joint_action', SingleJointPositionAction,
                     goal = SingleJointPositionGoal(position=0.01)),
-                {'succeeded':'aborted'})
+                {'succeeded':'APPROACH_OUTLET'})
 
         # Approach plug
         approach_it = Iterator(['succeeded','preempted','aborted'], drange(-0.07, 0.09, 0.005),'approach_offset')
@@ -142,7 +128,9 @@ def construct_sm():
                     goal.move_duration = rospy.Duration(0.5)
                     return goal
 
-                StateMachine.add('MOVE_CLOSER',SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_move_closer_goal),{'succeeded':'CHECK_CONTACT','aborted':'CHECK_CONTACT'})
+                StateMachine.add('MOVE_CLOSER',
+                        SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_move_closer_goal),
+                        {'succeeded':'CHECK_FOR_CONTACT','aborted':'CHECK_FOR_CONTACT'})
 
                 def plug_in_contact(ud):
                     """Returns true if the plug is in contact with something."""
@@ -162,6 +150,8 @@ def construct_sm():
 
             Iterator.set_contained_state('APPROACH',approach_sm,
                 loop_outcomes=['keep_moving'])
+
+        StateMachine.add('APPROACH_OUTLET',approach_it, {'succeeded':'TWIST_PLUG'})
 
         # Twist the plug to check if it's in the outlet
         twist_it = Iterator(['succeeded','preempted','aborted'], drange(0.0, 0.25, 0.025),'twist_angle')
@@ -187,7 +177,7 @@ def construct_sm():
 
                 StateMachine.add('TWIST_PLUG',
                         SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_twist_goal),
-                        {'succeeded':'PLUG_IN_SOCKET','aborted':'PLUG_IN_SOCKET'})
+                        {'succeeded':'CHECK_PLUG_IN_SOCKET','aborted':'CHECK_PLUG_IN_SOCKET'})
 
                 # Check for mate
                 def plug_in_socket(ud):
@@ -218,9 +208,11 @@ def construct_sm():
                     ConditionState(cond_cb = plug_in_socket),
                     {'true':'succeeded','false':'keep_moving'})
 
-            Iterator.set_contained_state('APPROACH',
+            Iterator.set_contained_state('TWIST',
                     twist_sm,
                     loop_outcomes=['keep_moving'])
+
+        StateMachine.add('TWIST_PLUG',twist_it, {'succeeded':'WIGGLE_IN'})
 
         # Wiggle the plug
         StateMachine.add('WIGGLE_IN',

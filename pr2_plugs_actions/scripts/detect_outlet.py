@@ -120,7 +120,7 @@ def construct_sm():
     # Define nominal sequence
     with sm:
         # Define SMACH interface
-        Container.map_parent_ud_keys({'outlet_pose':'outlet_pose'})
+        Container.map_parent_ud_keys(['base_to_outlet'])
 
         StateMachine.add('LOWER_SPINE',
                 SimpleActionState('torso_controller/position_joint_action', SingleJointPositionAction,
@@ -176,7 +176,7 @@ def construct_sm():
 
         def store_precise_outlet_result(ud, result_state, result):
             if result_state == GoalStatus.SUCCEEDED:
-                ud.outlet_pose = TFUtil.wait_and_transform("base_link",result.outlet_pose)
+                ud.base_to_outlet = TFUtil.wait_and_transform("base_link",result.outlet_pose)
 
         StateMachine.add('DETECT_OUTLET',
                 SimpleActionState('vision_outlet_detection', VisionOutletDetectionAction,
