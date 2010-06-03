@@ -50,8 +50,8 @@ class GraspPlugState(SPAState):
         pose_plug_gripper = PoseStampedMath()
         pose_plug_gripper.fromEuler(-.02, 0, .01, pi/2, 0, -pi/9)
 
-        pose_base_plug= PoseStampedMath(TFUtil.transformer.transformPose("base_link", pose_tf_plug))
-        pose_gripper_wrist= PoseStampedMath().fromTf(TFUtil.transformer.lookupTransform("r_gripper_tool_frame", "r_wrist_roll_link", rospy.Time(0)))
+        pose_base_plug= PoseStampedMath(TFUtil.listener.transformPose("base_link", pose_tf_plug))
+        pose_gripper_wrist= PoseStampedMath().fromTf(TFUtil.listener.lookupTransform("r_gripper_tool_frame", "r_wrist_roll_link", rospy.Time(0)))
         pose_plug_approach = PoseStampedMath().fromEuler(0, 0.05, 0, 0, 0, 0)
 
         cart_space_goal.pose = (pose_base_plug * pose_plug_approach * pose_plug_gripper * pose_gripper_wrist).msg

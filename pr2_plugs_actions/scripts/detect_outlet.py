@@ -177,6 +177,8 @@ def construct_sm():
         def store_precise_outlet_result(ud, result_state, result):
             if result_state == GoalStatus.SUCCEEDED:
                 ud.base_to_outlet = TFUtil.wait_and_transform("base_link",result.outlet_pose)
+                ud.map_to_outlet = TFUtil.wait_and_transform("map",result.outlet_pose)
+                TFUtil.broadcast_transform('outlet_frame',ud.map_to_outlet)
 
         StateMachine.add('DETECT_OUTLET',
                 SimpleActionState('vision_outlet_detection', VisionOutletDetectionAction,

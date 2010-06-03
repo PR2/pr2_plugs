@@ -128,7 +128,7 @@ class AbortedState(State):
         State.__init__(self, default_outcome='aborted')
 
 def main():
-    rospy.init_node("recharge_toplevel",log_level=rospy.INFO)
+    rospy.init_node("recharge_toplevel",log_level=rospy.DEBUG)
 
     # Close gripper goal
     close_gripper_goal = Pr2GripperCommandGoal()
