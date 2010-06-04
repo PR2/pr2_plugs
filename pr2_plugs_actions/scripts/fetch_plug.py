@@ -112,6 +112,8 @@ def construct_sm():
         def store_detect_plug_result(ud, result_state, result):
             if result_state == actionlib.GoalStatus.SUCCEEDED:
                 ud.plug_on_base_pose = TFUtil.wait_and_transform('base_link',result.plug_pose) 
+                TFUtil.broadcast_transform('plug_on_base_frame',ud.plug_on_base_pose)
+
         StateMachine.add('DETECT_PLUG_ON_BASE',
                 SimpleActionState('detect_plug_on_base',DetectPlugOnBaseAction,
                     goal = DetectPlugOnBaseGoal(),

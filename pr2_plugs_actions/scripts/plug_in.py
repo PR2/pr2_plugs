@@ -34,24 +34,6 @@ def drange(start, stop, step):
     yield r
     r += step
 
-def get_plugin_goal(ud,goal):
-    goal = PluginGoal()
-    goal.gripper_to_plug = ud.sm_result.gripper_to_plgripper_to_plugug
-    goal.base_to_outlet = ud.sm_goal.base_to_outlet
-    return goal
-
-def get_wiggle_goal(ud,goal):
-    goal = WigglePlugGoal()
-    goal.gripper_to_plug = ud.sm_result.gripper_to_plug
-    goal.gripper_to_plug.header.stamp = rospy.Time.now()
-
-    goal.base_to_outlet = ud.sm_goal.base_to_outlet
-    goal.base_to_outlet.header.stamp = rospy.Time.now()
-
-    goal.wiggle_period = rospy.Duration(0.5)
-    goal.insert = 1
-    return goal
-
 def construct_sm():
     TFUtil()
 
@@ -80,7 +62,7 @@ def construct_sm():
                 {'succeeded':'APPROACH_OUTLET_ITER'})
 
         # Approach outlet
-        approach_it = Iterator(['succeeded','preempted','aborted'], drange(-0.07, 0.09, 0.005),'approach_offset')
+        approach_it = Iterator(['succeeded','preempted','aborted'], drange(-0.07, 0.09, 0.005),'approach_offset','aborted')
         with approach_it:
             Container.map_parent_ud_keys([
                 'base_to_outlet',
@@ -140,7 +122,7 @@ def construct_sm():
         StateMachine.add('APPROACH_OUTLET_ITER',approach_it, {'succeeded':'TWIST_PLUG_ITER'})
 
         # Twist the plug to check if it's in the outlet
-        twist_it = Iterator(['succeeded','preempted','aborted'], drange(0.0, 0.25, 0.025),'twist_angle')
+        twist_it = Iterator(['succeeded','preempted','aborted'], drange(0.0, 0.25, 0.025),'twist_angle','aborted')
         with twist_it:
             Container.map_parent_ud_keys([
                 'base_to_outlet',
@@ -199,13 +181,46 @@ def construct_sm():
 
                 StateMachine.add('CHECK_PLUG_IN_SOCKET',
                     ConditionState(cond_cb = plug_in_socket),
-                    {'true':'succeeded','false':'keep_moving'})
+                    {'true':'STRAIGHTEN_PLUG','false':'keep_moving'})
+
+                def get_straighten_goal(ud, goal):
+                    """Generate an ik goal to straighten the plug in the outlet."""
+
+                    pose_outlet_plug = PoseStampedMath(ud.outlet_to_plug_contact)
+                    pose_plug_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('plug_frame', 'r_wrist_roll_link'))
+                    pose_outlet_wrist = (pose_outlet_plug * pose_plug_wrist).msg
+
+                    ud.pose_outlet_plug = pose_outlet_plug.msg
+
+                    goal = PR2ArmIKGoal()
+                    goal.pose.pose = pose_outlet_wrist.pose
+                    goal.pose.header.stamp = rospy.Time.now()
+                    goal.pose.header.frame_id = 'outlet_frame'
+                    goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
+                    goal.move_duration = rospy.Duration(0.5)
+                    return goal
+
+                StateMachine.add('STRAIGHTEN_PLUG',
+                    SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_straighten_goal))
 
             Iterator.set_contained_state('TWIST',
                     twist_sm,
                     loop_outcomes=['keep_moving'])
 
         StateMachine.add('TWIST_PLUG_ITER',twist_it, {'succeeded':'WIGGLE_IN'})
+
+        def get_wiggle_goal(ud,goal):
+            goal = WigglePlugGoal()
+            goal.gripper_to_plug = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'plug_frame')).msg
+            goal.gripper_to_plug.header.stamp = rospy.Time.now()
+            goal.gripper_to_plug.header.frame_id = 'r_gripper_tool_frame'
+            goal.base_to_outlet = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('base_link', 'outlet_frame')).msg
+            goal.base_to_outlet.header.stamp = rospy.Time.now()
+            goal.base_to_outlet.header.frame_id = 'base_link'
+
+            goal.wiggle_period = rospy.Duration(0.5)
+            goal.insert = 1
+            return goal
 
         # Wiggle the plug
         StateMachine.add('WIGGLE_IN',

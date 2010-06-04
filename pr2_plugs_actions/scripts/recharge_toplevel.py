@@ -235,8 +235,12 @@ def main():
             # Stow plug
             def get_stow_plug_goal(ud, goal):
                 goal = StowPlugGoal()
-                goal.gripper_to_plug = ud.plug_in_gripper_pose
-                goal.base_to_plug = ud.plug_on_base_pose
+                goal.gripper_to_plug = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'plug_frame')).msg
+                goal.gripper_to_plug.header.stamp = rospy.Time.now()
+                goal.gripper_to_plug.header.frame_id = 'r_gripper_tool_frame'
+                goal.base_to_plug= PoseStampedMath().fromTf(TFUtil.wait_and_lookup('base_link', 'plug_on_base_frame')).msg
+                goal.base_to_plug.header.stamp = rospy.Time.now()
+                goal.base_to_plug.header.frame_id = 'base_link'
                 return goal
 
             def set_unplug_result(ud, result_state, result):
