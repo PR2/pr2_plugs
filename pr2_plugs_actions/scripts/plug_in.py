@@ -52,39 +52,6 @@ def get_wiggle_goal(ud,goal):
     goal.insert = 1
     return goal
 
-def get_outlet_to_plug(pose_base_outlet, pose_plug_gripper):
-    """Get the pose of the plug in the outlet frame."""
-    time = rospy.Time.now()
-
-    pose_outlet_base = PoseStampedMath(pose_base_outlet).inverse()
-
-    TFUtil.listener.waitForTransform("base_link", "r_gripper_tool_frame", time, rospy.Duration(2.0))
-    pose_base_gripper = PoseStampedMath().fromTf(TFUtil.listener.lookupTransform("base_link","r_gripper_tool_frame", time))
-
-    pose_gripper_plug = PoseStampedMath(pose_plug_gripper).inverse()
-
-    pose_outlet_plug = pose_outlet_base * pose_base_gripper * pose_gripper_plug
-
-    return pose_outlet_plug.msg
-
-def get_outlet_to_plug_ik_goal(ud, pose_outlet_plug):
-    """Get an IK goal for a pose in the frame of the outlet."""
-    time = rospy.Time.now()
-
-    TFUtil.listener.waitForTransform("r_gripper_tool_frame", "r_wrist_roll_link", time, rospy.Duration(2.0))
-    pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.listener.lookupTransform("r_gripper_tool_frame", "r_wrist_roll_link", time))
-
-    pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
-    pose_plug_gripper = PoseStampedMath(ud.gripper_to_plug).inverse()
-
-    goal = PR2ArmIKGoal()
-    goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
-    goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
-    goal.pose.header.stamp = rospy.Time.now()
-    goal.pose.header.frame_id = 'base_link'
-
-    return goal
-
 def construct_sm():
     TFUtil()
 
@@ -129,10 +96,18 @@ def construct_sm():
                 # Move closer
                 def get_move_closer_goal(ud, goal):
                     """Generate an ik goal to move along the local x axis of the outlet."""
-                    approach_pose = PoseStampedMath().fromEuler(ud.approach_offset, 0, 0, 0, 0, 0)
-                    ud.approach_pose = approach_pose.msg
 
-                    goal = get_outlet_to_plug_ik_goal(ud, approach_pose)
+                    pose_outlet_plug = PoseStampedMath().fromEuler(ud.approach_offset, 0, 0, 0, 0, 0)
+                    pose_plug_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('plug_frame', 'r_wrist_roll_link'))
+                    pose_outlet_wrist = (pose_outlet_plug * pose_plug_wrist).msg
+
+                    ud.pose_outlet_plug = pose_outlet_plug.msg
+
+                    goal = PR2ArmIKGoal()
+                    goal.pose.pose = pose_outlet_wrist.pose
+                    goal.pose.header.stamp = rospy.Time.now()
+                    goal.pose.header.frame_id = 'outlet_frame'
+                    goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
                     goal.move_duration = rospy.Duration(0.5)
                     return goal
 
@@ -144,7 +119,7 @@ def construct_sm():
                     """Returns true if the plug is in contact with something."""
                     pose_outlet_plug = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('outlet_frame','plug_frame')).msg
 
-                    offset_error = pose_outlet_plug.pose.position.x - ud.approach_pose.pose.position.x 
+                    offset_error = pose_outlet_plug.pose.position.x - ud.pose_outlet_plug.pose.position.x 
                     in_contact = math.fabs(offset_error) > 0.002
                     rospy.logerr("Plug pose x error is %f m" % (offset_error))
 
@@ -162,7 +137,7 @@ def construct_sm():
             Iterator.set_contained_state('APPROACH',approach_sm,
                 loop_outcomes=['keep_moving'])
 
-        StateMachine.add('APPROACH_OUTLET_ITER',approach_it, {'succeeded':'succeeded'})
+        StateMachine.add('APPROACH_OUTLET_ITER',approach_it, {'succeeded':'TWIST_PLUG_ITER'})
 
         # Twist the plug to check if it's in the outlet
         twist_it = Iterator(['succeeded','preempted','aborted'], drange(0.0, 0.25, 0.025),'twist_angle')
@@ -180,10 +155,17 @@ def construct_sm():
                     'twist_angle'])
                 def get_twist_goal(ud, goal):
                     """Generate an ik goal to rotate the plug"""
-                    twist_pose = PoseStampedMath(ud.outlet_to_plug_contact) * PoseStampedMath().fromEuler(0, 0, 0, ud.twist_angle, 0, 0)
+                    pose_plug_twist = PoseStampedMath().fromEuler(0, 0, 0, 0.025, 0, 0)
+                    pose_plug_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('plug_frame', 'r_wrist_roll_link'))
 
-                    goal = get_outlet_to_plug_ik_goal(ud, twist_pose)
-                    goal.move_duration = rospy.Duration(0.5)
+                    pose_twist_wrist = (pose_plug_twist * pose_plug_wrist).msg
+
+                    goal = PR2ArmIKGoal()
+                    goal.pose.pose = pose_twist_wrist.pose
+                    goal.pose.header.stamp = rospy.Time.now()
+                    goal.pose.header.frame_id = 'plug_frame'
+                    goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
+                    goal.move_duration = rospy.Duration(1.0)
                     return goal
 
                 StateMachine.add('TWIST_PLUG',
@@ -195,22 +177,22 @@ def construct_sm():
                     """Determine if the plug is in the socket yet"""
 
                     MIN_EFFORT = 1.0
-                    roll_effort = None
+                    roll_effort = [None]
 
                     # Local cb
                     def joint_states_cb(msg):
-                        roll_effort = dict(zip(msg.name, msg.effort))['r_wrist_roll_joint']
+                        roll_effort[0] = dict(zip(msg.name, msg.effort))['r_wrist_roll_joint']
 
                     # Subscribe to joint state messages
                     joint_sub = rospy.Subscriber("joint_states", JointState, joint_states_cb)
 
                     # Wait for effort
-                    while roll_effort is None:
+                    while roll_effort[0] is None:
                         rospy.sleep(0.05)
 
                     joint_sub.unregister()
                     
-                    if roll_effort > MIN_EFFORT:
+                    if roll_effort[0] > MIN_EFFORT:
                         return True
                     
                     return False
@@ -223,7 +205,7 @@ def construct_sm():
                     twist_sm,
                     loop_outcomes=['keep_moving'])
 
-        StateMachine.add('TWIST_PLUG',twist_it, {'succeeded':'WIGGLE_IN'})
+        StateMachine.add('TWIST_PLUG_ITER',twist_it, {'succeeded':'WIGGLE_IN'})
 
         # Wiggle the plug
         StateMachine.add('WIGGLE_IN',
