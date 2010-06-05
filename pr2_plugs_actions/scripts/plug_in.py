@@ -34,6 +34,46 @@ def drange(start, stop, step):
     yield r
     r += step
 
+def get_outlet_to_plug(pose_base_outlet, pose_plug_gripper):
+    """Get the pose from the outlet to the plug."""
+    time = rospy.Time.now()
+
+    TFUtil.transformer.waitForTransform("base_link", "r_gripper_tool_frame", time, rospy.Duration(2.0))
+    pose_base_gripper = PoseStampedMath().fromTf(TFUtil.transformer.lookupTransform("base_link","r_gripper_tool_frame", time))
+
+    pose_outlet_base = PoseStampedMath(pose_base_outlet).inverse()
+    pose_gripper_plug = PoseStampedMath(pose_plug_gripper).inverse()
+    outlet_to_plug = (pose_outlet_base*pose_base_gripper*pose_gripper_plug).msg
+
+    return outlet_to_plug
+
+def get_outlet_to_plug_ik_goal(ud, pose):
+    """Get an IK goal for a pose in the frame of the outlet"""
+    time = rospy.Time.now()
+    pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.transformer.lookupTransform("r_gripper_tool_frame", "r_wrist_roll_link", time))
+    pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
+    pose_plug_gripper = PoseStampedMath(ud.gripper_to_plug).inverse()
+
+    goal = PR2ArmIKGoal()
+    goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
+    goal.pose = (pose_base_outlet * pose * pose_plug_gripper * pose_gripper_wrist).msg
+    goal.pose.header.stamp = rospy.Time.now()
+    goal.pose.header.frame_id = 'base_link'
+
+    return goal
+
+def get_wiggle_goal(ud,goal):
+    goal = WigglePlugGoal()
+    goal.gripper_to_plug = ud.gripper_to_plug
+    goal.gripper_to_plug.header.stamp = rospy.Time.now()
+
+    goal.base_to_outlet = ud.base_to_outlet
+    goal.base_to_outlet.header.stamp = rospy.Time.now()
+
+    goal.wiggle_period = rospy.Duration(0.5)
+    goal.insert = 1
+    return goal
+
 def construct_sm():
     TFUtil()
 
@@ -42,7 +82,7 @@ def construct_sm():
 
     # Define nominal sequence
     with sm:
-        Container.map_parent_ud_keys(['base_to_outlet','gripper_to_plug'])
+        Container.map_parent_ud_keys(['base_to_outlet','map_to_outlet','gripper_to_plug'])
 
         # Detect the plug in the gripper
         def store_detect_plug_result(ud, result_state, result):
@@ -64,31 +104,30 @@ def construct_sm():
         # Approach outlet
         approach_it = Iterator(['succeeded','preempted','aborted'], drange(-0.07, 0.09, 0.005),'approach_offset','aborted')
         with approach_it:
-            Container.map_parent_ud_keys([
-                'base_to_outlet',
-                'gripper_to_plug',
-                'outlet_to_plug_contact'])
+            Container.share_parent_userdata()
             approach_sm = StateMachine(['succeeded','preempted','aborted','keep_moving'])
             with approach_sm:
-                Container.map_parent_ud_keys([
-                    'base_to_outlet',
-                    'gripper_to_plug',
-                    'outlet_to_plug_contact',
-                    'approach_offset'])
+                Container.share_parent_userdata()
                 # Move closer
                 def get_move_closer_goal(ud, goal):
                     """Generate an ik goal to move along the local x axis of the outlet."""
 
+                    pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
                     pose_outlet_plug = PoseStampedMath().fromEuler(ud.approach_offset, 0, 0, 0, 0, 0)
-                    pose_plug_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('plug_frame', 'r_wrist_roll_link'))
-                    pose_outlet_wrist = (pose_outlet_plug * pose_plug_wrist).msg
+                    pose_plug_gripper = PoseStampedMath(ud.gripper_to_plug).inverse()
+                    pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
 
-                    ud.pose_outlet_plug = pose_outlet_plug.msg
+                    pose_base_wrist = (pose_base_outlet
+                            * pose_outlet_plug
+                            * pose_plug_gripper
+                            * pose_gripper_wrist).msg
+
+                    ud.outlet_to_plug = pose_outlet_plug.msg
 
                     goal = PR2ArmIKGoal()
-                    goal.pose.pose = pose_outlet_wrist.pose
+                    goal.pose.pose = pose_base_wrist.pose
                     goal.pose.header.stamp = rospy.Time.now()
-                    goal.pose.header.frame_id = 'outlet_frame'
+                    goal.pose.header.frame_id = 'base_link'
                     goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
                     goal.move_duration = rospy.Duration(0.5)
                     return goal
@@ -99,9 +138,13 @@ def construct_sm():
 
                 def plug_in_contact(ud):
                     """Returns true if the plug is in contact with something."""
-                    pose_outlet_plug = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('outlet_frame','plug_frame')).msg
 
-                    offset_error = pose_outlet_plug.pose.position.x - ud.pose_outlet_plug.pose.position.x 
+                    pose_outlet_base = PoseStampedMath(ud.base_to_outlet).inverse()
+                    pose_base_gripper = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('base_link', 'r_gripper_tool_frame'))
+                    pose_gripper_plug = PoseStampedMath(ud.gripper_to_plug)
+                    pose_outlet_plug = (pose_outlet_base * pose_base_gripper * pose_gripper_plug).msg
+
+                    offset_error = pose_outlet_plug.pose.position.x - ud.outlet_to_plug.pose.position.x 
                     in_contact = math.fabs(offset_error) > 0.002
                     rospy.logerr("Plug pose x error is %f m" % (offset_error))
 
@@ -119,33 +162,35 @@ def construct_sm():
             Iterator.set_contained_state('APPROACH',approach_sm,
                 loop_outcomes=['keep_moving'])
 
-        StateMachine.add('APPROACH_OUTLET_ITER',approach_it, {'succeeded':'TWIST_PLUG_ITER'})
+        StateMachine.add('APPROACH_OUTLET_ITER',approach_it,
+                {'succeeded':'TWIST_PLUG_ITER',
+                    'aborted':'FAIL_PULL_BACK_FROM_WALL'})
 
         # Twist the plug to check if it's in the outlet
         twist_it = Iterator(['succeeded','preempted','aborted'], drange(0.0, 0.25, 0.025),'twist_angle','aborted')
         with twist_it:
-            Container.map_parent_ud_keys([
-                'base_to_outlet',
-                'gripper_to_plug',
-                'outlet_to_plug_contact'])
+            Container.share_parent_userdata()
             twist_sm = StateMachine(['succeeded','preempted','aborted','keep_moving'])
             with twist_sm:
-                Container.map_parent_ud_keys([
-                    'base_to_outlet',
-                    'gripper_to_plug',
-                    'outlet_to_plug_contact',
-                    'twist_angle'])
+                Container.share_parent_userdata()
                 def get_twist_goal(ud, goal):
                     """Generate an ik goal to rotate the plug"""
-                    pose_plug_twist = PoseStampedMath().fromEuler(0, 0, 0, 0.025, 0, 0)
-                    pose_plug_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('plug_frame', 'r_wrist_roll_link'))
+                    pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
+                    pose_outlet_contact = PoseStampedMath(ud.outlet_to_plug_contact)
+                    pose_contact_plug = PoseStampedMath().fromEuler(0, 0, 0, ud.twist_angle, 0, 0)
+                    pose_plug_gripper = PoseStampedMath(ud.gripper_to_plug).inverse()
+                    pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
 
-                    pose_twist_wrist = (pose_plug_twist * pose_plug_wrist).msg
+                    pose_base_wrist = ( pose_base_outlet
+                            * pose_outlet_contact
+                            * pose_contact_plug
+                            * pose_plug_gripper
+                            * pose_gripper_wrist ).msg
 
                     goal = PR2ArmIKGoal()
-                    goal.pose.pose = pose_twist_wrist.pose
+                    goal.pose.pose = pose_base_wrist.pose
                     goal.pose.header.stamp = rospy.Time.now()
-                    goal.pose.header.frame_id = 'plug_frame'
+                    goal.pose.header.frame_id = 'base_link'
                     goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
                     goal.move_duration = rospy.Duration(1.0)
                     return goal
@@ -159,74 +204,97 @@ def construct_sm():
                     """Determine if the plug is in the socket yet"""
 
                     MIN_EFFORT = 1.0
-                    roll_effort = [None]
+                    ud.roll_effort = None
 
                     # Local cb
-                    def joint_states_cb(msg):
-                        roll_effort[0] = dict(zip(msg.name, msg.effort))['r_wrist_roll_joint']
+                    def joint_states_cb(msg, ud):
+                        ud.roll_effort = dict(zip(msg.name, msg.effort))['r_wrist_roll_joint']
 
                     # Subscribe to joint state messages
-                    joint_sub = rospy.Subscriber("joint_states", JointState, joint_states_cb)
+                    joint_sub = rospy.Subscriber("joint_states", JointState, joint_states_cb, ud)
 
                     # Wait for effort
-                    while roll_effort[0] is None:
+                    while ud.roll_effort is None:
                         rospy.sleep(0.05)
 
                     joint_sub.unregister()
                     
-                    if roll_effort[0] > MIN_EFFORT:
+                    if ud.roll_effort > MIN_EFFORT:
                         return True
                     
                     return False
 
                 StateMachine.add('CHECK_PLUG_IN_SOCKET',
                     ConditionState(cond_cb = plug_in_socket),
-                    {'true':'STRAIGHTEN_PLUG','false':'keep_moving'})
-
-                def get_straighten_goal(ud, goal):
-                    """Generate an ik goal to straighten the plug in the outlet."""
-
-                    pose_outlet_plug = PoseStampedMath(ud.outlet_to_plug_contact)
-                    pose_plug_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('plug_frame', 'r_wrist_roll_link'))
-                    pose_outlet_wrist = (pose_outlet_plug * pose_plug_wrist).msg
-
-                    ud.pose_outlet_plug = pose_outlet_plug.msg
-
-                    goal = PR2ArmIKGoal()
-                    goal.pose.pose = pose_outlet_wrist.pose
-                    goal.pose.header.stamp = rospy.Time.now()
-                    goal.pose.header.frame_id = 'outlet_frame'
-                    goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
-                    goal.move_duration = rospy.Duration(0.5)
-                    return goal
-
-                StateMachine.add('STRAIGHTEN_PLUG',
-                    SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_straighten_goal))
+                    {'true':'succeeded','false':'keep_moving'})
 
             Iterator.set_contained_state('TWIST',
                     twist_sm,
                     loop_outcomes=['keep_moving'])
 
-        StateMachine.add('TWIST_PLUG_ITER',twist_it, {'succeeded':'WIGGLE_IN'})
+        StateMachine.add('TWIST_PLUG_ITER',twist_it,
+                {'succeeded':'STRAIGHTEN_PLUG',
+                    'aborted':'FAIL_PULL_BACK_FROM_WALL'})
 
-        def get_wiggle_goal(ud,goal):
-            goal = WigglePlugGoal()
-            goal.gripper_to_plug = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'plug_frame')).msg
-            goal.gripper_to_plug.header.stamp = rospy.Time.now()
-            goal.gripper_to_plug.header.frame_id = 'r_gripper_tool_frame'
-            goal.base_to_outlet = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('base_link', 'outlet_frame')).msg
-            goal.base_to_outlet.header.stamp = rospy.Time.now()
-            goal.base_to_outlet.header.frame_id = 'base_link'
+        def get_straighten_goal(ud, goal):
+            """Generate an ik goal to straighten the plug in the outlet."""
 
-            goal.wiggle_period = rospy.Duration(0.5)
-            goal.insert = 1
+            pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
+            pose_outlet_plug = PoseStampedMath(ud.outlet_to_plug_contact)
+            pose_plug_gripper = PoseStampedMath(ud.gripper_to_plug).inverse()
+            pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
+
+            pose_base_wrist = (pose_base_outlet
+                    * pose_outlet_plug
+                    * pose_plug_gripper
+                    * pose_gripper_wrist).msg
+
+            goal = PR2ArmIKGoal()
+            goal.pose.pose = pose_base_wrist.pose
+            goal.pose.header.stamp = rospy.Time.now()
+            goal.pose.header.frame_id = 'base_link'
+            goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
+            goal.move_duration = rospy.Duration(0.5)
             return goal
+
+        StateMachine.add('STRAIGHTEN_PLUG',
+            SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_straighten_goal),
+            {'succeeded':'WIGGLE_IN',
+                'aborted':'FAIL_PULL_BACK_FROM_WALL'})
 
         # Wiggle the plug
         StateMachine.add('WIGGLE_IN',
                 SimpleActionState('wiggle_plug',
                     WigglePlugAction,
                     goal_cb = get_wiggle_goal),
-                {'succeeded':'succeeded'})
+                {'succeeded':'succeeded',
+                    'aborted':'FAIL_PULL_BACK_FROM_WALL'})
+
+        ### Recovery states
+        def get_pull_back_goal(ud, goal):
+            """Generate an ik goal to move along the local x axis of the outlet."""
+
+            pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
+            pose_outlet_plug = PoseStampedMath().fromEuler(-0.10, 0, 0, 0, 0, 0)
+            pose_plug_gripper = PoseStampedMath(ud.gripper_to_plug).inverse()
+            pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
+
+            pose_base_wrist = (pose_base_outlet
+                    * pose_outlet_plug
+                    * pose_plug_gripper
+                    * pose_gripper_wrist).msg
+
+            goal = PR2ArmIKGoal()
+            goal.pose.pose = pose_base_wrist.pose
+            goal.pose.header.stamp = rospy.Time.now()
+            goal.pose.header.frame_id = 'base_link'
+            goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
+            goal.move_duration = rospy.Duration(0.5)
+            return goal
+
+        StateMachine.add('FAIL_PULL_BACK_FROM_WALL',
+            SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_pull_back_goal),
+            {'succeeded':'aborted',
+                'aborted':'FAIL_PULL_BACK_FROM_WALL'})
     return sm
 

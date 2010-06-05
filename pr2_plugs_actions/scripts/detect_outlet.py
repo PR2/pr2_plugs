@@ -120,7 +120,7 @@ def construct_sm():
     # Define nominal sequence
     with sm:
         # Define SMACH interface
-        Container.map_parent_ud_keys(['base_to_outlet'])
+        Container.map_parent_ud_keys(['base_to_outlet','map_to_outlet'])
 
         StateMachine.add('LOWER_SPINE',
                 SimpleActionState('torso_controller/position_joint_action', SingleJointPositionAction,

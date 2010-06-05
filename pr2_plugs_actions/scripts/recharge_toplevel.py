@@ -218,7 +218,7 @@ def main():
             # Wiggle out
             def get_wiggle_out_goal(ud, goal):
                 goal = WigglePlugGoal()
-                goal.gripper_to_plug = ud.plug_in_gripper_pose
+                goal.gripper_to_plug = ud.gripper_to_plug
                 goal.gripper_to_plug.header.stamp = rospy.Time.now()
 
                 goal.base_to_outlet = ud.base_to_outlet
@@ -235,12 +235,10 @@ def main():
             # Stow plug
             def get_stow_plug_goal(ud, goal):
                 goal = StowPlugGoal()
-                goal.gripper_to_plug = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'plug_frame')).msg
+                goal.gripper_to_plug = ud.gripper_to_plug
                 goal.gripper_to_plug.header.stamp = rospy.Time.now()
-                goal.gripper_to_plug.header.frame_id = 'r_gripper_tool_frame'
-                goal.base_to_plug= PoseStampedMath().fromTf(TFUtil.wait_and_lookup('base_link', 'plug_on_base_frame')).msg
+                goal.base_to_plug = ud.base_to_plug_on_base
                 goal.base_to_plug.header.stamp = rospy.Time.now()
-                goal.base_to_plug.header.frame_id = 'base_link'
                 return goal
 
             def set_unplug_result(ud, result_state, result):

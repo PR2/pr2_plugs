@@ -41,7 +41,7 @@ class GraspPlugState(SPAState):
 
         preempt_timeout = rospy.Duration(5.0)
         # Grab relevant user data
-        pose_tf_plug = self.userdata.plug_on_base_pose
+        pose_tf_plug = self.userdata.base_to_plug_on_base
 
         # Get grasp plug IK seed
         cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/grasp_plug_seed')
@@ -89,12 +89,14 @@ def construct_sm():
     # Construct state machine
     sm = StateMachine(['succeeded','aborted','preempted'])
 
-    # Default userdata
-    sm.local_userdata.plug_pose = PoseStamped()
+    # Hardcoded poses for approach / grasping
+        
+    sm.local_userdata.pose_plug_gripper_grasp_approach = PoseStampedMath().fromEuler(0, 0.05, 0, 0, 0, 0).msg
+    sm.local_userdata.pose_plug_gripper_grasp = PoseStampedMath().fromEuler(-.02, 0, .01, pi/2, 0, -pi/9).msg
 
     # Define nominal sequence
     with sm:
-        Container.map_parent_ud_keys({'plug_on_base_pose':'plug_on_base_pose'})
+        Container.map_parent_ud_keys(['base_to_plug_on_base'])
 
         StateMachine.add('RAISE_SPINE',
                 SimpleActionState('torso_controller/position_joint_action',
@@ -111,8 +113,8 @@ def construct_sm():
         # Detect the plug
         def store_detect_plug_result(ud, result_state, result):
             if result_state == actionlib.GoalStatus.SUCCEEDED:
-                ud.plug_on_base_pose = TFUtil.wait_and_transform('base_link',result.plug_pose) 
-                TFUtil.broadcast_transform('plug_on_base_frame',ud.plug_on_base_pose)
+                ud.base_to_plug_on_base = TFUtil.wait_and_transform('base_link',result.plug_pose) 
+                TFUtil.broadcast_transform('plug_on_base_frame',ud.base_to_plug_on_base)
 
         StateMachine.add('DETECT_PLUG_ON_BASE',
                 SimpleActionState('detect_plug_on_base',DetectPlugOnBaseAction,
@@ -125,8 +127,31 @@ def construct_sm():
         StateMachine.add('MOVE_ARM_BASE_GRASP_POSE',
                 JointTrajectoryState('r_arm_plugs_controller',
                     'pr2_plugs_configuration/grasp_plug'),
-                {'succeeded':'OPEN_GRIPPER',
+                {'succeeded':'APPROACH_PLUG',
                     'aborted':'RECOVER_GRASP_TO_DETECT_POSE'})
+
+        def get_approach_plug_goal(ud, goal):
+            """Get the ik goal for approaching the plug to grasp it """
+            pose_base_plug = PoseStampedMath(ud.base_to_plug_on_base)
+            pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
+
+            goal = PR2ArmIKGoal()
+            goal.pose = (pose_base_plug
+                    * PoseStampedMath(ud.pose_plug_gripper_grasp_approach)
+                    * PoseStampedMath(ud.pose_plug_gripper_grasp)
+                    * pose_gripper_wrist).msg
+
+            goal.pose.header.stamp = rospy.Time.now()
+            goal.pose.header.frame_id = 'base_link'
+            goal.ik_seed = get_action_seed('pr2_plugs_configuration/grasp_plug_seed')
+            goal.move_duration = rospy.Duration(3.0)
+
+            return goal
+
+        StateMachine.add('APPROACH_PLUG',
+                SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_approach_plug_goal),
+                {'succeeded':'OPEN_GRIPPER',
+                    'aborted':'DETECT_PLUG_ON_BASE'})
 
         StateMachine.add('OPEN_GRIPPER',
                 SimpleActionState('r_gripper_controller/gripper_action',
@@ -134,8 +159,25 @@ def construct_sm():
                     goal = open_gripper_goal),
                 {'succeeded':'GRASP_PLUG'})
 
+        def get_grasp_plug_goal(ud, goal):
+            """Get the ik goal for grasping the plug."""
+            pose_base_plug = PoseStampedMath(ud.base_to_plug_on_base)
+            pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
+
+            goal = PR2ArmIKGoal()
+            goal.pose = (pose_base_plug
+                    * PoseStampedMath(ud.pose_plug_gripper_grasp)
+                    * pose_gripper_wrist).msg
+
+            goal.pose.header.stamp = rospy.Time.now()
+            goal.pose.header.frame_id = 'base_link'
+            goal.ik_seed = get_action_seed('pr2_plugs_configuration/grasp_plug_seed')
+            goal.move_duration = rospy.Duration(3.0)
+
+            return goal
+
         StateMachine.add('GRASP_PLUG',
-                GraspPlugState(),
+                SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_grasp_plug_goal),
                 {'succeeded':'CLOSE_GRIPPER',
                     'aborted':'DETECT_PLUG_ON_BASE'})
         
