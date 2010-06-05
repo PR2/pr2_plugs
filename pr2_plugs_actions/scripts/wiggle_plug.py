@@ -71,14 +71,22 @@ def execute_cb(goal):
     forward_step = 0.001
 
   wiggle = 1.0
+  wiggle_count = 1
   for offset in drange(forward_start, forward_stop, forward_step):
     pose_outlet_plug = PoseStampedMath().fromEuler(offset, 0, 0, 0, math.pi/30*wiggle, 0)
     cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
     cart_space_goal.pose.header.stamp = rospy.Time.now()
     cart_space_goal.pose.header.frame_id = 'base_link'
     cart_space_goal.move_duration = rospy.Duration(0.0)
-    cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout)
+
+    result_state = cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout)
+
+    if goal.insert != 1 and wiggle_count % 5 == 0 and result_state == GoalStatus.SUCCEEDED:
+      server.set_succeeded(WigglePlugResult())
+      return
+
     wiggle = wiggle * -1
+    wiggle_count += 1
     control_error = (PoseStampedMath(outlet_to_plug_error(goal)) * pose_outlet_plug.inverse()).msg
 #    rospy.loginfo('Control error in x direction is %f' %control_error.pose.position.x)
 #    rospy.loginfo('Current commanded depth is %f'%offset)

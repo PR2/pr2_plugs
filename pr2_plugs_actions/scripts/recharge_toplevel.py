@@ -48,8 +48,11 @@ from move_base_msgs.msg import *
 from geometry_msgs.msg import *
 from pr2_controllers_msgs.msg import *
 from pr2_common_action_msgs.msg import *
-from pr2_plugs_actions.posestampedmath import PoseStampedMath
+
 from std_srvs.srv import *
+
+from pr2_plugs_actions.posestampedmath import PoseStampedMath
+from pr2_arm_ik_action.tools import *
 
 # State machine classes
 from smach import *
@@ -203,10 +206,7 @@ def main():
         # Define unplug sm
         sm_unplug = StateMachine(outcomes = ['succeeded','aborted','preempted'])
         with sm_unplug:
-            unplug_keys = ('sm_result','plug_in_gripper_pose','plug_on_base_pose','base_to_outlet')
-            # Set userdata keys
-            Container.set_retrieve_keys(unplug_keys)
-            Container.set_return_keys(unplug_keys)
+            Container.share_parent_userdata()
 
             # Make sure the gripper is held tightly
             StateMachine.add('CLOSE_GRIPPER',
@@ -230,7 +230,33 @@ def main():
             StateMachine.add('WIGGLE_OUT',
                     SimpleActionState('wiggle_plug',WigglePlugAction,
                         goal_cb = get_wiggle_out_goal),
-                    {'succeeded':'STOW_PLUG'})
+                    {'succeeded':'PULL_BACK_FROM_WALL'})
+
+            def get_pull_back_goal(ud, goal):
+                """Generate an ik goal to move along the local x axis of the outlet."""
+
+                pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
+                pose_outlet_plug = PoseStampedMath().fromEuler(-0.10, 0, 0, 0, 0, 0)
+                pose_plug_gripper = PoseStampedMath(ud.gripper_to_plug).inverse()
+                pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
+
+                pose_base_wrist = (pose_base_outlet
+                        * pose_outlet_plug
+                        * pose_plug_gripper
+                        * pose_gripper_wrist).msg
+
+                goal = PR2ArmIKGoal()
+                goal.pose.pose = pose_base_wrist.pose
+                goal.pose.header.stamp = rospy.Time.now()
+                goal.pose.header.frame_id = 'base_link'
+                goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
+                goal.move_duration = rospy.Duration(5.0)
+                return goal
+
+            StateMachine.add('PULL_BACK_FROM_WALL',
+                SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_pull_back_goal),
+                {'succeeded':'STOW_PLUG',
+                    'aborted':'WIGGLE_OUT'})
             
             # Stow plug
             def get_stow_plug_goal(ud, goal):

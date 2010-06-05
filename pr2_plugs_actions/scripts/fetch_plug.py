@@ -32,46 +32,6 @@ import actionlib
 __all__ = ['construct_sm']
 
 
-# Code block state for grasping the plug
-class GraspPlugState(SPAState):
-    def enter(self):
-        cart_space_client = actionlib.SimpleActionClient('r_arm_ik', PR2ArmIKAction)
-        cart_space_client.wait_for_server()
-        cart_space_goal = PR2ArmIKGoal()
-
-        preempt_timeout = rospy.Duration(5.0)
-        # Grab relevant user data
-        pose_tf_plug = self.userdata.base_to_plug_on_base
-
-        # Get grasp plug IK seed
-        cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/grasp_plug_seed')
-
-        # Define the desired grasp on te plug
-        pose_plug_gripper = PoseStampedMath()
-        pose_plug_gripper.fromEuler(-.02, 0, .01, pi/2, 0, -pi/9)
-
-        pose_base_plug= PoseStampedMath(TFUtil.listener.transformPose("base_link", pose_tf_plug))
-        pose_gripper_wrist= PoseStampedMath().fromTf(TFUtil.listener.lookupTransform("r_gripper_tool_frame", "r_wrist_roll_link", rospy.Time(0)))
-        pose_plug_approach = PoseStampedMath().fromEuler(0, 0.05, 0, 0, 0, 0)
-
-        cart_space_goal.pose = (pose_base_plug * pose_plug_approach * pose_plug_gripper * pose_gripper_wrist).msg
-        cart_space_goal.pose.header.stamp = rospy.Time.now()
-        cart_space_goal.pose.header.frame_id = 'base_link'
-        cart_space_goal.move_duration = rospy.Duration(3.0)
-        if cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-            rospy.logerr('Failed to approach plug')
-            return 'aborted'
-
-        cart_space_goal.pose = (pose_base_plug * pose_plug_gripper * pose_gripper_wrist).msg
-        cart_space_goal.pose.header.stamp = rospy.Time.now()
-        cart_space_goal.pose.header.frame_id = 'base_link'
-        cart_space_goal.move_duration = rospy.Duration(3.0)
-        if cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-            rospy.logerr('Failed to grasp plug')
-            return 'aborted'
-
-        return 'succeeded'
-
 def construct_sm():
     TFUtil()
     # Define fixed goals
@@ -90,9 +50,8 @@ def construct_sm():
     sm = StateMachine(['succeeded','aborted','preempted'])
 
     # Hardcoded poses for approach / grasping
-        
     sm.local_userdata.pose_plug_gripper_grasp_approach = PoseStampedMath().fromEuler(0, 0.05, 0, 0, 0, 0).msg
-    sm.local_userdata.pose_plug_gripper_grasp = PoseStampedMath().fromEuler(-.02, 0, .01, pi/2, 0, -pi/9).msg
+    sm.local_userdata.pose_plug_gripper_grasp = PoseStampedMath().fromEuler(-.03, 0, .015, pi/2, 0, -pi/9).msg
 
     # Define nominal sequence
     with sm:

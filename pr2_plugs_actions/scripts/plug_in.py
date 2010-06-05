@@ -80,6 +80,7 @@ def construct_sm():
     # Construct state machine
     sm = StateMachine(['succeeded','aborted','preempted'])
 
+
     # Define nominal sequence
     with sm:
         Container.map_parent_ud_keys(['base_to_outlet','map_to_outlet','gripper_to_plug'])
@@ -106,6 +107,7 @@ def construct_sm():
         with approach_it:
             Container.share_parent_userdata()
             approach_sm = StateMachine(['succeeded','preempted','aborted','keep_moving'])
+            approach_sm.local_userdata.min_offset_error = 0.021
             with approach_sm:
                 Container.share_parent_userdata()
                 # Move closer
@@ -144,9 +146,8 @@ def construct_sm():
                     pose_gripper_plug = PoseStampedMath(ud.gripper_to_plug)
                     pose_outlet_plug = (pose_outlet_base * pose_base_gripper * pose_gripper_plug).msg
 
-                    offset_error = pose_outlet_plug.pose.position.x - ud.outlet_to_plug.pose.position.x 
-                    in_contact = math.fabs(offset_error) > 0.002
-                    rospy.logerr("Plug pose x error is %f m" % (offset_error))
+                    ud.offset_error = pose_outlet_plug.pose.position.x - ud.outlet_to_plug.pose.position.x 
+                    in_contact = math.fabs(ud.offset_error) > ud.min_offset_error
 
                     # Store the offset from the plug where we actually made contact
                     if in_contact:
@@ -289,7 +290,7 @@ def construct_sm():
             goal.pose.header.stamp = rospy.Time.now()
             goal.pose.header.frame_id = 'base_link'
             goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
-            goal.move_duration = rospy.Duration(0.5)
+            goal.move_duration = rospy.Duration(3.0)
             return goal
 
         StateMachine.add('FAIL_PULL_BACK_FROM_WALL',
@@ -298,3 +299,25 @@ def construct_sm():
                 'aborted':'FAIL_PULL_BACK_FROM_WALL'})
     return sm
 
+
+if __name__ == "__main__":
+    """
+    sm_plug_in = construct_sm()
+
+    # Run state machine introspection server
+    intro_server = IntrospectionServer('plug_in',sm_plug_in,'/RECHARGE/PLUG_IN')
+    intro_server.start()
+
+    # Run state machine action server 
+    sms = ActionServerWrapper(
+            'recharge', RechargeAction, sm_plug_in,
+            succeeded_outcomes = ['plugged_in','unplugged'],
+            aborted_outcomes = ['aborted'],
+            preempted_outcomes = ['preempted']
+            )
+    sms.run_server()
+
+    rospy.spin()
+
+    intro_server.stop()
+    """
