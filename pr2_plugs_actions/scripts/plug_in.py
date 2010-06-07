@@ -306,7 +306,7 @@ if __name__ == "__main__":
     sm_plug_in = construct_sm()
 
     # Run state machine introspection server
-    intro_server = IntrospectionServer('plug_in',sm_plug_in)
+    intro_server = IntrospectionServer('plug_in',sm_plug_in,'RECHARGE/PLUG_IN')
     intro_server.start()
 
     # Run state machine action server 

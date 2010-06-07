@@ -149,7 +149,7 @@ def construct_sm():
         StateMachine.add('PRECISE_ALIGN_BASE',
                 SimpleActionState('align_base', AlignBaseAction,
                     goal = AlignBaseGoal(offset = 0,look_point=look_point),
-                    goal_cb = get_precise_align_goal),
+                    goal_extract = get_precise_align_goal),
                 {'succeeded':'DETECT_WALL_NORM',
                     'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
 
@@ -201,7 +201,7 @@ if __name__ == "__main__":
     sm_detect_outlet = construct_sm()
 
     # Run state machine introspection server
-    intro_server = IntrospectionServer('detect_outlet',sm_detect_outlet)
+    intro_server = IntrospectionServer('detect_outlet',sm_detect_outlet,'/RECHARGE/DETECT_OUTLET')
     intro_server.start()
 
     # Run state machine action server 

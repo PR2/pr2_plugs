@@ -314,12 +314,7 @@ def main():
 
 
     # Run state machine introspection server
-    intro_server = IntrospectionServer('recharge',sm_recharge)
-    intro_server.add_nested_container_hints({
-        '/DETECT_OUTLET':'detect_outlet',
-        '/FETCH_PLUG':'fetch_plug',
-        '/PLUG_IN':'plug_in',
-        '/UNPLUG/STOW_PLUG':'stow_plug'})
+    intro_server = IntrospectionServer('recharge',sm_recharge,'/RECHARGE')
     intro_server.start()
 
     # Run state machine action server 

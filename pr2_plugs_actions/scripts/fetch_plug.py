@@ -172,7 +172,7 @@ if __name__ == "__main__":
     sm_fetch_plug = construct_sm()
 
     # Run state machine introspection server
-    intro_server = IntrospectionServer('fetch_plug',sm_fetch_plug)
+    intro_server = IntrospectionServer('fetch_plug',sm_fetch_plug,'/RECHARGE/FETCH_PLUG')
     intro_server.start()
 
     # Run state machine action server 
