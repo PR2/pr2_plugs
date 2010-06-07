@@ -80,7 +80,7 @@ class NavigateToOutletState(SimpleActionState):
         outlets = self.get_outlet_locations().poses
 
         # Get id from command
-        plug_id = ud.sm_goal.command.plug_id
+        plug_id = ud.action_goal.command.plug_id
 
         # Grab the relevant outlet approach pose
         for outlet in outlets:
@@ -99,7 +99,7 @@ class GetNavGoalState(State):
     def __init__(self):
         State.__init__(self, outcomes=['local', 'non-local'])
     def enter(self):
-        if self.userdata.sm_goal.command.plug_id == 'local':
+        if self.userdata.action_goal.command.plug_id == 'local':
             return 'local'
         else:
             return 'non-local'
@@ -111,20 +111,20 @@ class ProcessRechargeCommandState(State):
         State.__init__(self, outcomes=['nav_plug_in','unplug','aborted'])
     def enter(self):
         # Process the command to determine if we should plug in or unplug
-        command = self.userdata.sm_goal.command.command
+        command = self.userdata.action_goal.command.command
         if command is RechargeCommand.PLUG_IN:
             return 'nav_plug_in'
         elif command is RechargeCommand.UNPLUG:
             return 'unplug'
         # Set the default result, which is error
-        self.userdata.sm_result.state.state = RechargeState.FAILED
+        self.userdata.action_result.state.state = RechargeState.FAILED
         return 'aborted'
 
 class RemainUnpluggedState(State):
     def __init__(self):
         State.__init__(self, default_outcome='done')
     def enter(self):
-        self.userdata.sm_result.state.state = RechargeState.UNPLUGGED
+        self.userdata.action_result.state.state = RechargeState.UNPLUGGED
 
 class AbortedState(State):
     def __init__(self):
@@ -161,9 +161,9 @@ def main():
         sm_nav = StateMachine(outcomes=['succeeded','aborted','preempted'])
         StateMachine.add('NAVIGATE_TO_OUTLET', sm_nav,
                 {'succeeded':'DETECT_OUTLET',
-                    'aborted':'FAIL_STILL_UNPLUGGED'}),
+                    'aborted':'FAIL_STILL_UNPLUGGED'})
         with sm_nav:
-            Container.set_retrieve_keys(['sm_goal'])
+            Container.map_parent_ud_keys(['action_goal','action_result'])
 
             StateMachine.add('GET_NAV_GOAL', 
                     GetNavGoalState(),
@@ -182,24 +182,27 @@ def main():
 
         # Detect the outlet
         StateMachine.add('DETECT_OUTLET', 
-                construct_detect_outlet_sm(),
+                SimpleActionState('detect_outlet',DetectOutletAction,
+                    result_slots_map = {'outlet_pose':'base_to_outlet'}),
                 {'succeeded':'FETCH_PLUG',
-                    'aborted':'FAIL_STILL_UNPLUGGED'}),
+                    'aborted':'FAIL_STILL_UNPLUGGED'})
 
         # Fetch plug
         StateMachine.add('FETCH_PLUG',
-                construct_fetch_plug_sm(),
+                SimpleActionState('fetch_plug',FetchPlugAction,
+                    result_slots_map = {'plug_on_base_pose':'base_to_plug_on_base'}),
                 {'succeeded':'PLUG_IN',
-                    'aborted':'FAIL_OPEN_GRIPPER'}),
+                    'aborted':'FAIL_OPEN_GRIPPER'})
         
         # Plug in
-        plug_in_sm = construct_plug_in_sm()
-        def store_plug_in_result(ud, local_ud, terminal_states, container_outcome):
-            if container_outcome == 'succeeded':
-                ud.sm_result.state.state = RechargeState.PLUGGED_IN
-        plug_in_sm.register_termination_cb(store_plug_in_result)
+        def set_plug_in_result(ud, result_status, result):
+            if result_status == GoalStatus.SUCCEEDED:
+                ud.action_result.state.state = RechargeState.PLUGGED_IN
         StateMachine.add('PLUG_IN',
-                plug_in_sm,
+                SimpleActionState('plug_in',PlugInAction,
+                    goal_slots = ['base_to_outlet'],
+                    result_slots = ['gripper_to_plug'],
+                    result_cb = set_plug_in_result),
                 { 'succeeded':'plugged_in',
                     'aborted':'RECOVER_STOW_PLUG'})
         
@@ -217,18 +220,18 @@ def main():
             
             # Wiggle out
             def get_wiggle_out_goal(ud, goal):
-                goal = WigglePlugGoal()
-                goal.gripper_to_plug = ud.gripper_to_plug
+                # Flash timestamps
                 goal.gripper_to_plug.header.stamp = rospy.Time.now()
-
-                goal.base_to_outlet = ud.base_to_outlet
                 goal.base_to_outlet.header.stamp = rospy.Time.now()
 
+                # Set period
                 goal.wiggle_period = rospy.Duration(0.5)
                 goal.insert = 0
                 return goal
+
             StateMachine.add('WIGGLE_OUT',
                     SimpleActionState('wiggle_plug',WigglePlugAction,
+                        goal_slots = ['gripper_to_plug','base_to_outlet'],
                         goal_cb = get_wiggle_out_goal),
                     {'succeeded':'PULL_BACK_FROM_WALL'})
 
@@ -245,13 +248,11 @@ def main():
                         * pose_plug_gripper
                         * pose_gripper_wrist).msg
 
-                goal = PR2ArmIKGoal()
                 goal.pose.pose = pose_base_wrist.pose
                 goal.pose.header.stamp = rospy.Time.now()
                 goal.pose.header.frame_id = 'base_link'
                 goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
                 goal.move_duration = rospy.Duration(5.0)
-                return goal
 
             StateMachine.add('PULL_BACK_FROM_WALL',
                 SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_pull_back_goal),
@@ -260,18 +261,17 @@ def main():
             
             # Stow plug
             def get_stow_plug_goal(ud, goal):
-                goal = StowPlugGoal()
-                goal.gripper_to_plug = ud.gripper_to_plug
+                # Flash timestamps
                 goal.gripper_to_plug.header.stamp = rospy.Time.now()
-                goal.base_to_plug = ud.base_to_plug_on_base
                 goal.base_to_plug.header.stamp = rospy.Time.now()
-                return goal
 
             def set_unplug_result(ud, result_state, result):
                 if result_state is GoalStatus.SUCCEEDED:
-                    ud.sm_result.state.state = RechargeState.UNPLUGGED
+                    ud.action_result.state.state = RechargeState.UNPLUGGED
             StateMachine.add('STOW_PLUG',
                     SimpleActionState('stow_plug',StowPlugAction,
+                        goal_slots = ['gripper_to_plug'],
+                        goal_slots_map = {'base_to_plug_on_base':'base_to_plug'},
                         goal_cb = get_stow_plug_goal,
                         result_cb = set_unplug_result),
                     {'succeeded':'succeeded'})
@@ -314,7 +314,12 @@ def main():
 
 
     # Run state machine introspection server
-    intro_server = IntrospectionServer('recharge',sm_recharge,'/RECHARGE')
+    intro_server = IntrospectionServer('recharge',sm_recharge)
+    intro_server.add_nested_container_hints({
+        '/DETECT_OUTLET':'detect_outlet',
+        '/FETCH_PLUG':'fetch_plug',
+        '/PLUG_IN':'plug_in',
+        '/UNPLUG/STOW_PLUG':'stow_plug'})
     intro_server.start()
 
     # Run state machine action server 
@@ -322,14 +327,12 @@ def main():
             'recharge', RechargeAction, sm_recharge,
             succeeded_outcomes = ['plugged_in','unplugged'],
             aborted_outcomes = ['aborted'],
-            preempted_outcomes = ['preempted']
-            )
+            preempted_outcomes = ['preempted'])
     sms.run_server()
 
     rospy.spin()
 
     intro_server.stop()
-
 
 if __name__ == "__main__":
     main()

@@ -51,11 +51,11 @@ def construct_sm():
 
     # Hardcoded poses for approach / grasping
     sm.local_userdata.pose_plug_gripper_grasp_approach = PoseStampedMath().fromEuler(0, 0.05, 0, 0, 0, 0).msg
-    sm.local_userdata.pose_plug_gripper_grasp = PoseStampedMath().fromEuler(-.03, 0, .015, pi/2, 0, -pi/9).msg
+    sm.local_userdata.pose_plug_gripper_grasp = PoseStampedMath().fromEuler(-.03, 0, .005, pi/2, 0, -pi/9).msg
 
     # Define nominal sequence
     with sm:
-        Container.map_parent_ud_keys(['base_to_plug_on_base'])
+        Container.map_parent_ud_keys(['plug_on_base_pose'])
 
         StateMachine.add('RAISE_SPINE',
                 SimpleActionState('torso_controller/position_joint_action',
@@ -72,8 +72,8 @@ def construct_sm():
         # Detect the plug
         def store_detect_plug_result(ud, result_state, result):
             if result_state == actionlib.GoalStatus.SUCCEEDED:
-                ud.base_to_plug_on_base = TFUtil.wait_and_transform('base_link',result.plug_pose) 
-                TFUtil.broadcast_transform('plug_on_base_frame',ud.base_to_plug_on_base)
+                ud.plug_on_base_pose = TFUtil.wait_and_transform('base_link',result.plug_pose) 
+                TFUtil.broadcast_transform('plug_on_base_frame',ud.plug_on_base_pose)
 
         StateMachine.add('DETECT_PLUG_ON_BASE',
                 SimpleActionState('detect_plug_on_base',DetectPlugOnBaseAction,
@@ -91,7 +91,7 @@ def construct_sm():
 
         def get_approach_plug_goal(ud, goal):
             """Get the ik goal for approaching the plug to grasp it """
-            pose_base_plug = PoseStampedMath(ud.base_to_plug_on_base)
+            pose_base_plug = PoseStampedMath(ud.plug_on_base_pose)
             pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
 
             goal = PR2ArmIKGoal()
@@ -120,7 +120,7 @@ def construct_sm():
 
         def get_grasp_plug_goal(ud, goal):
             """Get the ik goal for grasping the plug."""
-            pose_base_plug = PoseStampedMath(ud.base_to_plug_on_base)
+            pose_base_plug = PoseStampedMath(ud.plug_on_base_pose)
             pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
 
             goal = PR2ArmIKGoal()
@@ -165,3 +165,24 @@ def construct_sm():
                 { 'succeeded':'DETECT_PLUG_ON_BASE',
                     'aborted':'RECOVER_GRASP_TO_DETECT_POSE'})
     return sm
+
+if __name__ == "__main__":
+    rospy.init_node("fetch_plug")#,log_level=rospy.DEBUG)
+
+    sm_fetch_plug = construct_sm()
+
+    # Run state machine introspection server
+    intro_server = IntrospectionServer('fetch_plug',sm_fetch_plug)
+    intro_server.start()
+
+    # Run state machine action server 
+    asw = ActionServerWrapper(
+            'fetch_plug', FetchPlugAction, sm_fetch_plug,
+            succeeded_outcomes = ['succeeded'],
+            aborted_outcomes = ['aborted'],
+            preempted_outcomes = ['preempted'])
+    asw.run_server()
+
+    rospy.spin()
+
+    intro_server.stop()

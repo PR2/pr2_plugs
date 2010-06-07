@@ -103,11 +103,11 @@ def construct_sm():
                 {'succeeded':'APPROACH_OUTLET_ITER'})
 
         # Approach outlet
-        approach_it = Iterator(['succeeded','preempted','aborted'], drange(-0.07, 0.09, 0.005),'approach_offset','aborted')
+        approach_it = Iterator(['succeeded','preempted','aborted'], lambda: drange(-0.07, 0.09, 0.005),'approach_offset','aborted')
         with approach_it:
             Container.share_parent_userdata()
             approach_sm = StateMachine(['succeeded','preempted','aborted','keep_moving'])
-            approach_sm.local_userdata.min_offset_error = 0.021
+            approach_sm.local_userdata.min_offset_error = 0.01
             with approach_sm:
                 Container.share_parent_userdata()
                 # Move closer
@@ -131,7 +131,7 @@ def construct_sm():
                     goal.pose.header.stamp = rospy.Time.now()
                     goal.pose.header.frame_id = 'base_link'
                     goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
-                    goal.move_duration = rospy.Duration(0.5)
+                    goal.move_duration = rospy.Duration(1.0)
                     return goal
 
                 StateMachine.add('MOVE_CLOSER',
@@ -168,7 +168,7 @@ def construct_sm():
                     'aborted':'FAIL_PULL_BACK_FROM_WALL'})
 
         # Twist the plug to check if it's in the outlet
-        twist_it = Iterator(['succeeded','preempted','aborted'], drange(0.0, 0.25, 0.025),'twist_angle','aborted')
+        twist_it = Iterator(['succeeded','preempted','aborted'], lambda: drange(0.0, 0.25, 0.025),'twist_angle','aborted')
         with twist_it:
             Container.share_parent_userdata()
             twist_sm = StateMachine(['succeeded','preempted','aborted','keep_moving'])
@@ -301,23 +301,22 @@ def construct_sm():
 
 
 if __name__ == "__main__":
-    """
+    rospy.init_node("plug_in")#,log_level=rospy.DEBUG)
+
     sm_plug_in = construct_sm()
 
     # Run state machine introspection server
-    intro_server = IntrospectionServer('plug_in',sm_plug_in,'/RECHARGE/PLUG_IN')
+    intro_server = IntrospectionServer('plug_in',sm_plug_in)
     intro_server.start()
 
     # Run state machine action server 
-    sms = ActionServerWrapper(
-            'recharge', RechargeAction, sm_plug_in,
-            succeeded_outcomes = ['plugged_in','unplugged'],
+    asw = ActionServerWrapper(
+            'plug_in', PlugInAction, sm_plug_in,
+            succeeded_outcomes = ['succeeded'],
             aborted_outcomes = ['aborted'],
-            preempted_outcomes = ['preempted']
-            )
-    sms.run_server()
+            preempted_outcomes = ['preempted'])
+    asw.run_server()
 
     rospy.spin()
 
     intro_server.stop()
-    """

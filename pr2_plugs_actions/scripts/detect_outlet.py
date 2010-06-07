@@ -194,3 +194,24 @@ def construct_sm():
                 {'succeeded':'aborted'})
 
     return sm
+
+if __name__ == "__main__":
+    rospy.init_node("detect_outlet")#,log_level=rospy.DEBUG)
+
+    sm_detect_outlet = construct_sm()
+
+    # Run state machine introspection server
+    intro_server = IntrospectionServer('detect_outlet',sm_detect_outlet)
+    intro_server.start()
+
+    # Run state machine action server 
+    asw = ActionServerWrapper(
+            'detect_outlet', DetectOutletAction, sm_detect_outlet,
+            succeeded_outcomes = ['succeeded'],
+            aborted_outcomes = ['aborted'],
+            preempted_outcomes = ['preempted'])
+    asw.run_server()
+
+    rospy.spin()
+
+    intro_server.stop()
