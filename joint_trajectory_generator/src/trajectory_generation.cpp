@@ -35,6 +35,7 @@
  * Author: Wim Meeussen
  *********************************************************************/
 
+#include <ros/ros.h>
 #include <joint_trajectory_generator/trajectory_generation.h>
 #include <kdl/velocityprofile_trap.hpp>
 
@@ -61,9 +62,9 @@ namespace trajectory{
 
     // check trajectory message
     if (traj_in.points.size() < 2){
-      ROS_WARN("Trajectory message should contain at least two points, but it contains %d joints. Returning original trajectory", (int)traj_in.points.size());
+      ROS_WARN("Trajectory message should contain at least two points, but it contains %d points. Returning original trajectory", (int)traj_in.points.size());
       traj_out = traj_in;
-      return;
+      throw ros::Exception("Trajectory contains fewer than two points.");
     }
 
     // default result

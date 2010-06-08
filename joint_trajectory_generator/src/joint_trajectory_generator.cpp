@@ -102,18 +102,25 @@ namespace joint_trajectory_generator {
         new_goal.trajectory.header = goal.trajectory.header;
         new_goal.trajectory.joint_names = goal.trajectory.joint_names;
 
+        size_t n_traj_points = goal.trajectory.points.size(),
+               n_joint_names = goal.trajectory.joint_names.size();
+
         // Increase traj length to account for the initial pose
-        new_goal.trajectory.set_points_size(goal.trajectory.points.size() + 1);
+        ROS_INFO_STREAM("Initial trajectory has "<<n_traj_points<<" points.");
+        new_goal.trajectory.set_points_size(n_traj_points + 1);
   
         // Set joint names
-        new_goal.trajectory.points[0].set_positions_size(new_goal.trajectory.joint_names.size());
+        for(size_t i=0; i<n_traj_points+1; i++) {
+          new_goal.trajectory.points[i].set_positions_size(n_joint_names);
+        }
 
         {
           boost::mutex::scoped_lock lock(mutex_);
           //add the current point as the start of the trajectory
-          for(unsigned int i = 0; i < new_goal.trajectory.joint_names.size(); ++i){
-            if(current_state_.find(new_goal.trajectory.joint_names[i]) == current_state_.end()){
-              ROS_FATAL("Joint names in goal and controller don't match. Something is very wrong.");
+          for(unsigned int i = 0; i < n_joint_names; ++i){
+            // Generate the first point
+            if(current_state_.find(new_goal.trajectory.joint_names[i]) == current_state_.end()) {
+              ROS_FATAL_STREAM("Joint names in goal and controller don't match. Something is very wrong. Goal joint name: "<<new_goal.trajectory.joint_names[i]);
               throw std::runtime_error("Joint names in goal and controller don't match. Something is very wrong.");
             }
             new_goal.trajectory.points[0].positions[i] = current_state_[new_goal.trajectory.joint_names[i]];
@@ -135,7 +142,7 @@ namespace joint_trajectory_generator {
             }
 
             // Apply offset to each point in the trajectory on this joint
-            for(unsigned int j=0; j < new_goal.trajectory.points.size(); j++) {
+            for(unsigned int j=0; j < n_traj_points; j++) {
               new_goal.trajectory.points[j+1].positions[i] = goal.trajectory.points[j].positions[i] + offset;
             }
           }
@@ -153,7 +160,14 @@ namespace joint_trajectory_generator {
       void executeCb(const pr2_controllers_msgs::JointTrajectoryGoalConstPtr& goal){
         ROS_INFO("Got a goal");
 
-        pr2_controllers_msgs::JointTrajectoryGoal full_goal = createGoal(*goal);
+        pr2_controllers_msgs::JointTrajectoryGoal full_goal;
+        try {
+          full_goal = createGoal(*goal);
+        } catch (ros::Exception ex) {
+          ROS_ERROR_STREAM(ex.what());
+          as_.setAborted();
+          return;
+        }
 
         ac_.sendGoal(full_goal, JTAC::SimpleDoneCallback(), JTAC::SimpleActiveCallback(), boost::bind(&JointTrajectoryGenerator::feedbackCb, this, _1));
 
