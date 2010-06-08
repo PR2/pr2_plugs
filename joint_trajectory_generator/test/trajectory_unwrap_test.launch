@@ -1,5 +1,0 @@
-<launch>
-        <param name="urdf_file_path" type="str" value="$(find joint_trajectory_generator)/test/test_robot.xml"/>
-        <test test-name="trajectory_unwrap_test" pkg="joint_trajectory_generator" type="trajectory_unwrap_test"/>
-
-</launch>

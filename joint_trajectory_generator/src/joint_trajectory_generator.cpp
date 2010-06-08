@@ -41,9 +41,10 @@
 #include <pr2_controllers_msgs/JointTrajectoryAction.h>
 #include <pr2_controllers_msgs/JointTrajectoryControllerState.h>
 
-#include<urdf/model.h>
+#include <angles/angles.h>
+#include <urdf/model.h>
+#include <urdf/joint.h>
 
-#include <joint_trajectory_generator/trajectory_unwrap.h>
 #include <joint_trajectory_generator/trajectory_generation.h>
 
 namespace joint_trajectory_generator {
@@ -66,27 +67,16 @@ namespace joint_trajectory_generator {
         ros::NodeHandle pn("~");
         pn.param("max_acc", max_acc_, 0.5);
         pn.param("max_vel", max_vel_, 5.0);
-        pn.param("unwrap", unwrap_, false);
 
-        if(unwrap_)
-        {
-          // Load Robot Model
-          ROS_INFO("Loading robot model");
-          std::string xml_string;
-          ros::NodeHandle nh_toplevel;
-          if (!nh_toplevel.getParam(std::string("/robot_description"), xml_string))
-          {
-            ROS_ERROR("Could not find parameter robot_description on parameter server.");
-            ros::shutdown();
-            exit(1);
-          }
-          if(!robot_model_.initString(xml_string))
-          {
-            ROS_ERROR("Could not load robot model.");
-            ros::shutdown();
-            exit(1);
-          }
-        }
+        // Load Robot Model
+        ROS_INFO("Loading robot model");
+        std::string xml_string;
+        ros::NodeHandle nh_toplevel;
+        if (!nh_toplevel.getParam(std::string("/robot_description"), xml_string))
+          throw ros::Exception("Could not find paramter robot_description on parameter server");
+
+        if(!robot_model_.initString(xml_string)) 
+          throw ros::Exception("Could not parse robot model");
 
         ros::Rate r(10.0);
         while(!got_state_){
@@ -111,8 +101,11 @@ namespace joint_trajectory_generator {
         pr2_controllers_msgs::JointTrajectoryGoal new_goal;
         new_goal.trajectory.header = goal.trajectory.header;
         new_goal.trajectory.joint_names = goal.trajectory.joint_names;
-        new_goal.trajectory.set_points_size(goal.trajectory.points.size() + 1);
 
+        // Increase traj length to account for the initial pose
+        new_goal.trajectory.set_points_size(goal.trajectory.points.size() + 1);
+  
+        // Set joint names
         new_goal.trajectory.points[0].set_positions_size(new_goal.trajectory.joint_names.size());
 
         {
@@ -124,18 +117,28 @@ namespace joint_trajectory_generator {
               throw std::runtime_error("Joint names in goal and controller don't match. Something is very wrong.");
             }
             new_goal.trajectory.points[0].positions[i] = current_state_[new_goal.trajectory.joint_names[i]];
+
+            // Get the joint and calculate the offset from the current state
+            boost::shared_ptr<const urdf::Joint> joint = robot_model_.getJoint(new_goal.trajectory.joint_names[i]);
+            double offset = 0;
+
+            double goal_position = goal.trajectory.points[0].positions[i],
+                   current_position = new_goal.trajectory.points[0].positions[i];
+
+            if(joint->type == urdf::Joint::REVOLUTE) {
+              offset = 0;
+            } else if(joint->type == urdf::Joint::CONTINUOUS) {
+              offset = current_position - goal_position - angles::shortest_angular_distance(goal_position, current_position);
+            } else {
+              ROS_WARN("Unknown joint type in joint trajectory. This joint might not be unwrapped properly. Supported joint types are urdf::Joint::REVOLUTE and urdf::Joint::CONTINUOUS");
+              offset = 0;
+            }
+
+            // Apply offset to each point in the trajectory on this joint
+            for(unsigned int j=0; j < new_goal.trajectory.points.size(); j++) {
+              new_goal.trajectory.points[j+1].positions[i] = goal.trajectory.points[j].positions[i] + offset;
+            }
           }
-        }
-
-        //push the rest of the points on
-        for(unsigned int i = 0; i < goal.trajectory.points.size(); ++i){
-          new_goal.trajectory.points[i + 1] = goal.trajectory.points[i];
-        }
-
-        if(unwrap_)
-        {
-          //unwrap angles
-          trajectory_unwrap::unwrap(robot_model_, new_goal.trajectory,new_goal.trajectory);
         }
 
         //todo pass into trajectory generator here
@@ -208,7 +211,6 @@ namespace joint_trajectory_generator {
       ros::Subscriber state_sub_;
       bool got_state_;
       double max_acc_, max_vel_;
-      bool unwrap_;
       urdf::Model robot_model_;
 
   };
