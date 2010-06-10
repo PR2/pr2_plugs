@@ -120,7 +120,7 @@ def construct_sm():
     # Define nominal sequence
     with sm:
         # Define SMACH interface
-        Container.map_parent_ud_keys(['base_to_outlet','map_to_outlet'])
+        Container.map_parent_ud_keys({'outlet_pose':'base_to_outlet'})
 
         StateMachine.add('LOWER_SPINE',
                 SimpleActionState('torso_controller/position_joint_action', SingleJointPositionAction,
@@ -129,7 +129,7 @@ def construct_sm():
 
         StateMachine.add('ROUGH_ALIGN_BASE',
                 SimpleActionState('align_base', AlignBaseAction,
-                    goal = AlignBaseGoal(offset = 0,look_point=look_point)),
+                    goal_key = 'align_base_goal'),#AlignBaseGoal(offset = 0,look_point=look_point)),
                 {'succeeded':'MOVE_ARM_DETECT_OUTLET'})
 
         StateMachine.add('MOVE_ARM_DETECT_OUTLET',
@@ -197,6 +197,7 @@ def construct_sm():
 
 if __name__ == "__main__":
     rospy.init_node("detect_outlet")#,log_level=rospy.DEBUG)
+    TFUtil()
 
     sm_detect_outlet = construct_sm()
 

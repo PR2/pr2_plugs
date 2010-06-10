@@ -302,6 +302,7 @@ def construct_sm():
 
 if __name__ == "__main__":
     rospy.init_node("plug_in")#,log_level=rospy.DEBUG)
+    TFUtil()
 
     sm_plug_in = construct_sm()
 

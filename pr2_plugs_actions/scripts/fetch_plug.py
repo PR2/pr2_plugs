@@ -168,6 +168,7 @@ def construct_sm():
 
 if __name__ == "__main__":
     rospy.init_node("fetch_plug")#,log_level=rospy.DEBUG)
+    TFUtil()
 
     sm_fetch_plug = construct_sm()
 

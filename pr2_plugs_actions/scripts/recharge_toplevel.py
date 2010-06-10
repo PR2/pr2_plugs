@@ -132,6 +132,7 @@ class AbortedState(State):
 
 def main():
     rospy.init_node("recharge_toplevel",log_level=rospy.DEBUG)
+    TFUtil()
 
     # Close gripper goal
     close_gripper_goal = Pr2GripperCommandGoal()
@@ -146,12 +147,14 @@ def main():
     sm_recharge = StateMachine(outcomes=['plugged_in','unplugged','aborted','preempted'])
 
     # Default userdata fields
-    sm_recharge.local_userdata.base_to_outlet = PoseStamped()
-    sm_recharge.local_userdata.plug_on_base_pose = PoseStamped()
-    sm_recharge.local_userdata.plug_in_gripper_pose = PoseStamped()
+    #sm_recharge.local_userdata.base_to_outlet = PoseStamped()
+    #sm_recharge.local_userdata.plug_on_base_pose = PoseStamped()
+    #sm_recharge.local_userdata.plug_in_gripper_pose = PoseStamped()
 
     # Define entry states
     with sm_recharge:
+        StateMachine.map_parent_ud_keys(['action_goal','action_feedback','action_result'])
+
         StateMachine.add('PROCESS_RECHARGE_COMMAND',
                 ProcessRechargeCommandState(),
                 { 'nav_plug_in':'NAVIGATE_TO_OUTLET',
