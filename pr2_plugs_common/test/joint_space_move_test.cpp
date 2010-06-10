@@ -65,7 +65,7 @@ int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "trajectory_unwrap_test");
   ros::NodeHandle n;
-  Server server(n, "r_arm_plugs_controller/joint_trajectory_action", boost::bind(&execute, _1, &server));
+  Server server(n, "r_arm_controller/joint_trajectory_action", boost::bind(&execute, _1, &server));
   boost::thread spin_thread(&spinThread);
   int log = RUN_ALL_TESTS();
   ros::shutdown();

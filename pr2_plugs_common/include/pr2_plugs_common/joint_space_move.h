@@ -49,7 +49,7 @@ static bool gotoJointPosition(double q1, double q2,double q3,double q4,double q5
   std::string arm = "r";
   if (!right_arm) arm = "l";
 
-  actionlib::SimpleActionClient<pr2_controllers_msgs::JointTrajectoryAction> trajectory_action(arm+"_arm_plugs_controller/joint_trajectory_action", true);
+  actionlib::SimpleActionClient<pr2_controllers_msgs::JointTrajectoryAction> trajectory_action(arm+"_arm_controller/joint_trajectory_action", true);
   trajectory_action.waitForServer();
   ROS_INFO("Moving %s arm to detection pose", arm.c_str());
 

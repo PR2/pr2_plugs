@@ -133,7 +133,7 @@ def construct_sm():
                 {'succeeded':'MOVE_ARM_DETECT_OUTLET'})
 
         StateMachine.add('MOVE_ARM_DETECT_OUTLET',
-                JointTrajectoryState('r_arm_plugs_controller','pr2_plugs_configuration/detect_outlet'),
+                JointTrajectoryState('r_arm_controller','pr2_plugs_configuration/detect_outlet'),
                 {'succeeded':'OUTLET_LATERAL_SEARCH',
                     'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'}),
 
@@ -190,7 +190,7 @@ def construct_sm():
 
         # Define recovery states
         StateMachine.add('FAIL_MOVE_ARM_OUTLET_TO_FREE',
-                JointTrajectoryState('r_arm_plugs_controller','pr2_plugs_configuration/recover_outlet_to_free'),
+                JointTrajectoryState('r_arm_controller','pr2_plugs_configuration/recover_outlet_to_free'),
                 {'succeeded':'aborted'})
 
     return sm

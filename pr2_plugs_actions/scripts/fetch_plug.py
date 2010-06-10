@@ -65,7 +65,7 @@ def construct_sm():
 
         # Move arm to detect the plug on the base
         StateMachine.add('MOVE_ARM_BASE_DETECT_POSE',
-                JointTrajectoryState('r_arm_plugs_controller',
+                JointTrajectoryState('r_arm_controller',
                     'pr2_plugs_configuration/detect_plug_on_base'),
                 {'succeeded':'DETECT_PLUG_ON_BASE'})
 
@@ -84,7 +84,7 @@ def construct_sm():
 
         # Move arm to the grasp pose
         StateMachine.add('MOVE_ARM_BASE_GRASP_POSE',
-                JointTrajectoryState('r_arm_plugs_controller',
+                JointTrajectoryState('r_arm_controller',
                     'pr2_plugs_configuration/grasp_plug'),
                 {'succeeded':'APPROACH_PLUG',
                     'aborted':'RECOVER_GRASP_TO_DETECT_POSE'})
@@ -148,7 +148,7 @@ def construct_sm():
                     'aborted':'REMOVE_PLUG'})
 
         StateMachine.add('REMOVE_PLUG',
-                JointTrajectoryState('r_arm_plugs_controller',
+                JointTrajectoryState('r_arm_controller',
                     'pr2_plugs_configuration/remove_plug'),
                 {'succeeded':'LOWER_SPINE'})
             
@@ -160,7 +160,7 @@ def construct_sm():
         
         # Define recovery states
         StateMachine.add('RECOVER_GRASP_TO_DETECT_POSE',
-                JointTrajectoryState('r_arm_plugs_controller',
+                JointTrajectoryState('r_arm_controller',
                     'pr2_plugs_configuration/recover_grasp_to_detect'),
                 { 'succeeded':'DETECT_PLUG_ON_BASE',
                     'aborted':'RECOVER_GRASP_TO_DETECT_POSE'})

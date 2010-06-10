@@ -1,4 +1,4 @@
-r_arm_plugs_controller:
+r_arm_controller:
   type: "JointSplineTrajectoryController"
   joints:
     - r_shoulder_pan_joint
@@ -46,7 +46,7 @@ r_arm_plugs_controller:
 
 
 
-l_arm_plugs_controller:
+l_arm_controller:
   type: "JointSplineTrajectoryController"
   joints:
     - l_shoulder_pan_joint

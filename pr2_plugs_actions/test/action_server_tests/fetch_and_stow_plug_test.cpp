@@ -79,7 +79,7 @@ TEST(ActionServerTest, fetch_plug)
 {
   ros::NodeHandle n;
   boost::thread spin_thread(&spinThread);
-  actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> arm_server(n, "r_arm_plugs_controller/joint_trajectory_generator", boost::bind(&arm_execute, _1, &arm_server));
+  actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> arm_server(n, "r_arm_controller/joint_trajectory_generator", boost::bind(&arm_execute, _1, &arm_server));
   actionlib::SimpleActionServer<pr2_common_action_msgs::PR2ArmIKAction> ik_server(n, "r_arm_ik", boost::bind(&ik_execute, _1, &ik_server));
   actionlib::SimpleActionServer<pr2_plugs_msgs::DetectPlugOnBaseAction> plug_server(n, "detect_plug_on_base", boost::bind(&plug_execute, _1, &plug_server));
   actionlib::SimpleActionServer<pr2_controllers_msgs::Pr2GripperCommandAction> gripper_server(n, "r_gripper_controller/gripper_action", boost::bind(&gripper_execute, _1, &gripper_server));
@@ -99,7 +99,7 @@ TEST(ActionServerTest, stow_plug)
 {
   ros::NodeHandle n;
   boost::thread spin_thread(&spinThread);
-  actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> arm_server(n, "r_arm_plugs_controller/joint_trajectory_generator", boost::bind(&arm_execute, _1, &arm_server));
+  actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> arm_server(n, "r_arm_controller/joint_trajectory_generator", boost::bind(&arm_execute, _1, &arm_server));
   actionlib::SimpleActionServer<pr2_common_action_msgs::PR2ArmIKAction> ik_server(n, "r_arm_ik", boost::bind(&ik_execute, _1, &ik_server));
   actionlib::SimpleActionServer<pr2_plugs_msgs::DetectPlugOnBaseAction> plug_server(n, "detect_plug_on_base", boost::bind(&plug_execute, _1, &plug_server));
   actionlib::SimpleActionServer<pr2_controllers_msgs::Pr2GripperCommandAction> gripper_server(n, "r_gripper_controller/gripper_action", boost::bind(&gripper_execute, _1, &gripper_server));
