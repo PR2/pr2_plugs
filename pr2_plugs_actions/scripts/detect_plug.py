@@ -54,7 +54,7 @@ if __name__ == '__main__':
   rospy.init_node(name)
 
   # create action clients we use
-  joint_space_client = actionlib.SimpleActionClient('r_arm_controller/joint_trajectory_generator_unwrap', JointTrajectoryAction)
+  joint_space_client = actionlib.SimpleActionClient('r_arm_controller/joint_trajectory_generator', JointTrajectoryAction)
   joint_space_client.wait_for_server()
   joint_space_goal = JointTrajectoryGoal()
 

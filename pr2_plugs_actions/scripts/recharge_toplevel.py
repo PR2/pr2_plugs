@@ -122,9 +122,10 @@ class ProcessRechargeCommandState(State):
 
 class RemainUnpluggedState(State):
     def __init__(self):
-        State.__init__(self, default_outcome='done')
+        State.__init__(self,outcomes=['done'])
     def enter(self):
         self.userdata.action_result.state.state = RechargeState.UNPLUGGED
+	return 'done'
 
 class AbortedState(State):
     def __init__(self):
