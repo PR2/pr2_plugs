@@ -7,7 +7,7 @@
 
   <!-- ik action -->
   <node pkg="pr2_arm_ik_action" type="arm_ik" name="r_arm_ik" output="screen">
-    <param name="joint_action" value="joint_trajectory_generator" />
+    <param name="joint_trajectory_action" value="joint_trajectory_generator" />
     <param name="arm" value="r" />
     <param name="free_angle" value="2" />
     <param name="search_discretization" value="0.01" />
@@ -17,7 +17,6 @@
   <!-- Trajectory generator -->
   <node pkg="joint_trajectory_generator" type="joint_trajectory_generator" output="screen" 
         name="joint_trajectory_generator" ns="r_arm_controller" >
-    <remap from="generator_action_name" to="joint_trajectory_generator" />
     <param name="max_acc" value="2.0" />
     <param name="max_vel" value="2.5" />
   </node>
