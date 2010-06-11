@@ -149,7 +149,7 @@ def construct_sm():
         StateMachine.add('PRECISE_ALIGN_BASE',
                 SimpleActionState('align_base', AlignBaseAction,
                     goal = AlignBaseGoal(offset = 0,look_point=look_point),
-                    goal_extract = get_precise_align_goal),
+                    goal_cb = get_precise_align_goal),
                 {'succeeded':'DETECT_WALL_NORM',
                     'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
 
