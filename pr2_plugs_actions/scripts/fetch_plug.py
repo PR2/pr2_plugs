@@ -86,8 +86,14 @@ def construct_sm():
         StateMachine.add('MOVE_ARM_BASE_GRASP_POSE',
                 JointTrajectoryState('r_arm_controller',
                     'pr2_plugs_configuration/grasp_plug'),
-                {'succeeded':'APPROACH_PLUG',
+                {'succeeded':'OPEN_GRIPPER',
                     'aborted':'RECOVER_GRASP_TO_DETECT_POSE'})
+
+        StateMachine.add('OPEN_GRIPPER',
+                SimpleActionState('r_gripper_controller/gripper_action',
+                    Pr2GripperCommandAction,
+                    goal = open_gripper_goal),
+                {'succeeded':'APPROACH_PLUG'})
 
         def get_approach_plug_goal(ud, goal):
             """Get the ik goal for approaching the plug to grasp it """
@@ -109,14 +115,8 @@ def construct_sm():
 
         StateMachine.add('APPROACH_PLUG',
                 SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_approach_plug_goal),
-                {'succeeded':'OPEN_GRIPPER',
+                {'succeeded':'GRASP_PLUG',
                     'aborted':'DETECT_PLUG_ON_BASE'})
-
-        StateMachine.add('OPEN_GRIPPER',
-                SimpleActionState('r_gripper_controller/gripper_action',
-                    Pr2GripperCommandAction,
-                    goal = open_gripper_goal),
-                {'succeeded':'GRASP_PLUG'})
 
         def get_grasp_plug_goal(ud, goal):
             """Get the ik goal for grasping the plug."""

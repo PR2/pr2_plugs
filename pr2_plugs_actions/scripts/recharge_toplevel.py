@@ -310,7 +310,7 @@ def main():
         # Lower the spine on cleanup
         StateMachine.add('FAIL_LOWER_SPINE',
                 SimpleActionState('torso_controller/position_joint_action', SingleJointPositionAction,
-                    goal = SingleJointPositionGoal(position=0.01)),
+                    goal = SingleJointPositionGoal(position=0.02)),
                 {'succeeded':'aborted'})
 
         # Set the initial state explicitly
