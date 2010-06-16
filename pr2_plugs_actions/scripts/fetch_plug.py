@@ -181,7 +181,9 @@ if __name__ == "__main__":
             'fetch_plug', FetchPlugAction, sm_fetch_plug,
             succeeded_outcomes = ['succeeded'],
             aborted_outcomes = ['aborted'],
-            preempted_outcomes = ['preempted'])
+            preempted_outcomes = ['preempted'],
+            expand_goal_slots = True,
+            pack_result_slots = True)
     asw.run_server()
 
     rospy.spin()
