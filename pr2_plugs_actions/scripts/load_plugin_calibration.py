@@ -7,11 +7,14 @@ import sys
 import os,stat
 import yaml
 def save_config(filename, config):
-    file = open(filename, "w")
+    f = open(filename, "w")
     for k,v in config.items():
-        file.write(" " + k + ": " + str(v) + "\r\n")
-    file.close()
-    os.chmod(filename,stat.S_IRUSR | stat.S_IXUSR | stat.S_IWUSR | stat.S_IROTH | stat.S_IXOTH | stat.S_IWOTH)
+        f.write(" " + k + ": " + str(v) + "\r\n")
+    f.close()
+    os.chmod(filename,\
+            stat.S_IRUSR | stat.S_IWUSR |\
+            stat.S_IRGRP | stat.S_IWGRP |\
+            stat.S_IROTH | stat.S_IWOTH)
 
 def main():
     param_ns = None
