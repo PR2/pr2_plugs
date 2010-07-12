@@ -35,7 +35,7 @@
 #include <boost/thread.hpp>
 #include <actionlib/client/simple_action_client.h>
 #include <pr2_plugs_msgs/WigglePlugAction.h>
-#include <pr2_common_action_msgs/PR2ArmIKAction.h>
+#include <pr2_common_action_msgs/ArmMoveIKAction.h>
 #include <actionlib/server/simple_action_server.h>
 
 
@@ -44,7 +44,7 @@ void spinThread()
   ros::spin();
 }
 
-void ik_execute(const pr2_common_action_msgs::PR2ArmIKGoalConstPtr& goal, actionlib::SimpleActionServer<pr2_common_action_msgs::PR2ArmIKAction>* as)
+void ik_execute(const pr2_common_action_msgs::ArmMoveIKGoalConstPtr& goal, actionlib::SimpleActionServer<pr2_common_action_msgs::ArmMoveIKAction>* as)
 {
   as->setSucceeded();
 }
@@ -56,7 +56,7 @@ TEST(ActionServerTest, wiggle_plug)
   ros::NodeHandle n;
   boost::thread spin_thread(&spinThread);
 
-  actionlib::SimpleActionServer<pr2_common_action_msgs::PR2ArmIKAction> ik_server(n, "r_arm_ik", boost::bind(&ik_execute, _1, &ik_server));
+  actionlib::SimpleActionServer<pr2_common_action_msgs::ArmMoveIKAction> ik_server(n, "r_arm_ik", boost::bind(&ik_execute, _1, &ik_server));
 
   actionlib::SimpleActionClient<pr2_plugs_msgs::WigglePlugAction> ac("wiggle_plug"); 
 

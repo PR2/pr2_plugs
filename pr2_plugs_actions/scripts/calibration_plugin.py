@@ -68,9 +68,9 @@ if __name__ == '__main__':
   transformer = tf.TransformListener()
 
   # create action clients we use
-  cart_space_client = actionlib.SimpleActionClient('r_arm_ik', PR2ArmIKAction)
+  cart_space_client = actionlib.SimpleActionClient('r_arm_ik', ArmMoveIKAction)
   cart_space_client.wait_for_server()
-  cart_space_goal = PR2ArmIKGoal()
+  cart_space_goal = ArmMoveIKGoal()
   rospy.loginfo('Connected to action clients')
 
   # create action server

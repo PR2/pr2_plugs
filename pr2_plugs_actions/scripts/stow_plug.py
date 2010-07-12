@@ -118,9 +118,9 @@ if __name__ == '__main__':
   joint_space_client.wait_for_server()
   joint_space_goal = JointTrajectoryGoal()
 
-  cart_space_client = actionlib.SimpleActionClient('r_arm_ik', PR2ArmIKAction)
+  cart_space_client = actionlib.SimpleActionClient('r_arm_ik', ArmMoveIKAction)
   cart_space_client.wait_for_server()
-  cart_space_goal = PR2ArmIKGoal()
+  cart_space_goal = ArmMoveIKGoal()
 
   spine_client = actionlib.SimpleActionClient('torso_controller/position_joint_action', SingleJointPositionAction)
   spine_client.wait_for_server()

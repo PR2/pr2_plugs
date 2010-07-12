@@ -32,7 +32,7 @@ class Plugin:
     self.transformer = tf.TransformListener()
 
     # create action clients we use
-    self.cart_space_client = actionlib.SimpleActionClient('r_arm_ik', PR2ArmIKAction)
+    self.cart_space_client = actionlib.SimpleActionClient('r_arm_ik', ArmMoveIKAction)
     self.cart_space_client.wait_for_server()
 
     self.spine_client = actionlib.SimpleActionClient('torso_controller/position_joint_action', SingleJointPositionAction)
@@ -65,7 +65,7 @@ class Plugin:
 
 
   def move_outlet_plug(self, pose):
-    cart_space_goal = PR2ArmIKGoal()
+    cart_space_goal = ArmMoveIKGoal()
     cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
     cart_space_goal.pose = (self.pose_base_outlet * pose * self.pose_plug_gripper * self.pose_gripper_wrist).msg
     cart_space_goal.pose.header.stamp = rospy.Time.now()

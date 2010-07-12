@@ -259,7 +259,7 @@ def main():
                 goal.move_duration = rospy.Duration(5.0)
 
             StateMachine.add('PULL_BACK_FROM_WALL',
-                SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_pull_back_goal),
+                SimpleActionState('r_arm_ik', ArmMoveIKAction, goal_cb = get_pull_back_goal),
                 {'succeeded':'STOW_PLUG',
                     'aborted':'WIGGLE_OUT'})
             

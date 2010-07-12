@@ -54,7 +54,7 @@ def get_outlet_to_plug_ik_goal(ud, pose):
     pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
     pose_plug_gripper = PoseStampedMath(ud.gripper_to_plug).inverse()
 
-    goal = PR2ArmIKGoal()
+    goal = ArmMoveIKGoal()
     goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
     goal.pose = (pose_base_outlet * pose * pose_plug_gripper * pose_gripper_wrist).msg
     goal.pose.header.stamp = rospy.Time.now()
@@ -127,7 +127,7 @@ def construct_sm():
 
                     ud.outlet_to_plug = pose_outlet_plug.msg
 
-                    goal = PR2ArmIKGoal()
+                    goal = ArmMoveIKGoal()
                     goal.pose.pose = pose_base_wrist.pose
                     goal.pose.header.stamp = rospy.Time.now()
                     goal.pose.header.frame_id = 'base_link'
@@ -136,7 +136,7 @@ def construct_sm():
                     return goal
 
                 StateMachine.add('MOVE_CLOSER',
-                        SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_move_closer_goal),
+                        SimpleActionState('r_arm_ik', ArmMoveIKAction, goal_cb = get_move_closer_goal),
                         {'succeeded':'CHECK_FOR_CONTACT','aborted':'CHECK_FOR_CONTACT'})
 
                 def plug_in_contact(ud):
@@ -189,7 +189,7 @@ def construct_sm():
                             * pose_plug_gripper
                             * pose_gripper_wrist ).msg
 
-                    goal = PR2ArmIKGoal()
+                    goal = ArmMoveIKGoal()
                     goal.pose.pose = pose_base_wrist.pose
                     goal.pose.header.stamp = rospy.Time.now()
                     goal.pose.header.frame_id = 'base_link'
@@ -198,7 +198,7 @@ def construct_sm():
                     return goal
 
                 StateMachine.add('TWIST_PLUG',
-                        SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_twist_goal),
+                        SimpleActionState('r_arm_ik', ArmMoveIKAction, goal_cb = get_twist_goal),
                         {'succeeded':'CHECK_PLUG_IN_SOCKET','aborted':'CHECK_PLUG_IN_SOCKET'})
 
                 # Check for mate
@@ -251,7 +251,7 @@ def construct_sm():
                     * pose_plug_gripper
                     * pose_gripper_wrist).msg
 
-            goal = PR2ArmIKGoal()
+            goal = ArmMoveIKGoal()
             goal.pose.pose = pose_base_wrist.pose
             goal.pose.header.stamp = rospy.Time.now()
             goal.pose.header.frame_id = 'base_link'
@@ -260,7 +260,7 @@ def construct_sm():
             return goal
 
         StateMachine.add('STRAIGHTEN_PLUG',
-            SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_straighten_goal),
+            SimpleActionState('r_arm_ik', ArmMoveIKAction, goal_cb = get_straighten_goal),
             {'succeeded':'WIGGLE_IN',
                 'aborted':'FAIL_PULL_BACK_FROM_WALL'})
 
@@ -286,7 +286,7 @@ def construct_sm():
                     * pose_plug_gripper
                     * pose_gripper_wrist).msg
 
-            goal = PR2ArmIKGoal()
+            goal = ArmMoveIKGoal()
             goal.pose.pose = pose_base_wrist.pose
             goal.pose.header.stamp = rospy.Time.now()
             goal.pose.header.frame_id = 'base_link'
@@ -295,7 +295,7 @@ def construct_sm():
             return goal
 
         StateMachine.add('FAIL_PULL_BACK_FROM_WALL',
-            SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_pull_back_goal),
+            SimpleActionState('r_arm_ik', ArmMoveIKAction, goal_cb = get_pull_back_goal),
             {'succeeded':'aborted',
                 'aborted':'FAIL_PULL_BACK_FROM_WALL'})
     return sm

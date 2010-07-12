@@ -99,7 +99,7 @@
   <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_outlet_detection/result VisionOutletDetectionActionResult result.outlet_pose outlet_detection_result" name="tf_outlet_detection_result" output="screen" />
   <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_plug_detection/goal VisionPlugDetectionActionGoal goal.prior plug_detection_prior" name="tf_plug_detection_prior" output="screen" />   
   <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_plug_detection/result VisionPlugDetectionActionResult result.plug_pose plug_detection_result" name="tf_plug_detection_result" output="screen" />
-  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="r_arm_ik/goal PR2ArmIKActionGoal goal.pose r_arm_ik_goal" name="tf_r_arm_ik_goal" output="screen" />        
+  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="r_arm_ik/goal ArmMoveIKActionGoal goal.pose r_arm_ik_goal" name="tf_r_arm_ik_goal" output="screen" />        
   -->
 
 </launch>

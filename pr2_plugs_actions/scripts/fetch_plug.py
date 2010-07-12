@@ -100,7 +100,7 @@ def construct_sm():
             pose_base_plug = PoseStampedMath(ud.plug_on_base_pose)
             pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
 
-            goal = PR2ArmIKGoal()
+            goal = ArmMoveIKGoal()
             goal.pose = (pose_base_plug
                     * PoseStampedMath(ud.pose_plug_gripper_grasp_approach)
                     * PoseStampedMath(ud.pose_plug_gripper_grasp)
@@ -114,7 +114,7 @@ def construct_sm():
             return goal
 
         StateMachine.add('APPROACH_PLUG',
-                SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_approach_plug_goal),
+                SimpleActionState('r_arm_ik', ArmMoveIKAction, goal_cb = get_approach_plug_goal),
                 {'succeeded':'GRASP_PLUG',
                     'aborted':'DETECT_PLUG_ON_BASE'})
 
@@ -123,7 +123,7 @@ def construct_sm():
             pose_base_plug = PoseStampedMath(ud.plug_on_base_pose)
             pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
 
-            goal = PR2ArmIKGoal()
+            goal = ArmMoveIKGoal()
             goal.pose = (pose_base_plug
                     * PoseStampedMath(ud.pose_plug_gripper_grasp)
                     * pose_gripper_wrist).msg
@@ -136,7 +136,7 @@ def construct_sm():
             return goal
 
         StateMachine.add('GRASP_PLUG',
-                SimpleActionState('r_arm_ik', PR2ArmIKAction, goal_cb = get_grasp_plug_goal),
+                SimpleActionState('r_arm_ik', ArmMoveIKAction, goal_cb = get_grasp_plug_goal),
                 {'succeeded':'CLOSE_GRIPPER',
                     'aborted':'DETECT_PLUG_ON_BASE'})
         
