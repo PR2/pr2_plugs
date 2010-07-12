@@ -52,7 +52,7 @@ from pr2_common_action_msgs.msg import *
 from std_srvs.srv import *
 
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
-from pr2_arm_ik_action.tools import *
+from pr2_arm_move_ik.tools import *
 
 # State machine classes
 from smach import *
@@ -175,14 +175,14 @@ def main():
                         'non-local': 'SAFETY_TUCK'})
             StateMachine.add('SAFETY_TUCK', 
                     SimpleActionState('tuck_arms', TuckArmsAction,
-                        goal = TuckArmsGoal(False,True,True)),
+                        goal = TuckArmsGoal(True,True)),
                     { 'succeeded':'NAVIGATE' })
             StateMachine.add('NAVIGATE', 
                     NavigateToOutletState(exec_timeout = rospy.Duration(20*60.0)),
                     { 'succeeded':'UNTUCK_AT_OUTLET' })
             StateMachine.add('UNTUCK_AT_OUTLET', 
                     SimpleActionState('tuck_arms', TuckArmsAction,
-                        goal = TuckArmsGoal(True,True,True)))
+                        goal = TuckArmsGoal(False, False)))
 
         # Detect the outlet
         StateMachine.add('DETECT_OUTLET', 
@@ -304,7 +304,7 @@ def main():
         
         StateMachine.add('FAIL_UNTUCK',
                 SimpleActionState('tuck_arms',TuckArmsAction,
-                    goal = TuckArmsGoal(True,True,True)),
+                    goal = TuckArmsGoal(False, False)),
                 {'succeeded':'FAIL_LOWER_SPINE'})
         
         # Lower the spine on cleanup

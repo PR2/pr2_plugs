@@ -96,6 +96,7 @@ class Executive:
     # Wait for all the ac to start
     for (name,action) in actions:
       print "Wait for server "+name
+      rospy.logerr("wait for server %s"%name)
       self.ac[name].wait_for_server()
     rospy.loginfo("All actions started.")
 
@@ -118,14 +119,13 @@ class Executive:
       self.recharge_state_pub.publish(self.recharge_state)
 
       # Tuck the arms
-      untuck_goal = TuckArmsGoal()
-      untuck_goal.untuck=False
-      untuck_goal.left=True
-      untuck_goal.right=True
-      untucked = False
-      while not untucked:
-        rospy.loginfo("Untucking right arm...")
-        untucked = (self.ac['tuck_arms'].send_goal_and_wait(untuck_goal, rospy.Duration(30.0), self.preempt_timeout) == GoalStatus.SUCCEEDED)
+      tuck_goal = TuckArmsGoal()
+      tuck_goal.tuck_left=True
+      tuck_goal.tuck_right=True
+      tucking_succeeded = False
+      while not tucking_succeeded:
+        rospy.loginfo("Tucking both arms...")
+        tucking_succeeded = (self.ac['tuck_arms'].send_goal_and_wait(tuck_goal, rospy.Duration(30.0), self.preempt_timeout) == GoalStatus.SUCCEEDED)
 
       # move to plug
       move_base_goal = MoveBaseGoal()
@@ -142,11 +142,12 @@ class Executive:
         rospy.logwarn("Failed to move to the outlet. Tyring again")
 
       # Untuck the arms
-      untuck_goal.untuck=True
-      untucked = False
-      while not untucked:
-        rospy.loginfo("Untucking right arm...")
-        untucked = (self.ac['tuck_arms'].send_goal_and_wait(untuck_goal, rospy.Duration(30.0), self.preempt_timeout) == GoalStatus.SUCCEEDED)
+      tuck_goal.tuck_left = False
+      tuck_goal.tuck_right = False      
+      untucking_succeeded = False
+      while not untucking_succeeded:
+        rospy.loginfo("Untucking both arms...")
+        untucking_succeeded = (self.ac['tuck_arms'].send_goal_and_wait(tuck_goal, rospy.Duration(30.0), self.preempt_timeout) == GoalStatus.SUCCEEDED)
 
       # Detect the outlet 
       detect_outlet_goal = DetectOutletGoal()

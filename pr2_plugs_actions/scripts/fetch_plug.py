@@ -18,7 +18,7 @@ from pr2_common_action_msgs.msg import *
 from pr2_controllers_msgs.msg import *
 from trajectory_msgs.msg import *
 
-from pr2_arm_ik_action.tools import *
+from pr2_arm_move_ik.tools import *
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
 from geometry_msgs.msg import *
 from joint_trajectory_action_tools.tools import *
