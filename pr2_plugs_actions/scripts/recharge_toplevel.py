@@ -122,7 +122,7 @@ def main():
                     ServiceState('outlet_locations', GetOutlets,
                         response_slots=['poses']),
                     {'succeeded':'NAVIGATE'},
-                    remapping={'approach_poses':'poses'})
+                    remapping={'poses':'approach_poses'})
 
             @smach.cb_interface(input_keys=['approach_poses','recharge_command'])
             def get_outlet_approach_goal(ud,goal):
@@ -132,7 +132,7 @@ def main():
                 plug_id = ud.recharge_command.plug_id
 
                 # Grab the relevant outlet approach pose
-                for outlet in ud.appraoch_poses:
+                for outlet in ud.approach_poses:
                     if outlet.name == plug_id or outlet.id == plug_id:
                         target_pose = PoseStamped(pose=outlet.approach_pose)
 
@@ -157,14 +157,14 @@ def main():
                     result_slots = ['outlet_pose']),
                 {'succeeded':'FETCH_PLUG',
                     'aborted':'FAIL_STILL_UNPLUGGED'},
-                remapping = {'base_to_outlet':'outlet_pose'})
+                remapping = {'outlet_pose':'base_to_outlet'})
 
         StateMachine.add('FETCH_PLUG',
                 SimpleActionState('fetch_plug',FetchPlugAction,
                     result_slots = ['plug_on_base_pose']),
                 {'succeeded':'PLUG_IN',
                     'aborted':'FAIL_OPEN_GRIPPER'},
-                remapping = {'base_to_plug_on_base':'plug_on_base_pose'})
+                remapping = {'plug_on_base_pose':'base_to_plug_on_base'})
         
         @smach.cb_interface(input_keys=['recharge_state'], output_keys=['recharge_state'])
         def set_plug_in_result(ud, result_status, result):
@@ -253,7 +253,7 @@ def main():
                         goal_cb = get_stow_plug_goal,
                         result_cb = set_unplug_result),
                     {'succeeded':'succeeded'},
-                    remapping = {'base_to_plug_on_base':'base_to_plug'})
+                    remapping = {'base_to_plug':'base_to_plug_on_base'})
 
         ### RECOVERY STATES ###
         StateMachine.add('RECOVER_STOW_PLUG',

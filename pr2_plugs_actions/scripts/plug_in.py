@@ -160,7 +160,7 @@ def construct_sm():
                         {'succeeded':'CHECK_FOR_CONTACT','aborted':'CHECK_FOR_CONTACT'})
 
                 @smach.cb_interface(
-                        input_keys=['base_to_outlet','gripper_to_plug','approach_offset','offset_error'],
+                        input_keys=['base_to_outlet','outlet_to_plug','gripper_to_plug','approach_offset','offset_error','min_offset_error'],
                         output_keys=['offset_error','outlet_to_plug_contact'])
                 def plug_in_contact(ud):
                     """Returns true if the plug is in contact with something."""
