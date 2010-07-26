@@ -117,6 +117,11 @@ def construct_sm():
             outcomes=['succeeded','aborted','preempted'],
             output_keys=['base_to_outlet'])
 
+    # Add static goals to userdata
+    sm.userdata.wall_norm_goal = wall_norm_goal
+    sm.userdata.align_base_goal = align_base_goal
+    sm.userdata.vision_detect_outlet_goal = vision_detect_outlet_goal
+
     # Define nominal sequence
     with sm:
         StateMachine.add('LOWER_SPINE',
@@ -126,7 +131,7 @@ def construct_sm():
 
         StateMachine.add('ROUGH_ALIGN_BASE',
                 SimpleActionState('align_base', AlignBaseAction,
-                    goal = align_base_goal),
+                    goal_key = 'align_base_goal'),
                 {'succeeded':'MOVE_ARM_DETECT_OUTLET'})
 
         StateMachine.add('MOVE_ARM_DETECT_OUTLET',
@@ -180,7 +185,6 @@ def construct_sm():
             if result_state == GoalStatus.SUCCEEDED:
                 ud.base_to_outlet = TFUtil.wait_and_transform("base_link",result.outlet_pose)
                 ud.map_to_outlet = TFUtil.wait_and_transform("map",result.outlet_pose)
-                TFUtil.broadcast_transform('outlet_frame',ud.map_to_outlet)
 
         StateMachine.add('DETECT_OUTLET',
                 SimpleActionState('vision_outlet_detection', VisionOutletDetectionAction,
