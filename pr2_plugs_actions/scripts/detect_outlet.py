@@ -22,6 +22,7 @@ from pr2_plugs_actions.posestampedmath import PoseStampedMath
 from joint_trajectory_action_tools.tools import *
 
 # State machine classes
+import smach
 from smach import *
 from executive_python_common.tf_util import TFUtil
 
@@ -125,7 +126,7 @@ def construct_sm():
 
         StateMachine.add('ROUGH_ALIGN_BASE',
                 SimpleActionState('align_base', AlignBaseAction,
-                    goal_key = 'align_base_goal'),#AlignBaseGoal(offset = 0,look_point=look_point)),
+                    goal = align_base_goal),
                 {'succeeded':'MOVE_ARM_DETECT_OUTLET'})
 
         StateMachine.add('MOVE_ARM_DETECT_OUTLET',

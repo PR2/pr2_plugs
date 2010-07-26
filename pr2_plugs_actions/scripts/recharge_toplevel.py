@@ -85,6 +85,7 @@ def main():
 
     # Set the initial state explicitly
     recharge_sm.set_initial_state(['PROCESS_RECHARGE_COMMAND'])
+    recharge_sm.userdata.recharge_state = RechargeState(state=RechargeState.UNPLUGGED)
 
     with recharge_sm:
         ### PLUGGING IN ###
@@ -109,7 +110,7 @@ def main():
         with sm_nav:
             StateMachine.add('GOAL_IS_LOCAL', 
                     ConditionState(
-                        cond_cb = lambda ud: ud.recharge_command.goal_id == 'local',
+                        cond_cb = lambda ud: ud.recharge_command.plug_id == 'local',
                         input_keys = ['recharge_command']),
                     {'true': 'UNTUCK_AT_OUTLET',
                         'false': 'SAFETY_TUCK'})
@@ -124,7 +125,7 @@ def main():
                     remapping={'approach_poses':'poses'})
 
             @smach.cb_interface(input_keys=['approach_poses','recharge_command'])
-            def get_outlet_approach_goal(self,ud,goal):
+            def get_outlet_approach_goal(ud,goal):
                 """Get the approach pose from the outlet approach poses list"""
 
                 # Get id from command
@@ -165,7 +166,7 @@ def main():
                     'aborted':'FAIL_OPEN_GRIPPER'},
                 remapping = {'base_to_plug_on_base':'plug_on_base_pose'})
         
-        @smach.cb_interface(output_keys=['recharge_state'])
+        @smach.cb_interface(input_keys=['recharge_state'], output_keys=['recharge_state'])
         def set_plug_in_result(ud, result_status, result):
             if result_status == GoalStatus.SUCCEEDED:
                 ud.recharge_state.state = RechargeState.PLUGGED_IN
@@ -263,7 +264,7 @@ def main():
 
         ### FAILURE STATES ###
         # State to fail to if we're still unplugged
-        @smach.cb_interface(output_keys=['recharge_state'],outcomes=['done'])
+        @smach.cb_interface(input_keys=['recharge_state'],output_keys=['recharge_state'],outcomes=['done'])
         def remain_unplugged(ud):
             ud.recharge_state.state = RechargeState.UNPLUGGED
             return 'done'

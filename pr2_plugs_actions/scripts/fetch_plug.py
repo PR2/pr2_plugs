@@ -25,6 +25,7 @@ from joint_trajectory_action_tools.tools import *
 
 # State machine classes
 from executive_python_common.tf_util import TFUtil
+import smach
 from smach import *
 
 import actionlib
