@@ -23,6 +23,7 @@ from pr2_plugs_actions.posestampedmath import PoseStampedMath
 from joint_trajectory_action_tools.tools import *
 
 # State machine classes
+import smach
 from smach import *
 from executive_python_common.tf_util import TFUtil
 
@@ -47,6 +48,7 @@ def get_outlet_to_plug(pose_base_outlet, pose_plug_gripper):
 
     return outlet_to_plug
 
+@smach.cb_interface(input_keys=['base_to_outlet','gripper_to_plug'])
 def get_outlet_to_plug_ik_goal(ud, pose):
     """Get an IK goal for a pose in the frame of the outlet"""
     time = rospy.Time.now()
@@ -62,6 +64,7 @@ def get_outlet_to_plug_ik_goal(ud, pose):
 
     return goal
 
+@smach.cb_interface(input_keys=['gripper_to_plug','base_to_outlet'])
 def get_wiggle_goal(ud,goal):
     goal = WigglePlugGoal()
     goal.gripper_to_plug = ud.gripper_to_plug
@@ -78,18 +81,19 @@ def construct_sm():
     TFUtil()
 
     # Construct state machine
-    sm = StateMachine(['succeeded','aborted','preempted'])
-
+    sm = StateMachine(
+            ['succeeded','aborted','preempted'],
+            input_keys = ['base_to_outlet'],
+            output_keys = ['gripper_to_plug'])
 
     # Define nominal sequence
     with sm:
-        Container.map_parent_ud_keys(['base_to_outlet','map_to_outlet','gripper_to_plug'])
 
         # Detect the plug in the gripper
+        @smach.cb_interface(output_keys=['gripper_to_plug'])
         def store_detect_plug_result(ud, result_state, result):
             if result_state == GoalStatus.SUCCEEDED:
                 ud.gripper_to_plug = TFUtil.wait_and_transform('r_gripper_tool_frame',result.plug_pose)
-                TFUtil.broadcast_transform('plug_frame',ud.gripper_to_plug)
 
         StateMachine.add('DETECT_PLUG_IN_GRIPPER',
                 SimpleActionState('detect_plug',
@@ -104,14 +108,30 @@ def construct_sm():
                 {'succeeded':'APPROACH_OUTLET_ITER'})
 
         # Approach outlet
-        approach_it = Iterator(['succeeded','preempted','aborted'], lambda: drange(-0.07, 0.09, 0.005),'approach_offset','aborted')
+        approach_it = Iterator(
+                ['succeeded','preempted','aborted'],
+                input_keys = ['base_to_outlet','gripper_to_plug'],
+                output_keys = ['outlet_to_plug'],
+                it = lambda: drange(-0.07, 0.09, 0.005),
+                it_label = 'approach_offset',
+                exhausted_outcome = 'aborted')
+        StateMachine.add('APPROACH_OUTLET_ITER',approach_it,
+                {'succeeded':'TWIST_PLUG_ITER',
+                    'aborted':'FAIL_PULL_BACK_FROM_WALL'})
         with approach_it:
-            Container.share_parent_userdata()
-            approach_sm = StateMachine(['succeeded','preempted','aborted','keep_moving'])
-            approach_sm.local_userdata.min_offset_error = 0.01
+            approach_sm = StateMachine(
+                    ['succeeded','preempted','aborted','keep_moving'],
+                    input_keys=['base_to_outlet','approach_offset','gripper_to_plug'],
+                    output_keys=['outlet_to_plug'])
+            approach_sm.userdata.min_offset_error = 0.01
+
+            Iterator.set_contained_state('APPROACH',approach_sm,
+                loop_outcomes=['keep_moving'])
+
             with approach_sm:
-                Container.share_parent_userdata()
-                # Move closer
+                @smach.cb_interface(
+                        input_keys=['base_to_outlet','approach_offset','gripper_to_plug'],
+                        output_keys=['outlet_to_plug'])
                 def get_move_closer_goal(ud, goal):
                     """Generate an ik goal to move along the local x axis of the outlet."""
 
@@ -139,6 +159,9 @@ def construct_sm():
                         SimpleActionState('r_arm_ik', ArmMoveIKAction, goal_cb = get_move_closer_goal),
                         {'succeeded':'CHECK_FOR_CONTACT','aborted':'CHECK_FOR_CONTACT'})
 
+                @smach.cb_interface(
+                        input_keys=['base_to_outlet','gripper_to_plug','approach_offset','offset_error'],
+                        output_keys=['offset_error','outlet_to_plug_contact'])
                 def plug_in_contact(ud):
                     """Returns true if the plug is in contact with something."""
 
@@ -161,20 +184,24 @@ def construct_sm():
                     ConditionState(cond_cb = plug_in_contact),
                     {'true':'succeeded','false':'keep_moving'})
 
-            Iterator.set_contained_state('APPROACH',approach_sm,
-                loop_outcomes=['keep_moving'])
-
-        StateMachine.add('APPROACH_OUTLET_ITER',approach_it,
-                {'succeeded':'TWIST_PLUG_ITER',
-                    'aborted':'FAIL_PULL_BACK_FROM_WALL'})
 
         # Twist the plug to check if it's in the outlet
-        twist_it = Iterator(['succeeded','preempted','aborted'], lambda: drange(0.0, 0.25, 0.025),'twist_angle','aborted')
+        twist_it = Iterator(
+                ['succeeded','preempted','aborted'],
+                input_keys = ['base_to_outlet','gripper_to_plug'],
+                output_keys = ['outlet_to_plug'],
+                it = lambda: drange(0.0, 0.25, 0.025),
+                it_label = 'twist_angle',
+                exhausted_outcome = 'aborted')
         with twist_it:
-            Container.share_parent_userdata()
-            twist_sm = StateMachine(['succeeded','preempted','aborted','keep_moving'])
+            twist_sm = StateMachine(
+                    ['succeeded','preempted','aborted','keep_moving'],
+                    input_keys = ['base_to_outlet','gripper_to_plug','twist_angle'],
+                    output_keys = ['outlet_to_plug'])
             with twist_sm:
-                Container.share_parent_userdata()
+                @smach.cb_interface(
+                        input_keys=['base_to_outlet','gripper_to_plug','twist_angle'],
+                        output_keys=['outlet_to_plug'])
                 def get_twist_goal(ud, goal):
                     """Generate an ik goal to rotate the plug"""
                     pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
@@ -202,6 +229,7 @@ def construct_sm():
                         {'succeeded':'CHECK_PLUG_IN_SOCKET','aborted':'CHECK_PLUG_IN_SOCKET'})
 
                 # Check for mate
+                @smach.cb_interface(input_keys=['roll_effort'],output_keys=['roll_effort'])
                 def plug_in_socket(ud):
                     """Determine if the plug is in the socket yet"""
 
@@ -238,6 +266,7 @@ def construct_sm():
                 {'succeeded':'STRAIGHTEN_PLUG',
                     'aborted':'FAIL_PULL_BACK_FROM_WALL'})
 
+        @smach.cb_interface(input_keys=['base_to_outlet','outlet_to_plug_contact','gripper_to_plug'])
         def get_straighten_goal(ud, goal):
             """Generate an ik goal to straighten the plug in the outlet."""
 
@@ -273,6 +302,7 @@ def construct_sm():
                     'aborted':'FAIL_PULL_BACK_FROM_WALL'})
 
         ### Recovery states
+        @smach.cb_interface(input_keys=['base_to_outlet','gripper_to_plug'])
         def get_pull_back_goal(ud, goal):
             """Generate an ik goal to move along the local x axis of the outlet."""
 

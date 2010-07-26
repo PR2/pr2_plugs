@@ -55,6 +55,7 @@ from pr2_plugs_actions.posestampedmath import PoseStampedMath
 from pr2_arm_move_ik.tools import *
 
 # State machine classes
+import smach
 from smach import *
 
 from detect_outlet import construct_sm as construct_detect_outlet_sm
@@ -62,74 +63,6 @@ from fetch_plug import construct_sm as construct_fetch_plug_sm
 from plug_in import construct_sm as construct_plug_in_sm
 
 from executive_python_common.tf_util import TFUtil
-
-class NavigateToOutletState(SimpleActionState):
-    def __init__(self,*args,**kwargs):
-        SimpleActionState.__init__(self,*args,
-                action_name = 'move_base',
-                action_spec = MoveBaseAction,
-                goal_cb = self.get_move_base_goal,
-                **kwargs)
-        # Construct service to access outlet location db
-        self.get_outlet_locations = rospy.ServiceProxy('outlet_locations', GetOutlets)
-
-
-    def get_move_base_goal(self,ud,goal):
-
-        # Get outlet locations
-        outlets = self.get_outlet_locations().poses
-
-        # Get id from command
-        plug_id = ud.action_goal.command.plug_id
-
-        # Grab the relevant outlet approach pose
-        for outlet in outlets:
-            if outlet.name == plug_id or outlet.id == plug_id:
-                target_pose = PoseStamped(pose=outlet.approach_pose)
-
-        # Create goal for move base
-        move_base_goal = MoveBaseGoal()
-        move_base_goal.target_pose = target_pose
-        move_base_goal.target_pose.header.stamp = rospy.Time.now()
-        move_base_goal.target_pose.header.frame_id = "map"
-
-        return move_base_goal
-
-class GetNavGoalState(State):
-    def __init__(self):
-        State.__init__(self, outcomes=['local', 'non-local'])
-    def enter(self):
-        if self.userdata.action_goal.command.plug_id == 'local':
-            return 'local'
-        else:
-            return 'non-local'
-
-
-# Define state to process the recharge goal
-class ProcessRechargeCommandState(State):
-    def __init__(self):
-        State.__init__(self, outcomes=['nav_plug_in','unplug','aborted'])
-    def enter(self):
-        # Process the command to determine if we should plug in or unplug
-        command = self.userdata.action_goal.command.command
-        if command is RechargeCommand.PLUG_IN:
-            return 'nav_plug_in'
-        elif command is RechargeCommand.UNPLUG:
-            return 'unplug'
-        # Set the default result, which is error
-        self.userdata.action_result.state.state = RechargeState.FAILED
-        return 'aborted'
-
-class RemainUnpluggedState(State):
-    def __init__(self):
-        State.__init__(self,outcomes=['done'])
-    def enter(self):
-        self.userdata.action_result.state.state = RechargeState.UNPLUGGED
-	return 'done'
-
-class AbortedState(State):
-    def __init__(self):
-        State.__init__(self, default_outcome='aborted')
 
 def main():
     rospy.init_node("recharge_toplevel",log_level=rospy.DEBUG)
@@ -145,63 +78,97 @@ def main():
     open_gripper_goal.command.max_effort = 99999
 
     # Construct state machine
-    sm_recharge = StateMachine(outcomes=['plugged_in','unplugged','aborted','preempted'])
+    recharge_sm = StateMachine(
+            outcomes=['plugged_in','unplugged','aborted','preempted'],
+            input_keys = ['recharge_command'],
+            output_keys = ['recharge_state'])
 
-    # Default userdata fields
-    #sm_recharge.local_userdata.base_to_outlet = PoseStamped()
-    #sm_recharge.local_userdata.plug_on_base_pose = PoseStamped()
-    #sm_recharge.local_userdata.plug_in_gripper_pose = PoseStamped()
+    # Set the initial state explicitly
+    recharge_sm.set_initial_state(['PROCESS_RECHARGE_COMMAND'])
 
-    # Define entry states
-    with sm_recharge:
-        StateMachine.map_parent_ud_keys(['action_goal','action_feedback','action_result'])
-
+    with recharge_sm:
+        ### PLUGGING IN ###
+        @smach.cb_interface(input_keys=['recharge_command'])
+        def plug_in_cond(ud):
+            command = ud.recharge_command.command
+            if command is RechargeCommand.PLUG_IN:
+                return True
+            elif command is RechargeCommand.UNPLUG:
+                return False
         StateMachine.add('PROCESS_RECHARGE_COMMAND',
-                ProcessRechargeCommandState(),
-                { 'nav_plug_in':'NAVIGATE_TO_OUTLET',
-                    'unplug':'UNPLUG'})
+                ConditionState(cond_cb = plug_in_cond),
+                { 'true':'NAVIGATE_TO_OUTLET',
+                    'false':'UNPLUG'})
         
-        # Define navigation sm
-        sm_nav = StateMachine(outcomes=['succeeded','aborted','preempted'])
+        sm_nav = StateMachine(
+                outcomes=['succeeded','aborted','preempted'],
+                input_keys = ['recharge_command'])
         StateMachine.add('NAVIGATE_TO_OUTLET', sm_nav,
                 {'succeeded':'DETECT_OUTLET',
                     'aborted':'FAIL_STILL_UNPLUGGED'})
         with sm_nav:
-            Container.map_parent_ud_keys(['action_goal','action_result'])
-
-            StateMachine.add('GET_NAV_GOAL', 
-                    GetNavGoalState(),
-                    {'local': 'UNTUCK_AT_OUTLET',
-                        'non-local': 'SAFETY_TUCK'})
+            StateMachine.add('GOAL_IS_LOCAL', 
+                    ConditionState(
+                        cond_cb = lambda ud: ud.recharge_command.goal_id == 'local',
+                        input_keys = ['recharge_command']),
+                    {'true': 'UNTUCK_AT_OUTLET',
+                        'false': 'SAFETY_TUCK'})
             StateMachine.add('SAFETY_TUCK', 
                     SimpleActionState('tuck_arms', TuckArmsAction,
                         goal = TuckArmsGoal(True,True)),
-                    { 'succeeded':'NAVIGATE' })
+                    { 'succeeded':'GET_OUTLET_LOCATIONS' })
+            StateMachine.add('GET_OUTLET_LOCATIONS',
+                    ServiceState('outlet_locations', GetOutlets,
+                        response_slots=['poses']),
+                    {'succeeded':'NAVIGATE'},
+                    remapping={'approach_poses':'poses'})
+
+            @smach.cb_interface(input_keys=['approach_poses','recharge_command'])
+            def get_outlet_approach_goal(self,ud,goal):
+                """Get the approach pose from the outlet approach poses list"""
+
+                # Get id from command
+                plug_id = ud.recharge_command.plug_id
+
+                # Grab the relevant outlet approach pose
+                for outlet in ud.appraoch_poses:
+                    if outlet.name == plug_id or outlet.id == plug_id:
+                        target_pose = PoseStamped(pose=outlet.approach_pose)
+
+                # Create goal for move base
+                move_base_goal = MoveBaseGoal()
+                move_base_goal.target_pose = target_pose
+                move_base_goal.target_pose.header.stamp = rospy.Time.now()
+                move_base_goal.target_pose.header.frame_id = "map"
+
+                return move_base_goal
             StateMachine.add('NAVIGATE', 
-                    NavigateToOutletState(exec_timeout = rospy.Duration(20*60.0)),
+                    SimpleActionState('move_base',MoveBaseAction,
+                        goal_cb=get_outlet_approach_goal,
+                        exec_timeout = rospy.Duration(20*60.0)),
                     { 'succeeded':'UNTUCK_AT_OUTLET' })
             StateMachine.add('UNTUCK_AT_OUTLET', 
                     SimpleActionState('tuck_arms', TuckArmsAction,
                         goal = TuckArmsGoal(False, False)))
 
-        # Detect the outlet
         StateMachine.add('DETECT_OUTLET', 
                 SimpleActionState('detect_outlet',DetectOutletAction,
-                    result_slots_map = {'outlet_pose':'base_to_outlet'}),
+                    result_slots = ['outlet_pose']),
                 {'succeeded':'FETCH_PLUG',
-                    'aborted':'FAIL_STILL_UNPLUGGED'})
+                    'aborted':'FAIL_STILL_UNPLUGGED'},
+                remapping = {'base_to_outlet':'outlet_pose'})
 
-        # Fetch plug
         StateMachine.add('FETCH_PLUG',
                 SimpleActionState('fetch_plug',FetchPlugAction,
-                    result_slots_map = {'plug_on_base_pose':'base_to_plug_on_base'}),
+                    result_slots = ['plug_on_base_pose']),
                 {'succeeded':'PLUG_IN',
-                    'aborted':'FAIL_OPEN_GRIPPER'})
+                    'aborted':'FAIL_OPEN_GRIPPER'},
+                remapping = {'base_to_plug_on_base':'plug_on_base_pose'})
         
-        # Plug in
+        @smach.cb_interface(output_keys=['recharge_state'])
         def set_plug_in_result(ud, result_status, result):
             if result_status == GoalStatus.SUCCEEDED:
-                ud.action_result.state.state = RechargeState.PLUGGED_IN
+                ud.recharge_state.state = RechargeState.PLUGGED_IN
         StateMachine.add('PLUG_IN',
                 SimpleActionState('plug_in',PlugInAction,
                     goal_slots = ['base_to_outlet'],
@@ -210,11 +177,15 @@ def main():
                 { 'succeeded':'plugged_in',
                     'aborted':'RECOVER_STOW_PLUG'})
         
-        # Define unplug sm
-        sm_unplug = StateMachine(outcomes = ['succeeded','aborted','preempted'])
-        with sm_unplug:
-            Container.share_parent_userdata()
-
+        ### UNPLUGGING ###
+        unplug_sm = StateMachine(
+                outcomes = ['succeeded','aborted','preempted'],
+                output_keys=['recharge_state'])
+        StateMachine.add('UNPLUG', unplug_sm,
+                { 'succeeded':'unplugged',
+                    'aborted':'FAIL_OPEN_GRIPPER'})
+        with unplug_sm:
+            """Unplug from outlet"""
             # Make sure the gripper is held tightly
             StateMachine.add('CLOSE_GRIPPER',
                     SimpleActionState('r_gripper_controller/gripper_action', Pr2GripperCommandAction,
@@ -224,6 +195,7 @@ def main():
             
             # Wiggle out
             def get_wiggle_out_goal(ud, goal):
+                """Reset the timestamps of the poses relevant to the wiggle goal."""
                 # Flash timestamps
                 goal.gripper_to_plug.header.stamp = rospy.Time.now()
                 goal.base_to_outlet.header.stamp = rospy.Time.now()
@@ -232,13 +204,13 @@ def main():
                 goal.wiggle_period = rospy.Duration(0.5)
                 goal.insert = 0
                 return goal
-
             StateMachine.add('WIGGLE_OUT',
                     SimpleActionState('wiggle_plug',WigglePlugAction,
                         goal_slots = ['gripper_to_plug','base_to_outlet'],
                         goal_cb = get_wiggle_out_goal),
                     {'succeeded':'PULL_BACK_FROM_WALL'})
 
+            @smach.cb_interface(input_keys=['base_to_outlet','gripper_to_plug'])
             def get_pull_back_goal(ud, goal):
                 """Generate an ik goal to move along the local x axis of the outlet."""
 
@@ -265,35 +237,38 @@ def main():
             
             # Stow plug
             def get_stow_plug_goal(ud, goal):
+                """Reset the timestamps for the stow plug goal."""
                 # Flash timestamps
                 goal.gripper_to_plug.header.stamp = rospy.Time.now()
                 goal.base_to_plug.header.stamp = rospy.Time.now()
-
+            @smach.cb_interface(output_keys=['recharge_state'])
             def set_unplug_result(ud, result_state, result):
                 if result_state is GoalStatus.SUCCEEDED:
-                    ud.action_result.state.state = RechargeState.UNPLUGGED
+                    ud.recharge_state.state = RechargeState.UNPLUGGED
+
             StateMachine.add('STOW_PLUG',
                     SimpleActionState('stow_plug',StowPlugAction,
-                        goal_slots = ['gripper_to_plug'],
-                        goal_slots_map = {'base_to_plug_on_base':'base_to_plug'},
+                        goal_slots = ['gripper_to_plug','base_to_plug'],
                         goal_cb = get_stow_plug_goal,
                         result_cb = set_unplug_result),
-                    {'succeeded':'succeeded'})
+                    {'succeeded':'succeeded'},
+                    remapping = {'base_to_plug_on_base':'base_to_plug'})
 
-        StateMachine.add('UNPLUG', sm_unplug,
-                { 'succeeded':'unplugged',
-                    'aborted':'FAIL_OPEN_GRIPPER'})
-
+        ### RECOVERY STATES ###
         StateMachine.add('RECOVER_STOW_PLUG',
                 SimpleActionState('stow_plug',StowPlugAction,
                     goal_cb = get_stow_plug_goal),
                 { 'succeeded':'FAIL_STILL_UNPLUGGED',
                     'aborted':'FAIL_OPEN_GRIPPER'})
 
-        # Add failure states
+        ### FAILURE STATES ###
         # State to fail to if we're still unplugged
+        @smach.cb_interface(output_keys=['recharge_state'],outcomes=['done'])
+        def remain_unplugged(ud):
+            ud.recharge_state.state = RechargeState.UNPLUGGED
+            return 'done'
         StateMachine.add('FAIL_STILL_UNPLUGGED', 
-                RemainUnpluggedState(),
+                CBState(cb = remain_unplugged),
                 {'done':'FAIL_LOWER_SPINE'})
         
         # Make sure we're not holding onto the plug
@@ -313,20 +288,19 @@ def main():
                     goal = SingleJointPositionGoal(position=0.02)),
                 {'succeeded':'aborted'})
 
-        # Set the initial state explicitly
-        sm_recharge.set_initial_state(['PROCESS_RECHARGE_COMMAND'])
-
 
     # Run state machine introspection server
-    intro_server = IntrospectionServer('recharge',sm_recharge,'/RECHARGE')
+    intro_server = IntrospectionServer('recharge',recharge_sm,'/RECHARGE')
     intro_server.start()
 
     # Run state machine action server 
     sms = ActionServerWrapper(
-            'recharge', RechargeAction, sm_recharge,
+            'recharge', RechargeAction, recharge_sm,
             succeeded_outcomes = ['plugged_in','unplugged'],
             aborted_outcomes = ['aborted'],
-            preempted_outcomes = ['preempted'])
+            preempted_outcomes = ['preempted'],
+            goal_slots_map = {'command':'recharge_command'},
+            result_slots_map = {'state':'recharge_state'})
     sms.run_server()
 
     rospy.spin()

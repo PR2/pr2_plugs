@@ -47,16 +47,16 @@ def construct_sm():
     close_gripper_goal.command.max_effort = 99999
 
     # Construct state machine
-    sm = StateMachine(['succeeded','aborted','preempted'])
+    sm = StateMachine(
+            ['succeeded','aborted','preempted'],
+            output_keys = ['plug_on_base_pose'])
 
     # Hardcoded poses for approach / grasping
-    sm.local_userdata.pose_plug_gripper_grasp_approach = PoseStampedMath().fromEuler(0, 0.05, 0, 0, 0, 0).msg
-    sm.local_userdata.pose_plug_gripper_grasp = PoseStampedMath().fromEuler(-.03, 0, .005, pi/2, 0, -pi/9).msg
+    sm.userdata.pose_plug_gripper_grasp_approach = PoseStampedMath().fromEuler(0, 0.05, 0, 0, 0, 0).msg
+    sm.userdata.pose_plug_gripper_grasp = PoseStampedMath().fromEuler(-.03, 0, .005, pi/2, 0, -pi/9).msg
 
     # Define nominal sequence
     with sm:
-        Container.map_parent_ud_keys(['plug_on_base_pose'])
-
         StateMachine.add('RAISE_SPINE',
                 SimpleActionState('torso_controller/position_joint_action',
                     SingleJointPositionAction,
@@ -70,10 +70,10 @@ def construct_sm():
                 {'succeeded':'DETECT_PLUG_ON_BASE'})
 
         # Detect the plug
+        @smach.cb_interface(output_keys=['plug_on_base_pose'])
         def store_detect_plug_result(ud, result_state, result):
             if result_state == actionlib.GoalStatus.SUCCEEDED:
                 ud.plug_on_base_pose = TFUtil.wait_and_transform('base_link',result.plug_pose) 
-                TFUtil.broadcast_transform('plug_on_base_frame',ud.plug_on_base_pose)
 
         StateMachine.add('DETECT_PLUG_ON_BASE',
                 SimpleActionState('detect_plug_on_base',DetectPlugOnBaseAction,
@@ -95,6 +95,10 @@ def construct_sm():
                     goal = open_gripper_goal),
                 {'succeeded':'APPROACH_PLUG'})
 
+        @smach.cb_interface(input_keys =
+                ['plug_on_base_pose',
+                    'pose_plug_gripper_grasp_approach',
+                    'pose_plug_gripper_grasp'])
         def get_approach_plug_goal(ud, goal):
             """Get the ik goal for approaching the plug to grasp it """
             pose_base_plug = PoseStampedMath(ud.plug_on_base_pose)
@@ -118,6 +122,9 @@ def construct_sm():
                 {'succeeded':'GRASP_PLUG',
                     'aborted':'DETECT_PLUG_ON_BASE'})
 
+        @smach.cb_interface(input_keys =
+                ['plug_on_base_pose',
+                    'pose_plug_gripper_grasp'])
         def get_grasp_plug_goal(ud, goal):
             """Get the ik goal for grasping the plug."""
             pose_base_plug = PoseStampedMath(ud.plug_on_base_pose)
@@ -182,7 +189,6 @@ if __name__ == "__main__":
             succeeded_outcomes = ['succeeded'],
             aborted_outcomes = ['aborted'],
             preempted_outcomes = ['preempted'],
-            expand_goal_slots = True,
             pack_result_slots = True)
     asw.run_server()
 
