@@ -20,7 +20,7 @@ from sensor_msgs.msg import *
 
 from pr2_arm_move_ik.tools import *
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
-from joint_trajectory_action_tools.tools import *
+from joint_trajectory_action_tools.tools import get_action_goal as get_generator_goal
 
 # State machine classes
 import smach

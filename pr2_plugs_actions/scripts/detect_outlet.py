@@ -19,7 +19,7 @@ from move_base_msgs.msg import *
 
 from pr2_arm_move_ik.tools import *
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
-from joint_trajectory_action_tools.tools import *
+from joint_trajectory_action_tools.tools import get_action_goal as get_generator_goal
 
 # State machine classes
 import smach
@@ -136,7 +136,7 @@ def construct_sm():
                 {'succeeded':'MOVE_ARM_DETECT_OUTLET'})
 
         StateMachine.add('MOVE_ARM_DETECT_OUTLET',
-                JointTrajectoryState('r_arm_controller','pr2_plugs_configuration/detect_outlet'),
+                SimpleActionState('r_arm_controller/joint_trajectory_generator',JointTrajectoryAction, goal = get_generator_goal('pr2_plugs_configuration/detect_outlet')),
                 {'succeeded':'OUTLET_LATERAL_SEARCH',
                     'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'}),
 
@@ -196,7 +196,7 @@ def construct_sm():
 
         # Define recovery states
         StateMachine.add('FAIL_MOVE_ARM_OUTLET_TO_FREE',
-                JointTrajectoryState('r_arm_controller','pr2_plugs_configuration/recover_outlet_to_free'),
+                SimpleActionState('r_arm_controller/joint_trajectory_generator',JointTrajectoryAction, goal = get_generator_goal('pr2_plugs_configuration/recover_outlet_to_free')),
                 {'succeeded':'aborted'})
 
     return sm
