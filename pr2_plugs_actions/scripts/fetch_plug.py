@@ -27,6 +27,7 @@ from joint_trajectory_action_tools.tools import *
 from executive_python_common.tf_util import TFUtil
 import smach
 from smach import *
+from smach_ros import *
 
 import actionlib
 

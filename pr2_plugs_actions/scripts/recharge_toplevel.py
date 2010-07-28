@@ -57,6 +57,7 @@ from pr2_arm_move_ik.tools import *
 # State machine classes
 import smach
 from smach import *
+from smach_ros import *
 
 from detect_outlet import construct_sm as construct_detect_outlet_sm
 from fetch_plug import construct_sm as construct_fetch_plug_sm
