@@ -37,16 +37,17 @@ roslib.load_manifest('pr2_plugs_executive')
 import rospy
 from pr2_plugs_msgs.msg import *
 
+import smach_ros
 import smach
 
 def main():
   rospy.init_node("plugs_app_test")
 
 
-  intro_client = smach.IntrospectionClient()
 
   # Set initial state
-  injected_ud = smach.UserData()
+#  intro_client = smach_ros.IntrospectionClient()
+#  injected_ud = smach.UserData()
 #  init_set = intro_client.set_initial_state('/recharge','/RECHARGE',['NAVIGATE_TO_OUTLET'],injected_ud)
 #  init_set = intro_client.set_initial_state('/recharge','/RECHARGE/NAVIGATE_TO_OUTLET',['UNTUCK_AT_OUTLET'],injected_ud)
 
