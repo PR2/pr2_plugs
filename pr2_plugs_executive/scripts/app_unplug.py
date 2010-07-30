@@ -46,10 +46,10 @@ def main():
   rospy.sleep(3)
 
   import smach
-  intro_client = smach.IntrospectionClient()
+#  intro_client = smach.IntrospectionClient()
 
   # Set initial state
-  init_set = intro_client.set_initial_state('/recharge','/RECHARGE',['PROCESS_RECHARGE_COMMAND'],timeout = rospy.Duration(10.0))
+#  init_set = intro_client.set_initial_state('/recharge','/RECHARGE',['PROCESS_RECHARGE_COMMAND'],timeout = rospy.Duration(10.0))
 
   cmd = RechargeCommand()
   cmd.command = RechargeCommand.UNPLUG

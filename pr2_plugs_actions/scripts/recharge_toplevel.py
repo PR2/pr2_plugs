@@ -182,6 +182,7 @@ def main():
         ### UNPLUGGING ###
         unplug_sm = StateMachine(
                 outcomes = ['succeeded','aborted','preempted'],
+                input_keys=['gripper_to_plug','base_to_outlet','base_to_plug_on_base'],
                 output_keys=['recharge_state'])
         StateMachine.add('UNPLUG', unplug_sm,
                 { 'succeeded':'unplugged',

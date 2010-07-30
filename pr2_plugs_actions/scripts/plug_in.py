@@ -112,7 +112,7 @@ def construct_sm():
         approach_it = Iterator(
                 ['succeeded','preempted','aborted'],
                 input_keys = ['base_to_outlet','gripper_to_plug'],
-                output_keys = ['outlet_to_plug'],
+                output_keys = ['outlet_to_plug', 'outlet_to_plug_contact'],
                 it = lambda: drange(-0.07, 0.09, 0.005),
                 it_label = 'approach_offset',
                 exhausted_outcome = 'aborted')
@@ -123,7 +123,7 @@ def construct_sm():
             approach_sm = StateMachine(
                     ['succeeded','preempted','aborted','keep_moving'],
                     input_keys=['base_to_outlet','approach_offset','gripper_to_plug'],
-                    output_keys=['outlet_to_plug'])
+                    output_keys=['outlet_to_plug', 'outlet_to_plug_contact'])
             approach_sm.userdata.min_offset_error = 0.01
 
             Iterator.set_contained_state('APPROACH',approach_sm,
@@ -189,7 +189,7 @@ def construct_sm():
         # Twist the plug to check if it's in the outlet
         twist_it = Iterator(
                 ['succeeded','preempted','aborted'],
-                input_keys = ['base_to_outlet','gripper_to_plug'],
+                input_keys = ['base_to_outlet','gripper_to_plug','outlet_to_plug_contact'],
                 output_keys = ['outlet_to_plug'],
                 it = lambda: drange(0.0, 0.25, 0.025),
                 it_label = 'twist_angle',
@@ -197,11 +197,11 @@ def construct_sm():
         with twist_it:
             twist_sm = StateMachine(
                     ['succeeded','preempted','aborted','keep_moving'],
-                    input_keys = ['base_to_outlet','gripper_to_plug','twist_angle'],
+                    input_keys = ['base_to_outlet','gripper_to_plug','twist_angle', 'outlet_to_plug_contact'],
                     output_keys = ['outlet_to_plug'])
             with twist_sm:
                 @smach.cb_interface(
-                        input_keys=['base_to_outlet','gripper_to_plug','twist_angle'],
+                        input_keys=['base_to_outlet','gripper_to_plug','twist_angle', 'outlet_to_plug_contact'],
                         output_keys=['outlet_to_plug'])
                 def get_twist_goal(ud, goal):
                     """Generate an ik goal to rotate the plug"""
