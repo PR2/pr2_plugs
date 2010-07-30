@@ -182,7 +182,7 @@ def main():
         ### UNPLUGGING ###
         unplug_sm = StateMachine(
                 outcomes = ['succeeded','aborted','preempted'],
-                input_keys=['gripper_to_plug','base_to_outlet','base_to_plug_on_base'],
+                input_keys=['recharge_state','gripper_to_plug','base_to_outlet','base_to_plug_on_base'],
                 output_keys=['recharge_state'])
         StateMachine.add('UNPLUG', unplug_sm,
                 { 'succeeded':'unplugged',
@@ -244,7 +244,7 @@ def main():
                 # Flash timestamps
                 goal.gripper_to_plug.header.stamp = rospy.Time.now()
                 goal.base_to_plug.header.stamp = rospy.Time.now()
-            @smach.cb_interface(output_keys=['recharge_state'])
+            @smach.cb_interface(input_keys=['recharge_state'],output_keys=['recharge_state'])
             def set_unplug_result(ud, result_state, result):
                 if result_state is GoalStatus.SUCCEEDED:
                     ud.recharge_state.state = RechargeState.UNPLUGGED
