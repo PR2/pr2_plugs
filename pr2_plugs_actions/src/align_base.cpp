@@ -40,7 +40,7 @@ using namespace ros;
 using namespace std;
 
 static const string fixed_frame = "odom_combined";
-static const double desired_distance = 0.81;
+//static const double desired_distance = 0.81;
 
 namespace pr2_plugs_actions{
 
@@ -68,6 +68,7 @@ void AlignBaseAction::execute(const pr2_plugs_msgs::AlignBaseGoalConstPtr& goal)
   // get wall normal
   pr2_plugs_msgs::DetectWallNormGoal wall_norm_goal;
   wall_norm_goal.look_point = goal->look_point;
+  wall_norm_goal.look_point.point.y = -fabs(goal->desired_distance);
   while (ros::ok() && wall_detector_.sendGoalAndWait(wall_norm_goal, ros::Duration(100.0), ros::Duration(5.0)) != actionlib::SimpleClientGoalState::SUCCEEDED)
     ROS_INFO("AlignBaseAction: try again to get wall norm");
   
@@ -98,7 +99,7 @@ void AlignBaseAction::execute(const pr2_plugs_msgs::AlignBaseGoalConstPtr& goal)
   
   // get desired robot pose
   tf::Pose desired_pose;
-  desired_pose.setOrigin(robot_pose.getOrigin() + (wall_norm * (wall_norm.dot(wall_point-robot_pose.getOrigin()) - desired_distance)));
+  desired_pose.setOrigin(robot_pose.getOrigin() + (wall_norm * (wall_norm.dot(wall_point-robot_pose.getOrigin()) - goal->desired_distance)));
   desired_pose.setRotation(tf::createQuaternionFromYaw(getVectorAngle(tf::Vector3(0,1,0), wall_norm*-1)));
   desired_pose = desired_pose * tf::Pose(tf::Quaternion::getIdentity(), tf::Vector3(goal->offset, 0.0, 0.0));
   ROS_INFO("AlignBaseAction: desired robot pose %f %f ==> %f", desired_pose.getOrigin().x(), desired_pose.getOrigin().y(), tf::getYaw(desired_pose.getRotation()));

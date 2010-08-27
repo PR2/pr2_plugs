@@ -33,7 +33,7 @@ import dynamic_reconfigure.client
 __all__ = ['construct_sm']
 
 class OutletSearchState(State):
-    def __init__(self, offsets):
+    def __init__(self, offsets, desired_distance):
         State.__init__(self,
                 outcomes=['succeeded','preempted','aborted'],
                 input_keys=['align_base_goal','vision_detect_outlet_goal'],
@@ -41,6 +41,7 @@ class OutletSearchState(State):
 
         # Store lateral offset goals
         self.offsets = offsets
+        self.desired_distance = desired_distance
 
         # Create action clients
         self.align_base_client = actionlib.SimpleActionClient('align_base', AlignBaseAction)
@@ -60,6 +61,7 @@ class OutletSearchState(State):
             # align base
             rospy.loginfo("Search base alignment...")
             align_base_goal.offset = offset
+            align_base_goal.desired_distance = self.desired_distance
             if self.align_base_client.send_goal_and_wait(align_base_goal, rospy.Duration(40.0), preempt_timeout) != GoalStatus.SUCCEEDED:
                 rospy.logerr('Aligning base failed')
                 return 'aborted'
@@ -96,17 +98,21 @@ def construct_sm():
     # Define fixed goals
     # Declare wall norm goal
     # This is the point at which we want the head to look
+    rough_align_distance = 1.0
+    precise_align_distance = 0.8
     look_point = PointStamped()
     look_point.header.frame_id = 'base_link'
     look_point.point.x = -0.14
-    look_point.point.y = -0.82
+    look_point.point.y = -rough_align_distance # later over written in align_base
     look_point.point.z = 0.3
 
     wall_norm_goal = DetectWallNormGoal()
     wall_norm_goal.look_point = look_point
+    wall_norm_goal.look_point.point.y = -precise_align_distance
 
     align_base_goal = AlignBaseGoal()
     align_base_goal.look_point = look_point
+    align_base_goal.desired_distance = rough_align_distance
 
     vision_detect_outlet_goal = VisionOutletDetectionGoal()
     vision_detect_outlet_goal.camera_name = "/r_forearm_cam"
@@ -141,7 +147,7 @@ def construct_sm():
                     'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'}),
 
         StateMachine.add('OUTLET_LATERAL_SEARCH',
-                OutletSearchState(offsets = (0.0, 0.1, -0.2, 0.3, -0.4)),
+                OutletSearchState(offsets = (0.0, 0.1, -0.2, 0.3, -0.4), desired_distance = rough_align_distance),
                 {'succeeded':'PRECISE_ALIGN_BASE',
                     'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
 
@@ -152,7 +158,7 @@ def construct_sm():
             return goal
         StateMachine.add('PRECISE_ALIGN_BASE',
                 SimpleActionState('align_base', AlignBaseAction,
-                    goal = AlignBaseGoal(offset = 0,look_point=look_point),
+                    goal = AlignBaseGoal(offset = 0, desired_distance = precise_align_distance, look_point=look_point),
                     goal_cb = get_precise_align_goal),
                 {'succeeded':'DETECT_WALL_NORM',
                     'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
