@@ -260,9 +260,11 @@ def main():
         ### RECOVERY STATES ###
         StateMachine.add('RECOVER_STOW_PLUG',
                 SimpleActionState('stow_plug',StowPlugAction,
+                    goal_slots = ['gripper_to_plug','base_to_plug'],  
                     goal_cb = get_stow_plug_goal),
                 { 'succeeded':'FAIL_STILL_UNPLUGGED',
-                    'aborted':'FAIL_OPEN_GRIPPER'})
+                    'aborted':'FAIL_OPEN_GRIPPER'},
+                remapping = {'base_to_plug':'base_to_plug_on_base'})
 
         ### FAILURE STATES ###
         # State to fail to if we're still unplugged
