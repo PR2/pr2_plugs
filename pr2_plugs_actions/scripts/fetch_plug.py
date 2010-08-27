@@ -55,7 +55,7 @@ def construct_sm():
 
     # Hardcoded poses for approach / grasping
     sm.userdata.pose_plug_gripper_grasp_approach = PoseStampedMath().fromEuler(0, 0.05, 0, 0, 0, 0).msg
-    sm.userdata.pose_plug_gripper_grasp = PoseStampedMath().fromEuler(-.03, 0, .005, pi/2, 0, -pi/9).msg
+    sm.userdata.pose_plug_gripper_grasp = PoseStampedMath().fromEuler(-0.03, 0.0, 0.02, pi/2, 0, -pi/9).msg
 
     # Define nominal sequence
     with sm:
