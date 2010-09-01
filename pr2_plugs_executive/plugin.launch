@@ -1,4 +1,6 @@
 <launch>
+  <arg name="run_sim" default="1" />
+
   <!-- machine file -->
   <include file="$(find pr2_machine)/$(env ROBOT).machine" />
 
@@ -6,7 +8,9 @@
   <include file="$(find pr2_plugs_executive)/base_actions.launch" />
 
   <!-- plug actions -->
-  <include file="$(find pr2_plugs_actions)/launch/plug_actions.launch" />
+  <include file="$(find pr2_plugs_actions)/launch/plug_actions.launch">
+    <arg name="run_sim" value="$(arg run_sim)" />
+  </include>
 
   <!-- plugs web adaptor -->
   <node pkg="pr2_plugs_executive" type="recharge_action_web_adapter.py" name="recharge_action_web_adapter" output="screen" />

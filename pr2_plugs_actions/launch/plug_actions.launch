@@ -1,4 +1,6 @@
 <launch>
+  <arg name="run_sim" default="1" />
+
   <rosparam command="load" file="$(find pr2_plugs_actions)/config/joint_trajectories.yaml" />
   <rosparam command="load" file="$(find pr2_plugs_actions)/config/cart_ik_seeds.yaml" />
 
@@ -14,8 +16,6 @@
   <!-- vision detect plug action -->
   <node pkg="pr2_plugs_actions" type="vision_detect_plug" name="vision_plug_detection" output="screen">
     <param name="subpixel_corners" type="bool" value="true"/>		
-    <param name="loader_output" type="string" command="$(find pr2_plugs_actions)/scripts/load_plugin_calibration.py $(find pr2_plugs_actions)/config/plug_description.yaml" />
-    <rosparam command="load" file="/tmp/plugs_config.yaml" />
   </node>
 
   <!-- detect plug action -->
@@ -32,6 +32,8 @@
 
   <!-- detect outlet action -->
   <node pkg="pr2_plugs_actions" type="detect_outlet.py" name="detect_outlet" output="screen" />
+  <rosparam file="$(find pr2_plugs_actions)/config/sim_calibration.yaml"  if="$(arg run_sim)" />
+  <rosparam file="/etc/ros/plugs/hw_calibration.yaml" unless="$(arg run_sim)" />
 
   <!-- fetch plug action -->
   <node pkg="pr2_plugs_actions" type="fetch_plug.py" name="fetch_plug" output="screen" />

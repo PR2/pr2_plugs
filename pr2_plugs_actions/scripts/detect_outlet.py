@@ -190,8 +190,13 @@ def construct_sm():
         @smach.cb_interface(output_keys=['base_to_outlet','map_to_outlet'])
         def store_precise_outlet_result(ud, result_state, result):
             if result_state == GoalStatus.SUCCEEDED:
-                ud.base_to_outlet = TFUtil.wait_and_transform("base_link",result.outlet_pose)
-                ud.map_to_outlet = TFUtil.wait_and_transform("map",result.outlet_pose)
+                y = rospy.get_param('plugs_calibration_offset/y')
+                z = rospy.get_param('plugs_calibration_offset/z')
+                outlet_pose_corrected = (PoseStampedMath(result.outlet_pose) * PoseStampedMath().fromEuler(0, y, z, 0, 0, 0)).msg
+                outlet_pose_corrected.header = result.outlet_pose.header
+                rospy.loginfo("Using calibration offset of %s"%str(calibration_offset_pose.msg))
+                ud.base_to_outlet = TFUtil.wait_and_transform("base_link",outlet_pose_corrected)
+                ud.map_to_outlet = TFUtil.wait_and_transform("map",outlet_pose_corrected)
 
         StateMachine.add('DETECT_OUTLET',
                 SimpleActionState('vision_outlet_detection', VisionOutletDetectionAction,
