@@ -2,22 +2,24 @@
   <rosparam command="load" file="$(find pr2_plugs_actions)/config/joint_trajectories.yaml" />
   <rosparam command="load" file="$(find pr2_plugs_actions)/config/cart_ik_seeds.yaml" />
 
-  <!-- detect wall norm action -->
-  <include file="$(find stereo_wall_detection)/wall_extractor.launch"/>
-
   <!-- wall norm action -->
+  <include file="$(find stereo_wall_detection)/wall_extractor.launch"/>
   <node pkg="pr2_plugs_actions" type="detect_wall_norm.py" name="detect_wall_norm" output="screen"/>
 
   <!-- vision detect outlet action -->
-  <include file="$(find pr2_plugs_actions)/launch/detect_outlet.launch"/>
-  <!--node pkg="pr2_plugs_actions" type="vision_detect_outlet.py" name="vision_detect_outlet" output="screen"/-->
+  <node pkg="pr2_plugs_actions" type="vision_detect_outlet" name="vision_outlet_detection" output="screen">
+    <param name="outlet_template" type="str" value="$(find pr2_plugs_actions)/outlet_templates/configs/green_2x1white"/>
+  </node>
 
   <!-- vision detect plug action -->
-  <include file="$(find pr2_plugs_actions)/launch/detect_plug.launch"/>
-  <!--node pkg="pr2_plugs_actions" type="vision_detect_plug.py" name="vision_detect_plug" output="screen"/-->
+  <node pkg="pr2_plugs_actions" type="vision_detect_plug" name="vision_plug_detection" output="screen">
+    <param name="subpixel_corners" type="bool" value="true"/>		
+    <param name="loader_output" type="string" command="$(find pr2_plugs_actions)/scripts/load_plugin_calibration.py $(find pr2_plugs_actions)/config/plug_description.yaml" />
+    <rosparam command="load" file="/tmp/plugs_config.yaml" />
+  </node>
 
   <!-- detect plug action -->
-  <node pkg="pr2_plugs_actions" type="detect_plug.py" name="detect_plug" output="screen"/>
+  <node pkg="pr2_plugs_actions" type="detect_plug.py" name="detect_plug_in_gripper" output="screen"/>
 
   <!-- detect plug on base action -->
   <node pkg="pr2_plugs_actions" type="detect_plug_on_base.py" name="detect_plug_on_base" output="screen"/>
@@ -37,6 +39,15 @@
   <!-- plug in action -->
   <node pkg="pr2_plugs_actions" type="plug_in.py" name="plug_in" output="screen" />
   
+  <!-- stow plug action -->
+  <node pkg="pr2_plugs_actions" type="stow_plug.py" name="stow_plug" output="screen"/>
+
+  <!-- plugin action -->
+  <node pkg="pr2_plugs_actions" type="plugin.py" name="plugin" output="screen"/>
+
+  <!-- wiggle plug action -->
+  <node pkg="pr2_plugs_actions" type="wiggle_plug.py" name="wiggle_plug" output="screen"/>
+
   <!-- move base omnidirectional action -->
   <node pkg="pr2_plugs_actions" type="move_base_omnidirectional" name="move_base_omnidirectional" output="screen">\
     <param name="k_trans" value="5.0" />
@@ -80,27 +91,6 @@
     <remap from="obstacles" to="~obstacles" />
     <remap from="inflated_obstacles" to="~inflated_obstacles" />
   </group>
-
-  <!-- stow plug action -->
-  <node pkg="pr2_plugs_actions" type="stow_plug.py" name="stow_plug" output="screen"/>
-
-  <!-- plugin action -->
-  <node pkg="pr2_plugs_actions" type="plugin.py" name="plugin" output="screen"/>
-
-  <!-- calibration action -->
-  <node pkg="pr2_plugs_actions" type="calibration_plugin.py" name="calibration_plugin" output="screen"/>
-
-  <!-- wiggle plug action -->
-  <node pkg="pr2_plugs_actions" type="wiggle_plug.py" name="wiggle_plug" output="screen"/>
-
-
-  <!-- tf frames for debugging 
-  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_outlet_detection/goal VisionOutletDetectionActionGoal goal.prior outlet_detection_prior" name="tf_outlet_detection_prior" output="screen" />
-  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_outlet_detection/result VisionOutletDetectionActionResult result.outlet_pose outlet_detection_result" name="tf_outlet_detection_result" output="screen" />
-  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_plug_detection/goal VisionPlugDetectionActionGoal goal.prior plug_detection_prior" name="tf_plug_detection_prior" output="screen" />   
-  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="vision_plug_detection/result VisionPlugDetectionActionResult result.plug_pose plug_detection_result" name="tf_plug_detection_result" output="screen" />
-  <node pkg="pr2_plugs_actions" type="tf_publish.py" args="r_arm_ik/goal ArmMoveIKActionGoal goal.pose r_arm_ik_goal" name="tf_r_arm_ik_goal" output="screen" />        
-  -->
 
 </launch>
 
