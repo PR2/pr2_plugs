@@ -112,7 +112,7 @@ def construct_sm():
         approach_it = Iterator(
                 ['succeeded','preempted','aborted'],
                 input_keys = ['base_to_outlet','gripper_to_plug'],
-                output_keys = ['outlet_to_plug', 'outlet_to_plug_contact'],
+                output_keys = ['outlet_to_plug_contact'],
                 it = lambda: drange(-0.07, 0.09, 0.005),
                 it_label = 'approach_offset',
                 exhausted_outcome = 'aborted')
@@ -123,16 +123,13 @@ def construct_sm():
             approach_sm = StateMachine(
                     ['succeeded','preempted','aborted','keep_moving'],
                     input_keys=['base_to_outlet','approach_offset','gripper_to_plug'],
-                    output_keys=['outlet_to_plug', 'outlet_to_plug_contact'])
-            approach_sm.userdata.min_offset_error = 0.01
-
+                    output_keys=['outlet_to_plug_contact'])
             Iterator.set_contained_state('APPROACH',approach_sm,
                 loop_outcomes=['keep_moving'])
 
             with approach_sm:
                 @smach.cb_interface(
-                        input_keys=['base_to_outlet','approach_offset','gripper_to_plug'],
-                        output_keys=['outlet_to_plug'])
+                        input_keys=['base_to_outlet','approach_offset','gripper_to_plug'])
                 def get_move_closer_goal(ud, goal):
                     """Generate an ik goal to move along the local x axis of the outlet."""
 
@@ -145,8 +142,6 @@ def construct_sm():
                             * pose_outlet_plug
                             * pose_plug_gripper
                             * pose_gripper_wrist).msg
-
-                    ud.outlet_to_plug = pose_outlet_plug.msg
 
                     goal = ArmMoveIKGoal()
                     goal.pose.pose = pose_base_wrist.pose
@@ -161,8 +156,8 @@ def construct_sm():
                         {'succeeded':'CHECK_FOR_CONTACT','aborted':'CHECK_FOR_CONTACT'})
 
                 @smach.cb_interface(
-                        input_keys=['base_to_outlet','outlet_to_plug','gripper_to_plug','approach_offset','offset_error','min_offset_error'],
-                        output_keys=['offset_error','outlet_to_plug_contact'])
+                        input_keys=['base_to_outlet','approach_offset','gripper_to_plug'],
+                        output_keys=['outlet_to_plug_contact'])
                 def plug_in_contact(ud):
                     """Returns true if the plug is in contact with something."""
 
@@ -171,14 +166,10 @@ def construct_sm():
                     pose_gripper_plug = PoseStampedMath(ud.gripper_to_plug)
                     pose_outlet_plug = (pose_outlet_base * pose_base_gripper * pose_gripper_plug).msg
 
-                    ud.offset_error = pose_outlet_plug.pose.position.x - ud.outlet_to_plug.pose.position.x 
-                    in_contact = math.fabs(ud.offset_error) > ud.min_offset_error
-
-                    # Store the offset from the plug where we actually made contact
-                    if in_contact:
-                        ud.outlet_to_plug_contact = pose_outlet_plug
+                    # check if difference between desired and measured outlet-plug along x-axis is more than 1 cm
+                    ud.outlet_to_plug_contact = pose_outlet_plug
+                    if math.fabs(pose_outlet_plug.pose.position.x - ud.approach_offset) > 0.01:
                         return True
-
                     return False
 
                 StateMachine.add('CHECK_FOR_CONTACT',
@@ -190,19 +181,17 @@ def construct_sm():
         twist_it = Iterator(
                 ['succeeded','preempted','aborted'],
                 input_keys = ['base_to_outlet','gripper_to_plug','outlet_to_plug_contact'],
-                output_keys = ['outlet_to_plug'],
                 it = lambda: drange(0.0, 0.25, 0.025),
+                output_keys = [],
                 it_label = 'twist_angle',
                 exhausted_outcome = 'aborted')
         with twist_it:
             twist_sm = StateMachine(
                     ['succeeded','preempted','aborted','keep_moving'],
-                    input_keys = ['base_to_outlet','gripper_to_plug','twist_angle', 'outlet_to_plug_contact'],
-                    output_keys = ['outlet_to_plug'])
+                    input_keys = ['base_to_outlet','gripper_to_plug','twist_angle', 'outlet_to_plug_contact'])
             with twist_sm:
                 @smach.cb_interface(
-                        input_keys=['base_to_outlet','gripper_to_plug','twist_angle', 'outlet_to_plug_contact'],
-                        output_keys=['outlet_to_plug'])
+                        input_keys=['base_to_outlet','gripper_to_plug','twist_angle', 'outlet_to_plug_contact'])
                 def get_twist_goal(ud, goal):
                     """Generate an ik goal to rotate the plug"""
                     pose_base_outlet = PoseStampedMath(ud.base_to_outlet)

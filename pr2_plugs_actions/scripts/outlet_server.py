@@ -47,16 +47,16 @@ from pr2_plugs_msgs.msg import OutletPose
 
 def serve_plug_locations(req):
   rospy.loginfo("Serving plug locations")
-
-  #find the plug locations and load them
-  outlet_file = roslib.packages.find_resource("pr2_plugs_executive", "outlet_db.yaml")
-  poses = yaml.load(open(outlet_file[0]))
+  poses = rospy.get_param('outlet_approach_poses')
+  print poses
 
   resp = GetOutletsResponse()
   for pose in poses:
     op = OutletPose()
-    roslib.message.fill_message_args(op, pose)
+    op.name = pose
+    roslib.message.fill_message_args(op.approach_pose, poses[pose])
     resp.poses.append(op)
+  print resp
 
   return resp
 
