@@ -2,41 +2,12 @@
   <!-- machine file -->
   <include file="$(find pr2_machine)/$(env ROBOT).machine" />
 
-  <!-- arm and head controllers -->
-  <include file="$(find pr2_plugs_executive)/config/plugs_controllers.launch" />
-
-  <!-- ik action -->
-  <node pkg="pr2_arm_move_ik" type="arm_ik" name="r_arm_ik" output="screen">
-    <param name="joint_trajectory_action" value="r_arm_controller/joint_trajectory_generator" />
-    <param name="arm" value="r" />
-    <param name="free_angle" value="2" />
-    <param name="search_discretization" value="0.01" />
-    <param name="ik_timeout" value="5.0" />
-  </node>
-
-  <!-- Trajectory generator -->
-  <node pkg="joint_trajectory_generator" type="joint_trajectory_generator" output="screen" 
-        name="joint_trajectory_generator" ns="r_arm_controller" >
-    <param name="max_acc" value="2.0" />
-    <param name="max_vel" value="2.5" />
-  </node>
-  <node pkg="joint_trajectory_generator" type="joint_trajectory_generator" output="screen" 
-        name="joint_trajectory_generator" ns="l_arm_controller" >
-    <param name="max_acc" value="2.0" />
-    <param name="max_vel" value="2.5" />
-  </node>
-
-  <!-- tuckarm action -->
-  <node pkg="pr2_tuck_arms_action" type="tuck_arms.py" name="tuck_arms_action" output="screen">
-    <param name="r_joint_trajectory_action" value="r_arm_controller/joint_trajectory_generator" />
-    <param name="l_joint_trajectory_action" value="l_arm_controller/joint_trajectory_generator" />
-    <param name="move_duration" value="0.0" />
-  </node>
+  <!-- base actions -->
+  <include file="$(find pr2_plugs_executive)/base_actions.launch" />
 
   <!-- plug actions -->
   <include file="$(find pr2_plugs_actions)/launch/plug_actions.launch" />
 
-  <!-- outlet locations -->
-  <node pkg="pr2_plugs_executive" type="outlet_server.py" name="outlet_server" output="screen"/>
-
+  <!-- plugs web adaptor -->
+  <node pkg="pr2_plugs_executive" type="recharge_action_web_adapter.py" name="recharge_action_web_adapter" output="screen" />
 </launch>
