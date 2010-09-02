@@ -8,7 +8,7 @@
   <include file="$(find stereo_wall_detection)/wall_extractor.launch"/>
   <node pkg="pr2_plugs_actions" type="detect_wall_norm.py" name="detect_wall_norm" output="screen"/>
 
-  <!-- vision detect outleto action -->
+  <!-- vision detect outlet action -->
   <node pkg="pr2_plugs_actions" type="vision_detect_outlet" name="vision_outlet_detection" output="screen">
     <param name="outlet_template" type="str" value="$(find pr2_plugs_actions)/outlet_templates/configs/green_2x1white"/>
   </node>
@@ -16,6 +16,7 @@
   <!-- vision detect plug action -->
   <node pkg="pr2_plugs_actions" type="vision_detect_plug" name="vision_plug_detection" output="screen">
     <param name="subpixel_corners" type="bool" value="true"/>		
+    <rosparam file="$(find pr2_plugs_actions)/config/plug_description.yaml" />
   </node>
 
   <!-- detect plug action -->

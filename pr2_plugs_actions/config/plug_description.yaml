@@ -2,7 +2,7 @@ square_size: 0.006
 board_width: 4
 board_height: 5
 # DO NOT CHANGE THE VALUES BELOW
-# TO CALIBRATE PLUGGING IN, EDIT /etc/ros/plugs/calibration.yaml
+# TO CALIBRATE PLUGGING IN, EDIT /etc/ros/plugs/hw_calibration.yaml
 plug_position_x: 0.017
 plug_position_y: 0.036
 plug_position_z: 0.019
