@@ -194,7 +194,7 @@ def construct_sm():
                 z = rospy.get_param('plugs_calibration_offset/z')
                 outlet_pose_corrected = (PoseStampedMath(result.outlet_pose) * PoseStampedMath().fromEuler(0, y, z, 0, 0, 0)).msg
                 outlet_pose_corrected.header = result.outlet_pose.header
-                rospy.loginfo("Using calibration offset of %s"%str(calibration_offset_pose.msg))
+                rospy.loginfo("Using calibration offset y: %f and z: %f"%(y,z))
                 ud.base_to_outlet = TFUtil.wait_and_transform("base_link",outlet_pose_corrected)
                 ud.map_to_outlet = TFUtil.wait_and_transform("map",outlet_pose_corrected)
 
