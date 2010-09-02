@@ -92,8 +92,7 @@ class DetectWallNormServer:
     if(not self.sim):
       rospy.loginfo('turn on projector')
       self.projector_ready = False
-      self.projector_client.update_configuration(self.projector_on)
-      while(not self.projector_ready):
+      while(not self.turn_projector_on() and not self.projector_ready):
         rospy.sleep(0.01)
 
     # detect wall norm
@@ -102,15 +101,16 @@ class DetectWallNormServer:
     except rospy.ServiceException, e:
       rospy.logerr("Service call to wall detector failed")
       if(not self.sim):
-        self.projector_client.update_configuration(self.projector_off)
+        while not self.turn_projector_off():
+          rospy.sleep(0.1)
       self.server.set_aborted()
       return
 
     # turn off projector
     if(not self.sim):
       rospy.loginfo('turn off projector')
-      self.projector_client.update_configuration(self.projector_off)
-
+      while not self.turn_projector_off():
+        rospy.sleep(0.1)
     result = DetectWallNormResult()
     result.wall_norm = wall.wall_norm
     result.wall_point = wall.wall_point
@@ -122,6 +122,23 @@ class DetectWallNormServer:
       return
 
     self.projector_ready = True
+
+  def turn_projector_on(self):
+    try:
+      self.projector_client.update_configuration(self.projector_on)
+      return True
+    except rospy.ServiceException, e:
+      rospy.logerr('Failed to turn projector on')
+      return False
+
+  def turn_projector_off(self):
+    try:
+      self.projector_client.update_configuration(self.projector_off)
+      return True
+    except rospy.ServiceException, e:
+      rospy.logerr('Failed to turn projector off')
+      return False
+
 
 
 if __name__ == '__main__':
