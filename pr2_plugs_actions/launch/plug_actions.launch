@@ -45,9 +45,6 @@
   <!-- stow plug action -->
   <node pkg="pr2_plugs_actions" type="stow_plug.py" name="stow_plug" output="screen"/>
 
-  <!-- plugin action -->
-  <node pkg="pr2_plugs_actions" type="plugin.py" name="plugin" output="screen"/>
-
   <!-- wiggle plug action -->
   <node pkg="pr2_plugs_actions" type="wiggle_plug.py" name="wiggle_plug" output="screen"/>
 
