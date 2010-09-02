@@ -99,7 +99,7 @@ def construct_sm():
     # Declare wall norm goal
     # This is the point at which we want the head to look
     rough_align_distance = 1.0
-    precise_align_distance = 0.8
+    precise_align_distance = 0.82
     look_point = PointStamped()
     look_point.header.frame_id = 'base_link'
     look_point.point.x = -0.14
@@ -147,7 +147,7 @@ def construct_sm():
                     'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'}),
 
         StateMachine.add('OUTLET_LATERAL_SEARCH',
-                OutletSearchState(offsets = (0.0, 0.1, -0.2, 0.3, -0.4), desired_distance = rough_align_distance),
+                OutletSearchState(offsets = (0.0, 0.15, -0.3, 0.45, -0.6), desired_distance = rough_align_distance),
                 {'succeeded':'PRECISE_ALIGN_BASE',
                     'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
 
