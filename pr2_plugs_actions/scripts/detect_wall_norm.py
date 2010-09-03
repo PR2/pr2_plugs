@@ -69,6 +69,7 @@ class DetectWallNormServer:
 
 
   def execute_cb(self, goal):
+    rospy.loginfo('detect wall norm')
 
     #point head at wall
     point_head_goal = PointHeadGoal()
@@ -92,17 +93,25 @@ class DetectWallNormServer:
     if(not self.sim):
       rospy.loginfo('turn on projector')
       self.projector_ready = False
-      while(not self.turn_projector_on() and not self.projector_ready):
-        rospy.sleep(0.01)
+      while not self.turn_projector_on():
+        rospy.loginfo('still trying to turn on projector')
+        rospy.sleep(1.0)
+      while not self.projector_ready:
+        rospy.sleep(1.0)
+        rospy.loginfo('waiting for projector to be ready')
+      rospy.loginfo('projector truned on')
 
     # detect wall norm
     try:
+      rospy.loginfo('Call stereo wall detector')
       wall = self.detect_wall_srv(DetectWallRequest())
+      rospy.loginfo('Call stereo wall detector succeeded')
     except rospy.ServiceException, e:
       rospy.logerr("Service call to wall detector failed")
       if(not self.sim):
         while not self.turn_projector_off():
-          rospy.sleep(0.1)
+          rospy.loginfo('still trying to turn off projector')
+          rospy.sleep(1.0)
       self.server.set_aborted()
       return
 
@@ -110,7 +119,8 @@ class DetectWallNormServer:
     if(not self.sim):
       rospy.loginfo('turn off projector')
       while not self.turn_projector_off():
-        rospy.sleep(0.1)
+        rospy.loginfo('still trying to turn off projector')
+        rospy.sleep(1.0)
     result = DetectWallNormResult()
     result.wall_norm = wall.wall_norm
     result.wall_point = wall.wall_point
