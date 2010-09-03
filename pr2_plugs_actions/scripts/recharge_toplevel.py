@@ -66,7 +66,7 @@ from plug_in import construct_sm as construct_plug_in_sm
 from executive_python_common.tf_util import TFUtil
 
 def main():
-    rospy.init_node("recharge_toplevel",log_level=rospy.DEBUG)
+    rospy.init_node("recharge_toplevel")
     TFUtil()
 
     # Close gripper goal
