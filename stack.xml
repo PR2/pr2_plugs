@@ -7,7 +7,6 @@
   <depend stack="common" /> <!-- actionlib, bfl -->
   <depend stack="common_msgs" /> <!-- sensor_msgs, actionlib_msgs, geometry_msgs -->
   <depend stack="driver_common" /> <!-- dynamic_reconfigure -->
-  <depend stack="executive_python" /> <!-- executive_python_common -->
   <depend stack="executive_smach" /> <!-- smach_ros, smach -->
   <depend stack="geometry" /> <!-- tf, kdl, eigen, angles -->
   <depend stack="image_common" /> <!-- image_transport -->

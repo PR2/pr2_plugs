@@ -35,6 +35,5 @@
 
   <depend package="smach"/>
   <depend package="smach_ros"/>
-  <depend package="executive_python_common"/>
 
 </package>

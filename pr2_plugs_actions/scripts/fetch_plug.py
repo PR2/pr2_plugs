@@ -24,7 +24,7 @@ from geometry_msgs.msg import *
 from joint_trajectory_action_tools.tools import get_action_goal as get_generator_goal
 
 # State machine classes
-from executive_python_common.tf_util import TFUtil
+from pr2_plugs_actions.tf_util import TFUtil
 import smach
 from smach import *
 from smach_ros import *

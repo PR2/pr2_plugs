@@ -63,7 +63,7 @@ from detect_outlet import construct_sm as construct_detect_outlet_sm
 from fetch_plug import construct_sm as construct_fetch_plug_sm
 from plug_in import construct_sm as construct_plug_in_sm
 
-from executive_python_common.tf_util import TFUtil
+from pr2_plugs_actions.tf_util import TFUtil
 
 def main():
     rospy.init_node("recharge_toplevel")
