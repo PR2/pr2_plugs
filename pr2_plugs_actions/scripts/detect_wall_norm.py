@@ -50,7 +50,6 @@ from stereo_wall_detection.srv import *
 class DetectWallNormServer:
   def __init__(self, name):
     self.name = name
-    self.sim = rospy.get_param('~sim', False)
 
     self.head_client = actionlib.SimpleActionClient('head_traj_controller/point_head_action', PointHeadAction)
     self.head_client.wait_for_server()
@@ -60,11 +59,10 @@ class DetectWallNormServer:
     self.detect_wall_srv = rospy.ServiceProxy('stereo_wall_detection/detect_wall', DetectWall)
     self.server = actionlib.simple_action_server.SimpleActionServer(self.name, DetectWallNormAction, self.execute_cb)
 
-    if(not self.sim):
-      self.projector_client = dynamic_reconfigure.client.Client('camera_synchronizer_node')
-      self.projector_on = {'narrow_stereo_trig_mode': 3}
-      self.projector_off = {'narrow_stereo_trig_mode': 4}
-      self.projector_sub = rospy.Subscriber("projector_controller/rising_edge_timestamps", roslib.msg.Header, self.projector_cb)
+    self.projector_client = dynamic_reconfigure.client.Client('camera_synchronizer_node')
+    self.projector_on = {'narrow_stereo_trig_mode': 3}
+    self.projector_off = {'narrow_stereo_trig_mode': 4}
+    self.projector_sub = rospy.Subscriber("projector_controller/rising_edge_timestamps", roslib.msg.Header, self.projector_cb)
 
 
 
@@ -90,16 +88,15 @@ class DetectWallNormServer:
       return
 
     # turn on projector
-    if(not self.sim):
-      rospy.loginfo('turn on projector')
-      self.projector_ready = False
-      while not self.turn_projector_on():
-        rospy.loginfo('still trying to turn on projector')
-        rospy.sleep(1.0)
-      while not self.projector_ready:
-        rospy.sleep(1.0)
-        rospy.loginfo('waiting for projector to be ready')
-      rospy.loginfo('projector truned on')
+    rospy.loginfo('turn on projector')
+    self.projector_ready = False
+    while not self.turn_projector_on():
+      rospy.loginfo('still trying to turn on projector')
+      rospy.sleep(1.0)
+    while not self.projector_ready:
+      rospy.sleep(1.0)
+      rospy.loginfo('waiting for projector to be ready')
+    rospy.loginfo('projector truned on')
 
     # detect wall norm
     try:
@@ -108,19 +105,17 @@ class DetectWallNormServer:
       rospy.loginfo('Call stereo wall detector succeeded')
     except rospy.ServiceException, e:
       rospy.logerr("Service call to wall detector failed")
-      if(not self.sim):
-        while not self.turn_projector_off():
-          rospy.loginfo('still trying to turn off projector')
-          rospy.sleep(1.0)
+      while not self.turn_projector_off():
+        rospy.loginfo('still trying to turn off projector')
+        rospy.sleep(1.0)
       self.server.set_aborted()
       return
 
     # turn off projector
-    if(not self.sim):
-      rospy.loginfo('turn off projector')
-      while not self.turn_projector_off():
-        rospy.loginfo('still trying to turn off projector')
-        rospy.sleep(1.0)
+    rospy.loginfo('turn off projector')
+    while not self.turn_projector_off():
+      rospy.loginfo('still trying to turn off projector')
+      rospy.sleep(1.0)
     result = DetectWallNormResult()
     result.wall_norm = wall.wall_norm
     result.wall_point = wall.wall_point
