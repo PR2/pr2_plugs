@@ -79,13 +79,9 @@ class PlanarFit
     // ROS messages
     sensor_msgs::PointCloud::ConstPtr cloud_msg_;
     boost::mutex cloud_msg_mutex_;
-    sensor_msgs::PointCloud cloud_down_;
     ros::ServiceServer serv_;
     ros::Publisher plane_normal_pub_;
     ros::Publisher vis_pub_;
-
-    // Kd-tree stuff
-    vector<vector<int> > points_indices_;
 
     // Parameters
     double radius_;
@@ -93,8 +89,6 @@ class PlanarFit
 
     // Additional downsampling parameters
     geometry_msgs::Point leaf_width_;
-
-    vector<cloud_geometry::Leaf> leaves_;
 
     // If normals_fidelity_, then use the original cloud data to estimate the k-neighborhood and thus the normals
     int normals_fidelity_;
@@ -106,9 +100,10 @@ class PlanarFit
 
     double max_dist_;
     string cloud_topic_;
+    bool subscriber_enabled_;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    PlanarFit () : nh_ ("~"), cloud_topic_ ("narrow_stereo_textured/points")
+    PlanarFit () : nh_ ("~"), cloud_topic_ ("narrow_stereo_textured/points"), subscriber_enabled_(false)
     {
       nh_.param ("search_radius", radius_, 0.03);                      // 3cm radius by default
 
@@ -139,6 +134,8 @@ class PlanarFit
     void
       cloud_cb (const sensor_msgs::PointCloud::ConstPtr& cloud)
     {
+      if(!subscriber_enabled_)
+        return;
       boost::mutex::scoped_lock(cloud_msg_mutex_);
       cloud_msg_ = cloud;
     }
@@ -157,8 +154,10 @@ class PlanarFit
       ros::Time start = ros::Time::now();
       bool have_cloud = false;
       bool received_cloud = false;
+      subscriber_enabled_ = true;
       sensor_msgs::PointCloud cloud_msg_local;
       while (!have_cloud){
+	ros::Duration(0.1).sleep();
         boost::mutex::scoped_lock(cloud_msg_mutex_);
         if (cloud_msg_)
         {
@@ -171,24 +170,27 @@ class PlanarFit
         }
         else
         {
-          ros::Duration(0.1).sleep();
           if (ros::Time::now() > start + ros::Duration(10.0)){
             if (!received_cloud)
               ROS_ERROR("Timed out waiting for point cloud");
             else
               ROS_ERROR("Only received a point cloud of size %d", (int)cloud_msg_local.points.size());
+            subscriber_enabled_ = false;
             return false;
           }
         }
       }
+
+      subscriber_enabled_ = false;
 
       ROS_INFO("point cloud of size %u", (unsigned int)(cloud_msg_local.points.size()));
       if (cloud_msg_local.points.size () == 0){
 	ROS_ERROR("Received point cloud of size zero");
         return (false);
       }
-      cloud_down_.header = cloud_msg_local.header;
-      cloud_down_.channels.clear();
+
+      sensor_msgs::PointCloud cloud_down;
+      cloud_down.header = cloud_msg_local.header;
 
       ros::Time ts = ros::Time::now ();
       // Figure out the viewpoint value in the cloud_frame frame
@@ -210,7 +212,8 @@ class PlanarFit
       try
       {
         // We sacrifice functionality for speed. Use a fixed 3D grid to downsample the data instead of an octree structure
-        cloud_geometry::downsamplePointCloud (cloud_msg_local, indices_down, cloud_down_, leaf_width_, leaves_, -1);  // -1 means use all data
+	vector<cloud_geometry::Leaf> leaves;
+        cloud_geometry::downsamplePointCloud (cloud_msg_local, indices_down, cloud_down, leaf_width_, leaves, -1);  // -1 means use all data
       }
       catch (std::bad_alloc)
       {
@@ -219,15 +222,15 @@ class PlanarFit
       }
 
       if (normals_fidelity_)
-        cloud_geometry::nearest::computePointCloudNormals (cloud_down_, cloud_msg_local, radius_, viewpoint_cloud);  // Estimate point normals in the original point cloud using a fixed radius search
+        cloud_geometry::nearest::computePointCloudNormals (cloud_down, cloud_msg_local, radius_, viewpoint_cloud);  // Estimate point normals in the original point cloud using a fixed radius search
       else
-        cloud_geometry::nearest::computePointCloudNormals (cloud_down_, radius_, viewpoint_cloud);          // Estimate point normals in the downsampled point cloud using a fixed radius search
+        cloud_geometry::nearest::computePointCloudNormals (cloud_down, radius_, viewpoint_cloud);          // Estimate point normals in the downsampled point cloud using a fixed radius search
 
 
       // ---[ Fit a planar model
       vector<int> inliers;
       vector<double> coeff;
-      if (!fitSACPlane (&cloud_down_, inliers, coeff, viewpoint_cloud, sac_distance_threshold_)){
+      if (!fitSACPlane (&cloud_down, inliers, coeff, viewpoint_cloud, sac_distance_threshold_)){
 	ROS_ERROR("Failed to fit planar model");
         return (false);
       }
@@ -241,9 +244,9 @@ class PlanarFit
       resp.wall_norm.vector.z = coeff[2];   
    
       geometry_msgs::Point32 centroid;
-      cloud_geometry::nearest::computeCentroid (cloud_down_, inliers, centroid);
+      cloud_geometry::nearest::computeCentroid (cloud_down, inliers, centroid);
 
-      //ROS_INFO ("Planar model with %d / %d inliers, coefficients: [%g, %g, %g, %g] found in %g seconds.", (int)inliers.size (), (int)cloud_down_.points.size (),
+      //ROS_INFO ("Planar model with %d / %d inliers, coefficients: [%g, %g, %g, %g] found in %g seconds.", (int)inliers.size (), (int)cloud_down.points.size (),
       //    coeff[0], coeff[1], coeff[2], coeff[3], (ros::Time::now () - ts).toSec ());
 
       resp.wall_point.header = cloud_msg_local.header;
