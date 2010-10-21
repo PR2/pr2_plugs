@@ -86,7 +86,11 @@ def execute_cb(goal):
 
   # detect plug on base
   rospy.loginfo("Detect plug on base...")
+  start_time = rospy.Time.now()
   while detect_plug_on_base_client.send_goal_and_wait(DetectPlugOnBaseGoal(), rospy.Duration(120.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+    if rospy.Time.now() > start_time + rospy.Duration(60*5):
+      rospy.logerr("Can't detect plug on base. It is soo dark in here... Giving up, driving away, living on the edge!")
+      break
     rospy.logerr('Detecting plug on base failed, trying again...')
 
   # move the spine down
