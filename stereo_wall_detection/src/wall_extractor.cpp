@@ -77,7 +77,7 @@ class PlanarFit
 
   public:
     // ROS messages
-    sensor_msgs::PointCloud::ConstPtr cloud_msg_;
+    sensor_msgs::PointCloud cloud_msg_;
     boost::mutex cloud_msg_mutex_;
     ros::ServiceServer serv_;
     ros::Publisher plane_normal_pub_;
@@ -100,7 +100,7 @@ class PlanarFit
 
     double max_dist_;
     string cloud_topic_;
-    bool subscriber_enabled_;
+    bool subscriber_enabled_, received_cloud_;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     PlanarFit () : nh_ ("~"), cloud_topic_ ("narrow_stereo_textured/points"), subscriber_enabled_(false)
@@ -137,7 +137,8 @@ class PlanarFit
       if(!subscriber_enabled_)
         return;
       boost::mutex::scoped_lock(cloud_msg_mutex_);
-      cloud_msg_ = cloud;
+      cloud_msg_ = *cloud;
+      received_cloud_ = true;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -145,33 +146,30 @@ class PlanarFit
     bool
       detect_wall (stereo_wall_detection::DetectWall::Request &req, stereo_wall_detection::DetectWall::Response &resp)
     {
+      received_cloud_ = false;
+
       // subscribe to point cloud and wait for message to come in
       ros::NodeHandle nh_toplevel;
-      cloud_msg_mutex_.lock();
-      cloud_msg_.reset();
-      cloud_msg_mutex_.unlock();
       ros::Subscriber cloud_sub = nh_toplevel.subscribe<sensor_msgs::PointCloud> (cloud_topic_, 1, &PlanarFit::cloud_cb, this);
       ros::Time start = ros::Time::now();
       bool have_cloud = false;
-      bool received_cloud = false;
       subscriber_enabled_ = true;
       sensor_msgs::PointCloud cloud_msg_local;
       while (!have_cloud){
 	ros::Duration(0.1).sleep();
         boost::mutex::scoped_lock(cloud_msg_mutex_);
-        if (cloud_msg_)
+        if (received_cloud_)
         {
-          received_cloud = true;
-          if(cloud_msg_->points.size() >= 50000){
+          if(cloud_msg_.points.size() >= 50000){
             // make a copy for our own use
-            cloud_msg_local = *cloud_msg_;
+            cloud_msg_local = cloud_msg_;
             have_cloud = true;
           }
         }
         else
         {
           if (ros::Time::now() > start + ros::Duration(10.0)){
-            if (!received_cloud)
+            if (!received_cloud_)
               ROS_ERROR("Timed out waiting for point cloud");
             else
               ROS_ERROR("Only received a point cloud of size %d", (int)cloud_msg_local.points.size());
