@@ -86,6 +86,13 @@ void AlignBaseAction::execute(const pr2_plugs_msgs::AlignBaseGoalConstPtr& goal)
   tf::Vector3 wall_point = fromPoint(wall_point_msg.point);
   ROS_INFO("AlignBaseAction: wall norm  %f %f %f", wall_norm.x(), wall_norm.y(), wall_norm.z());
   ROS_INFO("AlignBaseAction: wall point %f %f %f", wall_point.x(), wall_point.y(), wall_point.z());
+
+  // check if this is wall
+  if (fabs(wall_norm.z()) > 0.3){
+    ROS_ERROR("A wall should be vertical. This vector (%f, %f, %f) is not vertical", wall_norm.x(), wall_norm.y(), wall_norm.z());
+    action_server_.setAborted();
+    return;
+  }
   
   // get current robot pose
   tf::StampedTransform robot_pose;
