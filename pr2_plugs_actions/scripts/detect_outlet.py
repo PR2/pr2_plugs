@@ -16,6 +16,7 @@ from pr2_controllers_msgs.msg import *
 from geometry_msgs.msg import *
 from trajectory_msgs.msg import *
 from move_base_msgs.msg import *
+import copy
 
 from pr2_arm_move_ik.tools import *
 from pr2_plugs_actions.posestampedmath import PoseStampedMath
@@ -59,7 +60,7 @@ class OutletSearchState(State):
         # Iterate across move_base offsets
         for offset in self.offsets:
             # align base
-            rospy.loginfo("Search base alignment...")
+            rospy.loginfo("Search base alignment, offset %f..."%offset)
             align_base_goal.offset = offset
             align_base_goal.desired_distance = self.desired_distance
             if self.align_base_client.send_goal_and_wait(align_base_goal, rospy.Duration(40.0), preempt_timeout) != GoalStatus.SUCCEEDED:
@@ -113,6 +114,7 @@ def construct_sm():
     align_base_goal = AlignBaseGoal()
     align_base_goal.look_point = look_point
     align_base_goal.desired_distance = rough_align_distance
+    align_base_goal_rough = copy.deepcopy(align_base_goal)
 
     vision_detect_outlet_goal = VisionOutletDetectionGoal()
     vision_detect_outlet_goal.camera_name = "/r_forearm_cam"
@@ -138,7 +140,7 @@ def construct_sm():
 
         StateMachine.add('ROUGH_ALIGN_BASE',
                 SimpleActionState('align_base', AlignBaseAction,
-                    goal_key = 'align_base_goal'),
+                    goal = align_base_goal_rough),
                 {'succeeded':'MOVE_ARM_DETECT_OUTLET'})
 
         StateMachine.add('MOVE_ARM_DETECT_OUTLET',
