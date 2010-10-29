@@ -145,7 +145,7 @@ def main():
 
                 return move_base_goal
             StateMachine.add('NAVIGATE', 
-                    SimpleActionState('move_base',MoveBaseAction,
+                    SimpleActionState('pr2_move_base',MoveBaseAction,
                         goal_cb=get_outlet_approach_goal,
                         exec_timeout = rospy.Duration(20*60.0)),
                     { 'succeeded':'UNTUCK_AT_OUTLET' })
