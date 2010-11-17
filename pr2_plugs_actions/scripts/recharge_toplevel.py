@@ -39,7 +39,7 @@ import rospy
 import threading
 
 import actionlib
-import tf
+import PyKDL
 
 from pr2_plugs_msgs.msg import *
 from pr2_plugs_msgs.srv import *
@@ -51,7 +51,7 @@ from pr2_common_action_msgs.msg import *
 
 from std_srvs.srv import *
 
-from pr2_plugs_actions.posestampedmath import PoseStampedMath
+from tf_conversions.posemath import fromMsg, toMsg
 from pr2_arm_move_ik.tools import *
 
 # State machine classes
@@ -155,10 +155,10 @@ def main():
 
         StateMachine.add('DETECT_OUTLET', 
                 SimpleActionState('detect_outlet',DetectOutletAction,
-                    result_slots = ['outlet_pose']),
+                    result_slots = ['base_to_outlet_pose']),
                 {'succeeded':'FETCH_PLUG',
                     'aborted':'FAIL_STILL_UNPLUGGED'},
-                remapping = {'outlet_pose':'base_to_outlet'})
+                remapping = {'base_to_outlet_pose':'base_to_outlet'})
 
         StateMachine.add('FETCH_PLUG',
                 SimpleActionState('fetch_plug',FetchPlugAction,
@@ -198,11 +198,6 @@ def main():
             
             # Wiggle out
             def get_wiggle_out_goal(ud, goal):
-                """Reset the timestamps of the poses relevant to the wiggle goal."""
-                # Flash timestamps
-                goal.gripper_to_plug.header.stamp = rospy.Time.now()
-                goal.base_to_outlet.header.stamp = rospy.Time.now()
-
                 # Set period
                 goal.wiggle_period = rospy.Duration(0.5)
                 goal.insert = 0
@@ -217,54 +212,40 @@ def main():
             def get_pull_back_goal(ud, goal):
                 """Generate an ik goal to move along the local x axis of the outlet."""
 
-                pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
-                pose_outlet_plug = PoseStampedMath().fromEuler(-0.10, 0, 0, 0, 0, 0)
-                pose_plug_gripper = PoseStampedMath(ud.gripper_to_plug).inverse()
-                pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
+                pose_outlet_plug = PyKDL.Frame(PyKDL.Vector(-0.10, 0, 0))
+                pose_gripper_wrist = fromMsg(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link').pose)
 
-                pose_base_wrist = (pose_base_outlet
-                        * pose_outlet_plug
-                        * pose_plug_gripper
-                        * pose_gripper_wrist).msg
+                pose_base_wrist = fromMsg(ud.base_to_outlet) * pose_outlet_plug * fromMsg(ud.gripper_to_plug).Inverse() * pose_gripper_wrist
 
-                goal.pose.pose = pose_base_wrist.pose
+                goal.pose.pose = toMsg(pose_base_wrist)
                 goal.pose.header.stamp = rospy.Time.now()
                 goal.pose.header.frame_id = 'base_link'
                 goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
                 goal.move_duration = rospy.Duration(5.0)
 
             StateMachine.add('PULL_BACK_FROM_WALL',
-                SimpleActionState('r_arm_ik', ArmMoveIKAction, goal_cb = get_pull_back_goal),
-                {'succeeded':'STOW_PLUG',
-                    'aborted':'WIGGLE_OUT'})
+                             SimpleActionState('r_arm_ik', ArmMoveIKAction, goal_cb = get_pull_back_goal),
+                             {'succeeded':'STOW_PLUG',
+                              'aborted':'WIGGLE_OUT'})
             
             # Stow plug
-            def get_stow_plug_goal(ud, goal):
-                """Reset the timestamps for the stow plug goal."""
-                # Flash timestamps
-                goal.gripper_to_plug.header.stamp = rospy.Time.now()
-                goal.base_to_plug.header.stamp = rospy.Time.now()
             @smach.cb_interface(input_keys=['recharge_state'],output_keys=['recharge_state'])
             def set_unplug_result(ud, result_state, result):
                 if result_state is GoalStatus.SUCCEEDED:
                     ud.recharge_state.state = RechargeState.UNPLUGGED
 
-            StateMachine.add('STOW_PLUG',
-                    SimpleActionState('stow_plug',StowPlugAction,
-                        goal_slots = ['gripper_to_plug','base_to_plug'],
-                        goal_cb = get_stow_plug_goal,
-                        result_cb = set_unplug_result),
-                    {'succeeded':'succeeded'},
-                    remapping = {'base_to_plug':'base_to_plug_on_base'})
+            StateMachine.add('STOW_PLUG', SimpleActionState('stow_plug',StowPlugAction,
+                                                            goal_slots = ['gripper_to_plug','base_to_plug'],
+                                                            result_cb = set_unplug_result),
+                             {'succeeded':'succeeded'},
+                             remapping = {'base_to_plug':'base_to_plug_on_base'})
 
         ### RECOVERY STATES ###
-        StateMachine.add('RECOVER_STOW_PLUG',
-                SimpleActionState('stow_plug',StowPlugAction,
-                    goal_slots = ['gripper_to_plug','base_to_plug'],  
-                    goal_cb = get_stow_plug_goal),
-                { 'succeeded':'FAIL_STILL_UNPLUGGED',
-                    'aborted':'FAIL_OPEN_GRIPPER'},
-                remapping = {'base_to_plug':'base_to_plug_on_base'})
+        StateMachine.add('RECOVER_STOW_PLUG', SimpleActionState('stow_plug',StowPlugAction,
+                                                                goal_slots = ['gripper_to_plug','base_to_plug']),
+                         { 'succeeded':'FAIL_STILL_UNPLUGGED',
+                           'aborted':'FAIL_OPEN_GRIPPER'},
+                         remapping = {'base_to_plug':'base_to_plug_on_base'})
 
         ### FAILURE STATES ###
         # State to fail to if we're still unplugged
@@ -273,24 +254,24 @@ def main():
             ud.recharge_state.state = RechargeState.UNPLUGGED
             return 'done'
         StateMachine.add('FAIL_STILL_UNPLUGGED', 
-                CBState(cb = remain_unplugged),
-                {'done':'FAIL_LOWER_SPINE'})
+                         CBState(cb = remain_unplugged),
+                         {'done':'FAIL_LOWER_SPINE'})
         
         # Make sure we're not holding onto the plug
         StateMachine.add('FAIL_OPEN_GRIPPER',
-                SimpleActionState('r_gripper_controller/gripper_action', Pr2GripperCommandAction,
-                    goal = open_gripper_goal),
-                {'succeeded':'FAIL_UNTUCK'})
+                         SimpleActionState('r_gripper_controller/gripper_action', Pr2GripperCommandAction,
+                                           goal = open_gripper_goal),
+                         {'succeeded':'FAIL_UNTUCK'})
         
         StateMachine.add('FAIL_UNTUCK',
-                SimpleActionState('tuck_arms',TuckArmsAction,
-                    goal = TuckArmsGoal(False, False)),
-                {'succeeded':'FAIL_LOWER_SPINE'})
+                         SimpleActionState('tuck_arms',TuckArmsAction,
+                                           goal = TuckArmsGoal(False, False)),
+                         {'succeeded':'FAIL_LOWER_SPINE'})
         
         # Lower the spine on cleanup
         StateMachine.add('FAIL_LOWER_SPINE',
                 SimpleActionState('torso_controller/position_joint_action', SingleJointPositionAction,
-                    goal = SingleJointPositionGoal(position=0.02)),
+                                  goal = SingleJointPositionGoal(position=0.02)),
                 {'succeeded':'aborted'})
 
 

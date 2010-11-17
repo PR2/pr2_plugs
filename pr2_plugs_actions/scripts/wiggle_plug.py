@@ -8,12 +8,12 @@ from pr2_common_action_msgs.msg import *
 from pr2_plugs_msgs.msg import *
 from pr2_controllers_msgs.msg import *
 from pr2_arm_move_ik.tools import *
-from pr2_plugs_actions.posestampedmath import PoseStampedMath
+from tf_conversions.posemath import fromMsg, toMsg
 from actionlib_msgs.msg import *
 import geometry_msgs.msg
 from math import pi
 import math
-import tf
+from pr2_plugs_actions.tf_util import TFUtil
 
 def drange(start, stop, step):
   r = start
@@ -30,51 +30,44 @@ def drange(start, stop, step):
 def outlet_to_plug_error(goal):
   time = rospy.Time.now()
   try:
-    transformer.waitForTransform("base_link", "r_gripper_tool_frame", time, rospy.Duration(2.0))
+    pose_base_gripper = fromMsg(TFUtil.wait_and_lookup("base_link","r_gripper_tool_frame", time).pose)
   except rospy.ServiceException, e:
     rospy.logerr('Could not transform between gripper and wrist at time %f' %time.to_sec())
     server.set_aborted()
     return
-  pose_base_gripper= PoseStampedMath().fromTf(transformer.lookupTransform("base_link","r_gripper_tool_frame", time))
-  pose_outlet_base = PoseStampedMath(goal.base_to_outlet).inverse()
-  pose_gripper_plug = PoseStampedMath(goal.gripper_to_plug)
-  outlet_to_plug = (pose_outlet_base*pose_base_gripper*pose_gripper_plug).msg
+  outlet_to_plug = fromMsg(goal.base_to_outlet).Inverse() * pose_base_gripper * fromMsg(goal.gripper_to_plug)
   return outlet_to_plug
 
 
 def execute_cb(goal):
   rospy.loginfo("Action server received goal")
   preempt_timeout = rospy.Duration(10.0)
-
-  
   cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
-
-  time = rospy.Time.now()
   try:
-    transformer.waitForTransform("r_wrist_roll_link", "r_gripper_tool_frame", time, rospy.Duration(2.0))
+    pose_gripper_wrist= fromMsg(TFUtil.wait_and_lookup("r_gripper_tool_frame", "r_wrist_roll_link").pose)
   except rospy.ServiceException, e:
     rospy.logerr('Could not transform between gripper and wrist at time %f' %time.to_sec())
     server.set_aborted()
     return
-  pose_gripper_wrist= PoseStampedMath().fromTf(transformer.lookupTransform("r_gripper_tool_frame", "r_wrist_roll_link", time))
-  pose_base_outlet = PoseStampedMath(goal.base_to_outlet)
-  pose_plug_gripper = PoseStampedMath(goal.gripper_to_plug).inverse()
+
+  pose_base_outlet = fromMsg(goal.base_to_outlet)
+  pose_plug_gripper = fromMsg(goal.gripper_to_plug).Inverse()
   
   rate = rospy.Rate(100.0)
   current_error = outlet_to_plug_error(goal)
-  forward_start = current_error.pose.position.x
+  forward_start = current_error.p[0]
   if goal.insert == 1:
-    forward_stop = current_error.pose.position.x + 0.02
+    forward_stop = current_error.p[0] + 0.02
     forward_step = 0.0005
   else:
-    forward_stop = current_error.pose.position.x - 0.04
+    forward_stop = current_error.p[0] - 0.04
     forward_step = 0.001
 
   wiggle = 1.0
   wiggle_count = 1
   for offset in drange(forward_start, forward_stop, forward_step):
-    pose_outlet_plug = PoseStampedMath().fromEuler(offset, 0, 0, 0, math.pi/30*wiggle, 0)
-    cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
+    pose_outlet_plug = PyKDL.Frame(PyKDL.Rotation.RPY(0, math.pi/30*wiggle, 0), PyKDL.Vector(offset, 0, 0))
+    cart_space_goal.pose = toMsg(pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist)
     cart_space_goal.pose.header.stamp = rospy.Time.now()
     cart_space_goal.pose.header.frame_id = 'base_link'
     cart_space_goal.move_duration = rospy.Duration(0.0)
@@ -87,13 +80,10 @@ def execute_cb(goal):
 
     wiggle = wiggle * -1
     wiggle_count += 1
-    control_error = (PoseStampedMath(outlet_to_plug_error(goal)) * pose_outlet_plug.inverse()).msg
-#    rospy.loginfo('Control error in x direction is %f' %control_error.pose.position.x)
-#    rospy.loginfo('Current commanded depth is %f'%offset)
-#    rospy.loginfo('Measured depth is %f' %outlet_to_plug_error(goal).pose.position.x)
 
-  pose_outlet_plug = PoseStampedMath().fromEuler(offset, 0, 0, 0, 0, 0)
-  cart_space_goal.pose = (pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist).msg
+
+  pose_outlet_plug = PyKDL.Frame(PyKDL.Vector(offset, 0, 0))
+  cart_space_goal.pose = toMsg(pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist)
   cart_space_goal.pose.header.stamp = rospy.Time.now()
   cart_space_goal.pose.header.frame_id = 'base_link'
   cart_space_goal.move_duration = rospy.Duration(0.5)
@@ -110,7 +100,7 @@ if __name__ == '__main__':
   rospy.init_node(name)
 
   # transform listener
-  transformer = tf.TransformListener()
+  TFUtil()
 
   # create action clients we use
   cart_space_client = actionlib.SimpleActionClient('r_arm_ik', ArmMoveIKAction)

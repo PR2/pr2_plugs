@@ -17,6 +17,9 @@
   <depend package="pr2_controller_manager"/>
   <depend package="sensor_msgs"/>
   <depend package="tf"/>
+  <depend package="tf_conversions"/>
+  <depend package="tf2_ros"/>
+  <depend package="tf2_geometry_msgs"/>
   <depend package="pr2_msgs"/>
   <depend package="std_srvs"/>
   <depend package="move_base_msgs"/>

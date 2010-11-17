@@ -9,7 +9,8 @@ from pr2_controllers_msgs.msg import *
 from actionlib_msgs.msg import *
 from trajectory_msgs.msg import JointTrajectoryPoint
 from joint_trajectory_action_tools.tools import *
-from pr2_plugs_actions.posestampedmath import PoseStampedMath
+import PyKDL
+from tf_conversions.posemath import fromMsg, toMsg
 from math import pi
 
 #server actionlib.simple_action_server.SimpleActionServer
@@ -32,7 +33,7 @@ def execute_cb(goal):
     rospy.loginfo("Detecting plug...")
     detect_plug_goal = VisionPlugDetectionGoal()
     detect_plug_goal.camera_name = "/r_forearm_cam"
-    detect_plug_goal.prior = PoseStampedMath().fromEuler(-.03, 0, 0, pi/2, 0, -pi/9).inverse().msg
+    detect_plug_goal.prior.pose = toMsg(PyKDL.Frame(PyKDL.Rotation.RPY(pi/2, 0, -pi/9), PyKDL.Vector(-.03, 0, 0)).Inverse())
     detect_plug_goal.prior.header.stamp = rospy.Time.now()
     detect_plug_goal.prior.header.frame_id = "r_gripper_tool_frame"
     detect_plug_goal.origin_on_right = True

@@ -7,7 +7,7 @@ import rospy
 
 import os,sys,time
 from math import *
-import tf
+import PyKDL
 
 from actionlib_msgs.msg import *
 from pr2_common_action_msgs.msg import *
@@ -19,7 +19,7 @@ from move_base_msgs.msg import *
 import copy
 
 from pr2_arm_move_ik.tools import *
-from pr2_plugs_actions.posestampedmath import PoseStampedMath
+from tf_conversions.posemath import fromMsg, toMsg
 from joint_trajectory_action_tools.tools import get_action_goal as get_generator_goal
 
 # State machine classes
@@ -74,8 +74,7 @@ class OutletSearchState(State):
             vision_detect_outlet_goal.prior.header.stamp = rospy.Time.now()
             if self.vision_detect_outlet_client.send_goal_and_wait(vision_detect_outlet_goal, rospy.Duration(5.0), preempt_timeout) == GoalStatus.SUCCEEDED:
                 # Store the rough outlet position in the state machiine user data structure
-                ud.outlet_rough_pose = TFUtil.wait_and_transform(
-                        'r_forearm_cam_optical_frame', self.vision_detect_outlet_client.get_result().outlet_pose)
+                ud.outlet_rough_pose = TFUtil.wait_and_transform('r_forearm_cam_optical_frame', self.vision_detect_outlet_client.get_result().outlet_pose)
                 # Set succeeded, and return
                 return 'succeeded'
 
@@ -118,7 +117,7 @@ def construct_sm():
 
     vision_detect_outlet_goal = VisionOutletDetectionGoal()
     vision_detect_outlet_goal.camera_name = "/r_forearm_cam"
-    vision_detect_outlet_goal.prior = PoseStampedMath().fromEuler(-0.14, -0.82, 0.29, 0, 0, -pi/2).msg
+    vision_detect_outlet_goal.prior.pose = toMsg(PyKDL.Frame(PyKDL.Rotation.RPY(0, 0, -pi/2), PyKDL.Vector(-0.14, -0.82, 0.29)))
     vision_detect_outlet_goal.prior.header.frame_id = "base_link"
 
     # Construct state machine
@@ -194,11 +193,12 @@ def construct_sm():
             if result_state == GoalStatus.SUCCEEDED:
                 y = rospy.get_param('plugs_calibration_offset/y')
                 z = rospy.get_param('plugs_calibration_offset/z')
-                outlet_pose_corrected = (PoseStampedMath(result.outlet_pose) * PoseStampedMath().fromEuler(0, y, z, 0, 0, 0)).msg
+                outlet_pose_corrected = PoseStamped()
+                outlet_pose_corrected.pose = toMsg(fromMsg(result.outlet_pose) * PyKDL.Frame(PyKDL.Vector(0, y, z)))
                 outlet_pose_corrected.header = result.outlet_pose.header
                 rospy.loginfo("Using calibration offset y: %f and z: %f"%(y,z))
-                ud.base_to_outlet = TFUtil.wait_and_transform("base_link",outlet_pose_corrected)
-                ud.map_to_outlet = TFUtil.wait_and_transform("map",outlet_pose_corrected)
+                ud.base_to_outlet = TFUtil.wait_and_transform("base_link", outlet_pose_corrected).pose
+                ud.map_to_outlet = TFUtil.wait_and_transform("map", outlet_pose_corrected).pose
 
         StateMachine.add('DETECT_OUTLET',
                 SimpleActionState('vision_outlet_detection', VisionOutletDetectionAction,
@@ -230,7 +230,7 @@ if __name__ == "__main__":
             succeeded_outcomes = ['succeeded'],
             aborted_outcomes = ['aborted'],
             preempted_outcomes = ['preempted'],
-            result_slots_map = {'outlet_pose':'base_to_outlet'})
+            result_slots_map = {'base_to_outlet_pose':'base_to_outlet'})
     asw.run_server()
 
     rospy.spin()

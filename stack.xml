@@ -8,7 +8,8 @@
   <depend stack="common_msgs" /> <!-- sensor_msgs, actionlib_msgs, geometry_msgs -->
   <depend stack="driver_common" /> <!-- dynamic_reconfigure -->
   <depend stack="executive_smach" /> <!-- smach_ros, smach -->
-  <depend stack="geometry" /> <!-- tf, kdl, eigen, angles -->
+  <depend stack="geometry" /> <!-- tf, kdl, angles, tf_conversions, eigen -->
+  <depend stack="geometry_experimental" /> <!-- tf2_geometry_msgs, tf2_ros -->
   <depend stack="image_common" /> <!-- image_transport -->
   <depend stack="navigation" /> <!-- move_base_msgs, base_local_planner, costmap_2d -->
   <depend stack="pr2_common" /> <!-- pr2_msgs -->

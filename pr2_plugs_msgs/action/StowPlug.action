@@ -1,6 +1,6 @@
 # where the plug is in the gripper
-geometry_msgs/PoseStamped gripper_to_plug
+geometry_msgs/Pose gripper_to_plug
 # where to stow the plug on the base
-geometry_msgs/PoseStamped base_to_plug
+geometry_msgs/Pose base_to_plug
 ---
 ---

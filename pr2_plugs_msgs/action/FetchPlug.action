@@ -1,4 +1,4 @@
 ---
 # location where the plug was found on the base
-geometry_msgs/PoseStamped plug_on_base_pose
+geometry_msgs/Pose plug_on_base_pose
 ---

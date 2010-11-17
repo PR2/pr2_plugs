@@ -3,6 +3,9 @@ import roslib; roslib.load_manifest('pr2_plugs_actions')
 
 import rospy 
 import tf
+import tf2_ros
+import tf2_geometry_msgs
+from geometry_msgs.msg import PoseStamped
 from std_srvs.srv import *
 
 import threading
@@ -21,31 +24,34 @@ class TFUtil():
     
     def __init__(self):
         if not TFUtil.initialized:
-            TFUtil.listener = tf.TransformListener(True, rospy.Duration(60.0))    
+            TFUtil.listener = tf2_ros.buffer_client.BufferClient('tf2_buffer_server')
+            TFUtil.listener.wait_for_server()
             TFUtil.broadcaster = tf.TransformBroadcaster()
             TFUtil.initialized = True
 
             TFUtil.broadcast_lock = threading.Lock()
         
     @staticmethod
-    def wait_and_transform(frame_id,pose):
-        try:
-            TFUtil.listener.waitForTransform(frame_id, pose.header.frame_id, pose.header.stamp, rospy.Duration(2.0))
-        except rospy.ServiceException, ex:
-            rospy.logerr('Could not transform between %s and %s' % (frame_id,pose.header.frame_id))
-            raise ex
-        return TFUtil.listener.transformPose(frame_id, pose)
+    def wait_and_transform(frame_id, pose):
+        return TFUtil.listener.transform(pose, frame_id, rospy.Duration(2.0))
+
 
     @staticmethod
     def wait_and_lookup(parent_frame_id, child_frame_id, time=None):
         if time == None:
             time = rospy.Time.now()
-        try:
-            TFUtil.listener.waitForTransform(parent_frame_id, child_frame_id, time, rospy.Duration(2.0))
-        except rospy.ServiceException, ex:
-            rospy.logerr('Could not transform between %s and %s' % (parent_frame_id,child_frame_id))
-            raise ex
-        return TFUtil.listener.lookupTransform(parent_frame_id, child_frame_id, time)
+
+        ps = PoseStamped()
+        ps.header.stamp = time
+        ps.header.frame_id = child_frame_id
+        ps.pose.position.x = 0.0
+        ps.pose.position.y = 0.0
+        ps.pose.position.z = 0.0
+        ps.pose.orientation.x = 0.0
+        ps.pose.orientation.y = 0.0
+        ps.pose.orientation.z = 0.0
+        ps.pose.orientation.w = 1.0
+        return TFUtil.listener.transform(ps, parent_frame_id, rospy.Duration(2.0))
 
 
     @staticmethod

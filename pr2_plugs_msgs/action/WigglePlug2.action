@@ -1,6 +1,0 @@
-geometry_msgs/PoseStamped gripper_to_plug
-geometry_msgs/PoseStamped base_to_outlet
-duration wiggle_period
-int32 insert
----
----

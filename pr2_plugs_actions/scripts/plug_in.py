@@ -7,7 +7,7 @@ import rospy
 
 import os,sys,time
 import math
-import tf
+import PyKDL
 
 from actionlib_msgs.msg import *
 from pr2_common_action_msgs.msg import *
@@ -19,7 +19,7 @@ from move_base_msgs.msg import *
 from sensor_msgs.msg import *
 
 from pr2_arm_move_ik.tools import *
-from pr2_plugs_actions.posestampedmath import PoseStampedMath
+from tf_conversions.posemath import fromMsg, toMsg
 from joint_trajectory_action_tools.tools import get_action_goal as get_generator_goal
 
 # State machine classes
@@ -38,28 +38,22 @@ def drange(start, stop, step):
 
 def get_outlet_to_plug(pose_base_outlet, pose_plug_gripper):
     """Get the pose from the outlet to the plug."""
-    time = rospy.Time.now()
+    pose_base_gripper = fromMsg(TFUtil.wait_and_lookup("base_link","r_gripper_tool_frame", 
+                                                       rospy.Time.now(), rospy.Duration(2.0)).pose)
 
-    TFUtil.transformer.waitForTransform("base_link", "r_gripper_tool_frame", time, rospy.Duration(2.0))
-    pose_base_gripper = PoseStampedMath().fromTf(TFUtil.transformer.lookupTransform("base_link","r_gripper_tool_frame", time))
-
-    pose_outlet_base = PoseStampedMath(pose_base_outlet).inverse()
-    pose_gripper_plug = PoseStampedMath(pose_plug_gripper).inverse()
-    outlet_to_plug = (pose_outlet_base*pose_base_gripper*pose_gripper_plug).msg
+    outlet_to_plug = pose_base_outlet.Inverse() * pose_base_gripper * pose_plug_gripper.Inverse()
 
     return outlet_to_plug
 
 @smach.cb_interface(input_keys=['base_to_outlet','gripper_to_plug'])
 def get_outlet_to_plug_ik_goal(ud, pose):
     """Get an IK goal for a pose in the frame of the outlet"""
-    time = rospy.Time.now()
-    pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.transformer.lookupTransform("r_gripper_tool_frame", "r_wrist_roll_link", time))
-    pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
-    pose_plug_gripper = PoseStampedMath(ud.gripper_to_plug).inverse()
+    pose_gripper_wrist = fromMsg(TFUtil.wait_and_lookup("r_gripper_tool_frame", "r_wrist_roll_link", 
+                                                        rospy.Time.now(), rospy.Duration(2.0)).pose)
 
     goal = ArmMoveIKGoal()
     goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
-    goal.pose = (pose_base_outlet * pose * pose_plug_gripper * pose_gripper_wrist).msg
+    goal.pose.pose = toMsg(fromMsg(ud.base_to_outlet) * pose * fromMsg(ud.gripper_to_plug).Inverse() * pose_gripper_wrist)
     goal.pose.header.stamp = rospy.Time.now()
     goal.pose.header.frame_id = 'base_link'
 
@@ -69,11 +63,7 @@ def get_outlet_to_plug_ik_goal(ud, pose):
 def get_wiggle_goal(ud,goal):
     goal = WigglePlugGoal()
     goal.gripper_to_plug = ud.gripper_to_plug
-    goal.gripper_to_plug.header.stamp = rospy.Time.now()
-
     goal.base_to_outlet = ud.base_to_outlet
-    goal.base_to_outlet.header.stamp = rospy.Time.now()
-
     goal.wiggle_period = rospy.Duration(0.5)
     goal.insert = 1
     return goal
@@ -94,7 +84,7 @@ def construct_sm():
         @smach.cb_interface(output_keys=['gripper_to_plug'])
         def store_detect_plug_result(ud, result_state, result):
             if result_state == GoalStatus.SUCCEEDED:
-                ud.gripper_to_plug = TFUtil.wait_and_transform('r_gripper_tool_frame',result.plug_pose)
+                ud.gripper_to_plug = TFUtil.wait_and_transform('r_gripper_tool_frame',result.plug_pose).pose
 
         StateMachine.add('DETECT_PLUG_IN_GRIPPER',
                 SimpleActionState('detect_plug',
@@ -133,18 +123,15 @@ def construct_sm():
                 def get_move_closer_goal(ud, goal):
                     """Generate an ik goal to move along the local x axis of the outlet."""
 
-                    pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
-                    pose_outlet_plug = PoseStampedMath().fromEuler(ud.approach_offset, 0, 0, 0, 0, 0)
-                    pose_plug_gripper = PoseStampedMath(ud.gripper_to_plug).inverse()
-                    pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
+                    pose_outlet_plug = PyKDL.Frame(PyKDL.Vector(ud.approach_offset, 0, 0))
+                    pose_gripper_wrist = fromMsg(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link').pose)
+                    base_to_outlet = fromMsg(ud.base_to_outlet)
+                    gripper_to_plug = fromMsg(ud.gripper_to_plug)
 
-                    pose_base_wrist = (pose_base_outlet
-                            * pose_outlet_plug
-                            * pose_plug_gripper
-                            * pose_gripper_wrist).msg
+                    pose_base_wrist = base_to_outlet * pose_outlet_plug * gripper_to_plug.Inverse() * pose_gripper_wrist
 
                     goal = ArmMoveIKGoal()
-                    goal.pose.pose = pose_base_wrist.pose
+                    goal.pose.pose = toMsg(pose_base_wrist)
                     goal.pose.header.stamp = rospy.Time.now()
                     goal.pose.header.frame_id = 'base_link'
                     goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
@@ -161,14 +148,12 @@ def construct_sm():
                 def plug_in_contact(ud):
                     """Returns true if the plug is in contact with something."""
 
-                    pose_outlet_base = PoseStampedMath(ud.base_to_outlet).inverse()
-                    pose_base_gripper = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('base_link', 'r_gripper_tool_frame'))
-                    pose_gripper_plug = PoseStampedMath(ud.gripper_to_plug)
-                    pose_outlet_plug = (pose_outlet_base * pose_base_gripper * pose_gripper_plug).msg
+                    pose_base_gripper = fromMsg(TFUtil.wait_and_lookup('base_link', 'r_gripper_tool_frame').pose)
+                    pose_outlet_plug = fromMsg(ud.base_to_outlet).Inverse() * pose_base_gripper * fromMsg(ud.gripper_to_plug)
 
                     # check if difference between desired and measured outlet-plug along x-axis is more than 1 cm
-                    ud.outlet_to_plug_contact = pose_outlet_plug
-                    if math.fabs(pose_outlet_plug.pose.position.x - ud.approach_offset) > 0.01:
+                    ud.outlet_to_plug_contact = toMsg(pose_outlet_plug)
+                    if math.fabs(pose_outlet_plug.p[0] - ud.approach_offset) > 0.01:
                         return True
                     return False
 
@@ -194,20 +179,13 @@ def construct_sm():
                         input_keys=['base_to_outlet','gripper_to_plug','twist_angle', 'outlet_to_plug_contact'])
                 def get_twist_goal(ud, goal):
                     """Generate an ik goal to rotate the plug"""
-                    pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
-                    pose_outlet_contact = PoseStampedMath(ud.outlet_to_plug_contact)
-                    pose_contact_plug = PoseStampedMath().fromEuler(0, 0, 0, ud.twist_angle, 0, 0)
-                    pose_plug_gripper = PoseStampedMath(ud.gripper_to_plug).inverse()
-                    pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
+                    pose_contact_plug = PyKDL.Frame(PyKDL.Rotation.RPY(ud.twist_angle, 0, 0))
+                    pose_gripper_wrist = fromMsg(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link').pose)
 
-                    pose_base_wrist = ( pose_base_outlet
-                            * pose_outlet_contact
-                            * pose_contact_plug
-                            * pose_plug_gripper
-                            * pose_gripper_wrist ).msg
+                    pose_base_wrist = fromMsg(ud.base_to_outlet) * fromMsg(ud.outlet_to_plug_contact) * pose_contact_plug * fromMsg(ud.gripper_to_plug).Inverse() * pose_gripper_wrist
 
                     goal = ArmMoveIKGoal()
-                    goal.pose.pose = pose_base_wrist.pose
+                    goal.pose.pose = toMsg(pose_base_wrist)
                     goal.pose.header.stamp = rospy.Time.now()
                     goal.pose.header.frame_id = 'base_link'
                     goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
@@ -259,19 +237,12 @@ def construct_sm():
         @smach.cb_interface(input_keys=['base_to_outlet','outlet_to_plug_contact','gripper_to_plug'])
         def get_straighten_goal(ud, goal):
             """Generate an ik goal to straighten the plug in the outlet."""
+            pose_gripper_wrist = fromMsg(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link').pose)
 
-            pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
-            pose_outlet_plug = PoseStampedMath(ud.outlet_to_plug_contact)
-            pose_plug_gripper = PoseStampedMath(ud.gripper_to_plug).inverse()
-            pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
-
-            pose_base_wrist = (pose_base_outlet
-                    * pose_outlet_plug
-                    * pose_plug_gripper
-                    * pose_gripper_wrist).msg
+            pose_base_wrist = fromMsg(ud.base_to_outlet) * fromMsg(ud.outlet_to_plug_contact) * fromMsg(ud.gripper_to_plug).Inverse() * pose_gripper_wrist
 
             goal = ArmMoveIKGoal()
-            goal.pose.pose = pose_base_wrist.pose
+            goal.pose.pose = toMsg(pose_base_wrist)
             goal.pose.header.stamp = rospy.Time.now()
             goal.pose.header.frame_id = 'base_link'
             goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')
@@ -295,19 +266,13 @@ def construct_sm():
         @smach.cb_interface(input_keys=['base_to_outlet','gripper_to_plug'])
         def get_pull_back_goal(ud, goal):
             """Generate an ik goal to move along the local x axis of the outlet."""
+            pose_outlet_plug = PyKDL.Frame(PyKDL.Vector(-0.10, 0, 0))
+            pose_gripper_wrist = fromMsg(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link').pose)
 
-            pose_base_outlet = PoseStampedMath(ud.base_to_outlet)
-            pose_outlet_plug = PoseStampedMath().fromEuler(-0.10, 0, 0, 0, 0, 0)
-            pose_plug_gripper = PoseStampedMath(ud.gripper_to_plug).inverse()
-            pose_gripper_wrist = PoseStampedMath().fromTf(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link'))
-
-            pose_base_wrist = (pose_base_outlet
-                    * pose_outlet_plug
-                    * pose_plug_gripper
-                    * pose_gripper_wrist).msg
+            pose_base_wrist = fromMsg(ud.base_to_outlet) * pose_outlet_plug * fromMsg(ud.gripper_to_plug).Inverse() * pose_gripper_wrist
 
             goal = ArmMoveIKGoal()
-            goal.pose.pose = pose_base_wrist.pose
+            goal.pose.pose = toMsg(pose_base_wrist)
             goal.pose.header.stamp = rospy.Time.now()
             goal.pose.header.frame_id = 'base_link'
             goal.ik_seed = get_action_seed('pr2_plugs_configuration/approach_outlet_seed')

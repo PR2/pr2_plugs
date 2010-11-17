@@ -1,22 +1,54 @@
 #!/usr/bin/env python
-# stub for outlet detection action
+# Software License Agreement (BSD License)
+#
+# Copyright (c) 2009, Willow Garage, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#    * Redistributions of source code must retain the above copyright
+#        notice, this list of conditions and the following disclaimer.
+#    * Redistributions in binary form must reproduce the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer in the documentation and/or other materials provided
+#        with the distribution.
+#    * Neither the name of the Willow Garage nor the names of its
+#        contributors may be used to endorse or promote products derived
+#        from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
 
 import roslib; roslib.load_manifest('pr2_plugs_actions')
 import rospy;
+import PyKDL
 import actionlib;
 from pr2_common_action_msgs.msg import *
 from pr2_plugs_msgs.msg import *
 from pr2_controllers_msgs.msg import *
 from joint_trajectory_action_tools.tools import *
 from pr2_arm_move_ik.tools import *
-from pr2_plugs_actions.posestampedmath import PoseStampedMath
+from tf_conversions.posemath import fromMsg, toMsg
 from actionlib_msgs.msg import *
 import geometry_msgs.msg
 from trajectory_msgs.msg import JointTrajectoryPoint
 from math import pi
 import copy
 import math
-import tf
+from pr2_plugs_actions.tf_util import TFUtil
 
 #server actionlib.simple_action_server.SimpleActionServer
 
@@ -42,19 +74,12 @@ def execute_cb(goal):
   # return plug
   cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/return_plug_seed')
 
-  pose_plug_gripper = PoseStampedMath(goal.gripper_to_plug).inverse()  
-  pose_base_plug = PoseStampedMath(goal.base_to_plug)  
-  pose_gripper_wrist = PoseStampedMath()
+  pose_plug_gripper = fromMsg(goal.gripper_to_plug).Inverse()  
+  pose_base_plug = fromMsg(goal.base_to_plug)
   time = rospy.Time.now()
-  try:
-    transformer.waitForTransform("r_wrist_roll_link", "r_gripper_tool_frame", time, rospy.Duration(2.0))
-  except rospy.ServiceException, e:
-    rospy.logerr('Could not transform between gripper and wrist at time %f' %time.to_sec())
-    server.set_aborted()
-    return
-  pose_gripper_wrist.fromTf(transformer.lookupTransform("r_gripper_tool_frame", "r_wrist_roll_link", time))
+  pose_gripper_wrist = fromMsg(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link').pose)
 
-  cart_space_goal.pose = (pose_base_plug * pose_plug_gripper * pose_gripper_wrist).msg
+  cart_space_goal.pose = toMsg(pose_base_plug * pose_plug_gripper * pose_gripper_wrist)
   cart_space_goal.pose.header.stamp = rospy.Time.now()
   cart_space_goal.pose.header.frame_id = "base_link"
   cart_space_goal.move_duration = rospy.Duration(3.0)
@@ -74,8 +99,8 @@ def execute_cb(goal):
 
   # retract arm
   rospy.loginfo("Releasing plug...")  
-  pose_plug_approach = PoseStampedMath().fromEuler(0, 0.05, 0, 0, 0, 0)
-  cart_space_goal.pose = (pose_base_plug * pose_plug_approach * pose_plug_gripper * pose_gripper_wrist).msg
+  pose_plug_approach = PyKDL.Frame(PyKDL.Vector(0, 0.05, 0))
+  cart_space_goal.pose = toMsg(pose_base_plug * pose_plug_approach * pose_plug_gripper * pose_gripper_wrist)
   cart_space_goal.pose.header.stamp = rospy.Time.now()
   cart_space_goal.pose.header.frame_id = "base_link"
   cart_space_goal.move_duration = rospy.Duration(3.0)
@@ -109,7 +134,7 @@ if __name__ == '__main__':
   rospy.init_node(name)
 
   # transform listener
-  transformer = tf.TransformListener()
+  TFUtil()
 
   # create action clients we use
   gripper_client = actionlib.SimpleActionClient('r_gripper_controller/gripper_action', Pr2GripperCommandAction)

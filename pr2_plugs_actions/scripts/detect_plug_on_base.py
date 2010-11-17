@@ -8,14 +8,15 @@ from pr2_plugs_msgs.msg import *
 from pr2_controllers_msgs.msg import *
 from joint_trajectory_action_tools.tools import *
 from pr2_arm_move_ik.tools import *
-from pr2_plugs_actions.posestampedmath import PoseStampedMath
 from actionlib_msgs.msg import *
 import geometry_msgs.msg
 from trajectory_msgs.msg import JointTrajectoryPoint
 from math import pi
 import copy
 import math
-import tf
+import PyKDL
+from tf_conversions.posemath import fromMsg, toMsg
+from pr2_plugs_actions.tf_util import TFUtil
 
 
 def to_init_position():
@@ -55,21 +56,21 @@ def execute_cb(goal):
     rospy.loginfo("Detecting plug...")
     detect_plug_goal = VisionPlugDetectionGoal()
     detect_plug_goal.camera_name = "/r_forearm_cam"
-    detect_plug_goal.prior = PoseStampedMath().fromEuler(0.080, 0.026, 0.23, pi/2, 0, pi/2).msg
+    detect_plug_goal.prior = toMsg(PyKDL.Frame(PyKDL.Rotation.RPY(pi/2, 0, pi/2), PyKDL.Vector(0.080, 0.026, 0.23)))
     detect_plug_goal.prior.header.frame_id = "base_link"
     detect_plug_goal.origin_on_right = False
     detect_plug_goal.prior.header.stamp = rospy.Time.now()
     if detect_plug_client.send_goal_and_wait(detect_plug_goal, rospy.Duration(5.0), preempt_timeout) == GoalStatus.SUCCEEDED:
       pose_detect_plug = detect_plug_client.get_result().plug_pose
       try:
-        transformer.waitForTransform("base_link", pose_detect_plug.header.frame_id, pose_detect_plug.header.stamp, rospy.Duration(2.0))
+        pose_base_plug = fromMsg(TFUtil.wait_and_transform('base_link', pose_detect_plug).pose, rospy.Duration(2.0))
       except rospy.ServiceException, e:
         rospy.logerr('Could not transform between base_link and %s' %pose_detect_plug.header.frame_id)
         server.set_aborted()
         return
-      pose_base_plug= PoseStampedMath(transformer.transformPose("base_link", pose_detect_plug))
-      error = (pose_base_plug.inverse()*PoseStampedMath(detect_plug_goal.prior)).toEuler()
-      if (math.fabs(error[3]) < 0.8) and (math.fabs(error[4]) < 0.8) and (math.fabs(error[5]) < 0.8) and (math.fabs(error[0]) < 0.1) and (math.fabs(error[1]) < 0.1) and (math.fabs(error[2]) < 0.1):
+      error = (pose_base_plug.Inverse() * fromMsg(detect_plug_goal.prior.pose))
+      (r, p, y) = error.M.GetRPY()
+      if (math.fabs(r) < 0.8) and (math.fabs(p) < 0.8) and (math.fabs(y) < 0.8) and (math.fabs(error.p[0]) < 0.1) and (math.fabs(error.p[1]) < 0.1) and (math.fabs(error.p[2]) < 0.1):
         to_init_position()
         server.set_succeeded(DetectPlugOnBaseResult(detect_plug_client.get_result().plug_pose))      
         rospy.loginfo("Action server goal finished")  
@@ -91,7 +92,7 @@ if __name__ == '__main__':
   rospy.init_node(name)
 
   # transform listener
-  transformer = tf.TransformListener()
+  TFUtil()
 
   joint_space_client = actionlib.SimpleActionClient('r_arm_controller/joint_trajectory_generator', JointTrajectoryAction)
   joint_space_client.wait_for_server()
