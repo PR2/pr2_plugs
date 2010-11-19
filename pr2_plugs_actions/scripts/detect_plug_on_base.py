@@ -56,14 +56,14 @@ def execute_cb(goal):
     rospy.loginfo("Detecting plug...")
     detect_plug_goal = VisionPlugDetectionGoal()
     detect_plug_goal.camera_name = "/r_forearm_cam"
-    detect_plug_goal.prior = toMsg(PyKDL.Frame(PyKDL.Rotation.RPY(pi/2, 0, pi/2), PyKDL.Vector(0.080, 0.026, 0.23)))
+    detect_plug_goal.prior.pose = toMsg(PyKDL.Frame(PyKDL.Rotation.RPY(pi/2, 0, pi/2), PyKDL.Vector(0.080, 0.026, 0.23)))
     detect_plug_goal.prior.header.frame_id = "base_link"
     detect_plug_goal.origin_on_right = False
     detect_plug_goal.prior.header.stamp = rospy.Time.now()
     if detect_plug_client.send_goal_and_wait(detect_plug_goal, rospy.Duration(5.0), preempt_timeout) == GoalStatus.SUCCEEDED:
       pose_detect_plug = detect_plug_client.get_result().plug_pose
       try:
-        pose_base_plug = fromMsg(TFUtil.wait_and_transform('base_link', pose_detect_plug).pose, rospy.Duration(2.0))
+        pose_base_plug = fromMsg(TFUtil.wait_and_transform('base_link', pose_detect_plug).pose)
       except rospy.ServiceException, e:
         rospy.logerr('Could not transform between base_link and %s' %pose_detect_plug.header.frame_id)
         server.set_aborted()
@@ -76,7 +76,7 @@ def execute_cb(goal):
         rospy.loginfo("Action server goal finished")  
         return
       else:
-        rospy.loginfo('Found the plug, but it is in a different location than I expected. Offset in xyz: %f %f %f and RPY: %f %f %f', error[0], error[1], error[2], error[3], error[4], error[5])
+        rospy.loginfo('Found the plug, but it is in a different location than I expected.')
 
   # Failure
   rospy.logerr("Failed to detect plug on base")      

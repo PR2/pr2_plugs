@@ -79,7 +79,7 @@ def execute_cb(goal):
   time = rospy.Time.now()
   pose_gripper_wrist = fromMsg(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link').pose)
 
-  cart_space_goal.pose = toMsg(pose_base_plug * pose_plug_gripper * pose_gripper_wrist)
+  cart_space_goal.pose.pose = toMsg(pose_base_plug * pose_plug_gripper * pose_gripper_wrist)
   cart_space_goal.pose.header.stamp = rospy.Time.now()
   cart_space_goal.pose.header.frame_id = "base_link"
   cart_space_goal.move_duration = rospy.Duration(3.0)
@@ -100,7 +100,7 @@ def execute_cb(goal):
   # retract arm
   rospy.loginfo("Releasing plug...")  
   pose_plug_approach = PyKDL.Frame(PyKDL.Vector(0, 0.05, 0))
-  cart_space_goal.pose = toMsg(pose_base_plug * pose_plug_approach * pose_plug_gripper * pose_gripper_wrist)
+  cart_space_goal.pose.pose = toMsg(pose_base_plug * pose_plug_approach * pose_plug_gripper * pose_gripper_wrist)
   cart_space_goal.pose.header.stamp = rospy.Time.now()
   cart_space_goal.pose.header.frame_id = "base_link"
   cart_space_goal.move_duration = rospy.Duration(3.0)

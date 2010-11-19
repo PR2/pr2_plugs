@@ -13,7 +13,6 @@ import PyKDL
 from tf_conversions.posemath import fromMsg, toMsg
 from math import pi
 
-#server actionlib.simple_action_server.SimpleActionServer
 
 def execute_cb(goal):
   rospy.loginfo("Action server received goal")
@@ -33,7 +32,8 @@ def execute_cb(goal):
     rospy.loginfo("Detecting plug...")
     detect_plug_goal = VisionPlugDetectionGoal()
     detect_plug_goal.camera_name = "/r_forearm_cam"
-    detect_plug_goal.prior.pose = toMsg(PyKDL.Frame(PyKDL.Rotation.RPY(pi/2, 0, -pi/9), PyKDL.Vector(-.03, 0, 0)).Inverse())
+    #detect_plug_goal.prior.pose = toMsg(PyKDL.Frame(PyKDL.Rotation.RPY(pi/2, 0.0, -pi/9), PyKDL.Vector(-.03, 0, 0)).Inverse())
+    detect_plug_goal.prior.pose = toMsg(PyKDL.Frame(PyKDL.Rotation.RPY(-pi/2, pi/9, 0.0), PyKDL.Vector(0.03, 0, -0.01)))
     detect_plug_goal.prior.header.stamp = rospy.Time.now()
     detect_plug_goal.prior.header.frame_id = "r_gripper_tool_frame"
     detect_plug_goal.origin_on_right = True

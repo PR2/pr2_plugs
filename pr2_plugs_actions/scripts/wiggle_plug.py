@@ -3,6 +3,7 @@
 
 import roslib; roslib.load_manifest('pr2_plugs_actions')
 import rospy;
+import PyKDL
 import actionlib;
 from pr2_common_action_msgs.msg import *
 from pr2_plugs_msgs.msg import *
@@ -67,7 +68,7 @@ def execute_cb(goal):
   wiggle_count = 1
   for offset in drange(forward_start, forward_stop, forward_step):
     pose_outlet_plug = PyKDL.Frame(PyKDL.Rotation.RPY(0, math.pi/30*wiggle, 0), PyKDL.Vector(offset, 0, 0))
-    cart_space_goal.pose = toMsg(pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist)
+    cart_space_goal.pose.pose = toMsg(pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist)
     cart_space_goal.pose.header.stamp = rospy.Time.now()
     cart_space_goal.pose.header.frame_id = 'base_link'
     cart_space_goal.move_duration = rospy.Duration(0.0)
@@ -83,7 +84,7 @@ def execute_cb(goal):
 
 
   pose_outlet_plug = PyKDL.Frame(PyKDL.Vector(offset, 0, 0))
-  cart_space_goal.pose = toMsg(pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist)
+  cart_space_goal.pose.pose = toMsg(pose_base_outlet * pose_outlet_plug * pose_plug_gripper * pose_gripper_wrist)
   cart_space_goal.pose.header.stamp = rospy.Time.now()
   cart_space_goal.pose.header.frame_id = 'base_link'
   cart_space_goal.move_duration = rospy.Duration(0.5)

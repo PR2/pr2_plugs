@@ -188,24 +188,26 @@ def construct_sm():
             ud.vision_detect_outlet_goal.prior.header.stamp = rospy.Time.now()
             return ud.vision_detect_outlet_goal
 
-        @smach.cb_interface(output_keys=['base_to_outlet','map_to_outlet'])
+        @smach.cb_interface(output_keys=['base_to_outlet'])
         def store_precise_outlet_result(ud, result_state, result):
             if result_state == GoalStatus.SUCCEEDED:
                 y = rospy.get_param('plugs_calibration_offset/y')
                 z = rospy.get_param('plugs_calibration_offset/z')
                 outlet_pose_corrected = PoseStamped()
-                outlet_pose_corrected.pose = toMsg(fromMsg(result.outlet_pose) * PyKDL.Frame(PyKDL.Vector(0, y, z)))
+                outlet_pose_corrected.pose = toMsg(fromMsg(result.outlet_pose.pose) * PyKDL.Frame(PyKDL.Vector(0, y, z)))
                 outlet_pose_corrected.header = result.outlet_pose.header
                 rospy.loginfo("Using calibration offset y: %f and z: %f"%(y,z))
                 ud.base_to_outlet = TFUtil.wait_and_transform("base_link", outlet_pose_corrected).pose
-                ud.map_to_outlet = TFUtil.wait_and_transform("map", outlet_pose_corrected).pose
+                print 'outlet not corrected'
+                print  TFUtil.wait_and_transform("base_link", result.outlet_pose).pose
+                print 'outlet corrected'
+                print  TFUtil.wait_and_transform("base_link", outlet_pose_corrected).pose
 
-        StateMachine.add('DETECT_OUTLET',
-                SimpleActionState('vision_outlet_detection', VisionOutletDetectionAction,
-                    goal_cb = get_vision_detect_goal,
-                    result_cb = store_precise_outlet_result),
-                {'succeeded':'succeeded',
-                    'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
+        StateMachine.add('DETECT_OUTLET', SimpleActionState('vision_outlet_detection', VisionOutletDetectionAction,
+                                                            goal_cb = get_vision_detect_goal,
+                                                            result_cb = store_precise_outlet_result),
+                         {'succeeded':'succeeded',
+                          'aborted':'FAIL_MOVE_ARM_OUTLET_TO_FREE'})
 
         # Define recovery states
         StateMachine.add('FAIL_MOVE_ARM_OUTLET_TO_FREE',

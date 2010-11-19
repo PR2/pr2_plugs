@@ -85,6 +85,8 @@ def construct_sm():
         def store_detect_plug_result(ud, result_state, result):
             if result_state == GoalStatus.SUCCEEDED:
                 ud.gripper_to_plug = TFUtil.wait_and_transform('r_gripper_tool_frame',result.plug_pose).pose
+                print 'gripper_to_plug'
+                print TFUtil.wait_and_transform('r_gripper_tool_frame',result.plug_pose).pose
 
         StateMachine.add('DETECT_PLUG_IN_GRIPPER',
                 SimpleActionState('detect_plug',
