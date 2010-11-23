@@ -24,7 +24,7 @@ class TFUtil():
     
     def __init__(self):
         if not TFUtil.initialized:
-            TFUtil.listener = tf2_ros.buffer_client.BufferClient('tf2_buffer_server')
+            TFUtil.listener = tf2_ros.buffer_client.BufferClient('tf2_buffer_server_plugs')
             TFUtil.listener.wait_for_server()
             TFUtil.broadcaster = tf.TransformBroadcaster()
             TFUtil.initialized = True

@@ -1,6 +1,11 @@
 <launch>
   <arg name="run_sim" default="1" />
 
+  <!-- Buffer Server -->
+  <node pkg="tf2_ros" type="buffer_server" name="tf2_buffer_server_plugs" output="screen">
+    <param name="buffer_size" value="120.0"/>
+  </node>
+
   <rosparam command="load" file="$(find pr2_plugs_actions)/config/joint_trajectories.yaml" />
   <rosparam command="load" file="$(find pr2_plugs_actions)/config/cart_ik_seeds.yaml" />
 
