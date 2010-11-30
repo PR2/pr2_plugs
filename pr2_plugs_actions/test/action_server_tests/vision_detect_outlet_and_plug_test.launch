@@ -1,4 +1,11 @@
 <launch>
+
+  <!-- Buffer Server -->
+  <node pkg="tf2_ros" type="buffer_server" name="tf2_buffer_server_plugs" output="screen">
+    <remap from="tf2_buffer_server" to="tf2_buffer_server_plugs" />
+    <param name="buffer_size" value="120.0"/>
+  </node>
+
   <!-- vision detect outlet action -->
   <node pkg="pr2_plugs_actions" type="vision_detect_outlet" name="vision_outlet_detection" output="screen">
     <param name="outlet_template" type="str" value="$(find pr2_plugs_actions)/outlet_templates/configs/green_2x1white"/>
