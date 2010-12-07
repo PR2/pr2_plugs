@@ -1,0 +1,7 @@
+string topic_name # Topic name, must be of sensor_msgs/Image
+int32 num_images # Set <0 to record until prempted
+string output_file_name # Default: /hwlog/TOPIC_NAME_DATE_TIME.bag
+---
+# Empty result
+---
+# Empty feedback

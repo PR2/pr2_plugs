@@ -1,0 +1,19 @@
+<package>
+  <description brief="pr2_image_snapshot_recorder">
+
+     pr2_image_snapshot_recorder
+
+  </description>
+  <author>Kevin Watts</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/pr2_image_snapshot_recorder</url>
+  <depend package="rospy"/>
+  <depend package="actionlib"/>
+  <depend package="actionlib_msgs"/>
+  <depend package="sensor_msgs"/>
+  <depend package="rosbag"/>
+
+</package>
+
+
