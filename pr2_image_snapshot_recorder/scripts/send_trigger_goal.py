@@ -17,7 +17,6 @@ if __name__ == '__main__':
     goal = ImageSnapshotGoal()
     goal.num_images = 5
     goal.topic_name = '/r_forearm_cam/image_rect'
-    #goal.output_file_name = '/home/watts/image_snapshot.bag'
     # Fill in the goal here
     rospy.loginfo('Sending snapshot goal')
     client.send_goal(goal)

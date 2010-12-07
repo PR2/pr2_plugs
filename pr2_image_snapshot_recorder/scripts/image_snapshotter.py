@@ -14,7 +14,9 @@ import time
 import threading
 
 def get_bagname(topic_name):
-    return topic_name + '_' + time.strftime('%Y%m%d_%I%M%S', time.localtime()) + '.bag'
+    if topic_name.startswith('/'):
+        topic_name = topic_name[1:]
+    return topic_name.replace('/', '_') + '_' + time.strftime('%Y%m%d_%I%M%S', time.localtime()) + '.bag'
     
 
 class ImageSnapshotter(object):
@@ -46,10 +48,11 @@ class ImageSnapshotter(object):
         
 
     def _execute(self, goal):
-        rospy.loginfo('Snapshot recording of %d images on \"%s\" to file \"%s\"' % \
-                          (goal.num_images, goal.topic_name, goal.output_file_name))
         # Open bag
         filename = goal.output_file_name if goal.output_file_name else get_bagname(goal.topic_name)
+
+        rospy.loginfo('Snapshot recording of %d images on \"%s\" to file \"%s\"' % \
+                          (goal.num_images, goal.topic_name, filename))
 
         if not filename.endswith('.bag'):
             filename += '.bag'
