@@ -52,11 +52,11 @@ def construct_sm():
     # Construct state machine
     sm = StateMachine(
             ['succeeded','aborted','preempted'],
-            output_keys = ['plug_on_base_pose'])
+            output_keys = ['plug_on_base_pose', 'gripper_plug_grasp_pose'])
 
     # Hardcoded poses for approach / grasping
-    sm.userdata.pose_plug_gripper_grasp_approach = toMsg(PyKDL.Frame(PyKDL.Vector(0, 0.05, 0)))
-    sm.userdata.pose_plug_gripper_grasp = toMsg(PyKDL.Frame(PyKDL.Rotation.RPY(pi/2, 0.0, -pi/9), PyKDL.Vector(-0.03, 0.0, 0.005)))
+    sm.userdata.gripper_plug_grasp_pose_approach = toMsg(PyKDL.Frame(PyKDL.Vector(0, 0.05, 0)).Inverse())
+    sm.userdata.gripper_plug_grasp_pose = toMsg(PyKDL.Frame(PyKDL.Rotation.RPY(pi/2, 0.0, -pi/9), PyKDL.Vector(-0.03, 0.0, 0.005)).Inverse())
 
     # Define nominal sequence
     with sm:
@@ -68,8 +68,9 @@ def construct_sm():
 
         # Move arm to detect the plug on the base
         StateMachine.add('MOVE_ARM_BASE_DETECT_POSE',
-                SimpleActionState('r_arm_controller/joint_trajectory_generator',JointTrajectoryAction, goal = get_generator_goal('pr2_plugs_configuration/detect_plug_on_base')),
-                {'succeeded':'DETECT_PLUG_ON_BASE'})
+                         SimpleActionState('r_arm_controller/joint_trajectory_generator',
+                                           JointTrajectoryAction, goal = get_generator_goal('pr2_plugs_configuration/detect_plug_on_base')),
+                         {'succeeded':'DETECT_PLUG_ON_BASE'})
 
         # Detect the plug
         @smach.cb_interface(output_keys=['plug_on_base_pose'])
@@ -97,15 +98,15 @@ def construct_sm():
                          {'succeeded':'APPROACH_PLUG'})
 
         @smach.cb_interface(input_keys = ['plug_on_base_pose',
-                                          'pose_plug_gripper_grasp_approach',
-                                          'pose_plug_gripper_grasp'])
+                                          'gripper_plug_grasp_pose_approach',
+                                          'gripper_plug_grasp_pose'])
         def get_approach_plug_goal(ud, goal):
             """Get the ik goal for approaching the plug to grasp it """
             pose_gripper_wrist = fromMsg(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link').pose)
             goal = ArmMoveIKGoal()
             goal.pose.pose = toMsg(fromMsg(ud.plug_on_base_pose)
-                                   * fromMsg(ud.pose_plug_gripper_grasp_approach)
-                                   * fromMsg(ud.pose_plug_gripper_grasp)
+                                   * fromMsg(ud.gripper_plug_grasp_pose_approach).Inverse()
+                                   * fromMsg(ud.gripper_plug_grasp_pose).Inverse()
                                    * pose_gripper_wrist)
 
             goal.pose.header.stamp = rospy.Time.now()
@@ -120,14 +121,14 @@ def construct_sm():
                          {'succeeded':'GRASP_PLUG',
                           'aborted':'DETECT_PLUG_ON_BASE'})
 
-        @smach.cb_interface(input_keys = ['plug_on_base_pose', 'pose_plug_gripper_grasp'])
+        @smach.cb_interface(input_keys = ['plug_on_base_pose', 'gripper_plug_grasp_pose'])
         def get_grasp_plug_goal(ud, goal):
             """Get the ik goal for grasping the plug."""
             pose_gripper_wrist = fromMsg(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link').pose)
 
             goal = ArmMoveIKGoal()
             goal.pose.pose = toMsg(fromMsg(ud.plug_on_base_pose)
-                                   * fromMsg(ud.pose_plug_gripper_grasp)
+                                   * fromMsg(ud.gripper_plug_grasp_pose).Inverse()
                                    * pose_gripper_wrist)
 
             goal.pose.header.stamp = rospy.Time.now()

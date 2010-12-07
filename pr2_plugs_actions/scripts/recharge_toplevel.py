@@ -145,48 +145,48 @@ def main():
 
                 return move_base_goal
             StateMachine.add('NAVIGATE', 
-                    SimpleActionState('pr2_move_base',MoveBaseAction,
-                        goal_cb=get_outlet_approach_goal,
-                        exec_timeout = rospy.Duration(20*60.0)),
-                    { 'succeeded':'UNTUCK_AT_OUTLET' })
+                             SimpleActionState('pr2_move_base',MoveBaseAction,
+                                               goal_cb=get_outlet_approach_goal,
+                                               exec_timeout = rospy.Duration(20*60.0)),
+                             { 'succeeded':'UNTUCK_AT_OUTLET' })
             StateMachine.add('UNTUCK_AT_OUTLET', 
-                    SimpleActionState('tuck_arms', TuckArmsAction,
-                        goal = TuckArmsGoal(False, False)))
+                             SimpleActionState('tuck_arms', TuckArmsAction,
+                                               goal = TuckArmsGoal(False, False)))
 
         StateMachine.add('DETECT_OUTLET', 
-                SimpleActionState('detect_outlet',DetectOutletAction,
-                    result_slots = ['base_to_outlet_pose']),
-                {'succeeded':'FETCH_PLUG',
-                    'aborted':'FAIL_STILL_UNPLUGGED'},
-                remapping = {'base_to_outlet_pose':'base_to_outlet'})
+                         SimpleActionState('detect_outlet',DetectOutletAction,
+                                           result_slots = ['base_to_outlet_pose']),
+                         {'succeeded':'FETCH_PLUG',
+                          'aborted':'FAIL_STILL_UNPLUGGED'},
+                         remapping = {'base_to_outlet_pose':'base_to_outlet'})
 
         StateMachine.add('FETCH_PLUG',
-                SimpleActionState('fetch_plug',FetchPlugAction,
-                    result_slots = ['plug_on_base_pose']),
-                {'succeeded':'PLUG_IN',
-                    'aborted':'FAIL_OPEN_GRIPPER'},
-                remapping = {'plug_on_base_pose':'base_to_plug_on_base'})
+                         SimpleActionState('fetch_plug',FetchPlugAction,
+                                           result_slots = ['plug_on_base_pose', 'gripper_plug_grasp_pose']),
+                         {'succeeded':'PLUG_IN',
+                          'aborted':'FAIL_OPEN_GRIPPER'},
+                         remapping = {'plug_on_base_pose':'base_to_plug_on_base', 'gripper_plug_grasp_pose':'gripper_to_plug_grasp'})
         
         @smach.cb_interface(input_keys=['recharge_state'], output_keys=['recharge_state'])
         def set_plug_in_result(ud, result_status, result):
             if result_status == GoalStatus.SUCCEEDED:
                 ud.recharge_state.state = RechargeState.PLUGGED_IN
         StateMachine.add('PLUG_IN',
-                SimpleActionState('plug_in',PlugInAction,
-                    goal_slots = ['base_to_outlet'],
-                    result_slots = ['gripper_to_plug'],
-                    result_cb = set_plug_in_result),
-                { 'succeeded':'plugged_in',
-                    'aborted':'RECOVER_STOW_PLUG'})
+                         SimpleActionState('plug_in',PlugInAction,
+                                           goal_slots = ['base_to_outlet'],
+                                           result_slots = ['gripper_to_plug'],
+                                           result_cb = set_plug_in_result),
+                         { 'succeeded':'plugged_in',
+                           'aborted':'RECOVER_STOW_PLUG'})
         
         ### UNPLUGGING ###
         unplug_sm = StateMachine(
-                outcomes = ['succeeded','aborted','preempted'],
-                input_keys=['recharge_state','gripper_to_plug','base_to_outlet','base_to_plug_on_base'],
-                output_keys=['recharge_state'])
+            outcomes = ['succeeded','aborted','preempted'],
+            input_keys=['recharge_state','gripper_to_plug_grasp','gripper_to_plug','base_to_outlet','base_to_plug_on_base'],
+            output_keys=['recharge_state'])
         StateMachine.add('UNPLUG', unplug_sm,
-                { 'succeeded':'unplugged',
-                    'aborted':'FAIL_OPEN_GRIPPER'})
+                         { 'succeeded':'unplugged',
+                           'aborted':'FAIL_OPEN_GRIPPER'})
         with unplug_sm:
             """Unplug from outlet"""
             # Make sure the gripper is held tightly
@@ -235,14 +235,14 @@ def main():
                     ud.recharge_state.state = RechargeState.UNPLUGGED
 
             StateMachine.add('STOW_PLUG', SimpleActionState('stow_plug',StowPlugAction,
-                                                            goal_slots = ['gripper_to_plug','base_to_plug'],
+                                                            goal_slots = ['gripper_to_plug_grasp','base_to_plug'],
                                                             result_cb = set_unplug_result),
                              {'succeeded':'succeeded'},
                              remapping = {'base_to_plug':'base_to_plug_on_base'})
 
         ### RECOVERY STATES ###
         StateMachine.add('RECOVER_STOW_PLUG', SimpleActionState('stow_plug',StowPlugAction,
-                                                                goal_slots = ['gripper_to_plug','base_to_plug']),
+                                                                goal_slots = ['gripper_to_plug_grasp','base_to_plug']),
                          { 'succeeded':'FAIL_STILL_UNPLUGGED',
                            'aborted':'FAIL_OPEN_GRIPPER'},
                          remapping = {'base_to_plug':'base_to_plug_on_base'})

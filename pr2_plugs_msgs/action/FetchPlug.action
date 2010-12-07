@@ -1,4 +1,5 @@
 ---
 # location where the plug was found on the base
 geometry_msgs/Pose plug_on_base_pose
+geometry_msgs/Pose gripper_plug_grasp_pose
 ---

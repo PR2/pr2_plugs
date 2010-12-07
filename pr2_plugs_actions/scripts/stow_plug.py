@@ -46,8 +46,6 @@ from actionlib_msgs.msg import *
 import geometry_msgs.msg
 from trajectory_msgs.msg import JointTrajectoryPoint
 from math import pi
-import copy
-import math
 from pr2_plugs_actions.tf_util import TFUtil
 
 #server actionlib.simple_action_server.SimpleActionServer
@@ -64,29 +62,49 @@ def execute_cb(goal):
     server.set_aborted()
     return
 
-  # move to joint space position
-  rospy.loginfo("Move in joint space...")
-  if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/stow_plug'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr('Move approach in joint space failed')
-    server.set_aborted()
-    return
 
   # return plug
-  cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/return_plug_seed')
+  error = 1.0
+  free_cord = False
+  while error > 0.01 and not rospy.is_shutdown():
+    # appraoch in joint space when re-trying
+    if free_cord:
+      rospy.loginfo("Free plug cord by doing approach...")
+      if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/free_plug_cord'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+        rospy.logerr('Free plug cord failed')
+        server.set_aborted()
+        return
+    free_cord = True
 
-  pose_plug_gripper = fromMsg(goal.gripper_to_plug).Inverse()  
-  pose_base_plug = fromMsg(goal.base_to_plug)
-  time = rospy.Time.now()
-  pose_gripper_wrist = fromMsg(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link').pose)
+    # move to joint space position
+    rospy.loginfo("Move in joint space...")
+    if joint_space_client.send_goal_and_wait(get_action_goal('pr2_plugs_configuration/stow_plug'), rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+      rospy.logerr('Move approach in joint space failed')
+      server.set_aborted()
+      return
 
-  cart_space_goal.pose.pose = toMsg(pose_base_plug * pose_plug_gripper * pose_gripper_wrist)
-  cart_space_goal.pose.header.stamp = rospy.Time.now()
-  cart_space_goal.pose.header.frame_id = "base_link"
-  cart_space_goal.move_duration = rospy.Duration(3.0)
-  if cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr('Failed to grasp plug')
-    server.set_aborted()
-    return
+    # return plug to original location
+    cart_space_goal.ik_seed = get_action_seed('pr2_plugs_configuration/return_plug_seed')
+    pose_plug_gripper = fromMsg(goal.gripper_to_plug_grasp).Inverse()  
+    pose_base_plug = fromMsg(goal.base_to_plug)
+    pose_gripper_wrist = fromMsg(TFUtil.wait_and_lookup('r_gripper_tool_frame', 'r_wrist_roll_link').pose)
+    cart_space_goal.pose.pose = toMsg(pose_base_plug * pose_plug_gripper * pose_gripper_wrist)
+    cart_space_goal.pose.header.stamp = rospy.Time.now()
+    cart_space_goal.pose.header.frame_id = "base_link"
+    cart_space_goal.move_duration = rospy.Duration(3.0)
+    if cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
+      rospy.logerr('Failed to return plug to location where the plug was found when fetching it.')
+      server.set_aborted()
+      return
+
+    # check if plug in correct location
+    pose_base_gripper_measured = fromMsg(TFUtil.wait_and_lookup('base_link', 'r_gripper_tool_frame', rospy.Time.now()).pose)  
+    pose_base_gripper_desired = pose_base_plug * pose_plug_gripper
+    diff = pose_base_gripper_measured.Inverse() * pose_base_gripper_desired
+    error = diff.p.Norm()
+    (r, p, y) = diff.M.GetRPY()
+    error += (r + p + y)/10.0
+    rospy.loginfo("Diff between desired and actual plug storing poses = %f"%error)
 
   # open gripper
   rospy.loginfo("Open gripper...")  
@@ -105,7 +123,7 @@ def execute_cb(goal):
   cart_space_goal.pose.header.frame_id = "base_link"
   cart_space_goal.move_duration = rospy.Duration(3.0)
   if cart_space_client.send_goal_and_wait(cart_space_goal, rospy.Duration(20.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    rospy.logerr('Failed to release plug')
+    rospy.logerr('Failed to move arm away from where the plug got released')
     server.set_aborted()
     return
 

@@ -1,5 +1,5 @@
-# where the plug is in the gripper
-geometry_msgs/Pose gripper_to_plug
+# where the plug is in the gripper when we grasped it
+geometry_msgs/Pose gripper_to_plug_grasp
 # where to stow the plug on the base
 geometry_msgs/Pose base_to_plug
 ---
