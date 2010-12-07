@@ -36,7 +36,7 @@
   <depend package="pr2_arm_move_ik" />
   <depend package="costmap_2d"/>
   <depend package="base_local_planner"/>
-
+  <depend package="pr2_image_snapshot_recorder"/>
   <depend package="smach"/>
   <depend package="smach_ros"/>
 
