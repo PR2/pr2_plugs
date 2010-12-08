@@ -1,3 +1,4 @@
+bool record_image
 ---
 geometry_msgs/PoseStamped plug_pose
 ---

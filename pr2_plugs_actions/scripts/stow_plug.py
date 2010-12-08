@@ -47,7 +47,7 @@ import geometry_msgs.msg
 from trajectory_msgs.msg import JointTrajectoryPoint
 from math import pi
 from pr2_plugs_actions.tf_util import TFUtil
-from pr2_image_snapshot_recorder.msg import ImageSnapshotAction, ImageSnapshotGoal
+
 
 #server actionlib.simple_action_server.SimpleActionServer
 
@@ -132,17 +132,9 @@ def execute_cb(goal):
   rospy.loginfo("Detect plug on base...")
   start_time = rospy.Time.now()
   while detect_plug_on_base_client.send_goal_and_wait(DetectPlugOnBaseGoal(), rospy.Duration(120.0), preempt_timeout) != GoalStatus.SUCCEEDED:
-    if rospy.Time.now() > start_time + rospy.Duration(60*5):
+    if rospy.Time.now() > start_time + rospy.Duration(60):
       rospy.logerr("Can't detect plug on base. It is soo dark in here... Giving up, driving away, living on the edge!  But let's take an image to make sure.")
-      image_client = actionlib.SimpleActionClient('image_snapshot', ImageSnapshotAction)
-      if not image_client.wait_for_server(rospy.Duration(20.0)):
-        rospy.logerr("Imagesnapshot server is down.")
-        break
-      image_goal = ImageSnapshotGoal()
-      image_goal.topic_name = 'r_forearm_cam/image_raw'
-      image_goal.num_images = 5
-      image_goal.output_file_name = '/removable/continuous_operation/stow_plug_failure_images.bag'
-      image_client.send_goal_and_wait(image_goal)
+      detect_plug_on_base_client.send_goal_and_wait(DetectPlugOnBaseGoal(record_image=True), rospy.Duration(120.0), preempt_timeout)
       break
     rospy.logerr('Detecting plug on base failed, trying again...')
 

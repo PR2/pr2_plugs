@@ -12,11 +12,11 @@ from actionlib_msgs.msg import *
 import geometry_msgs.msg
 from trajectory_msgs.msg import JointTrajectoryPoint
 from math import pi
-import copy
 import math
 import PyKDL
 from tf_conversions.posemath import fromMsg, toMsg
 from pr2_plugs_actions.tf_util import TFUtil
+from pr2_image_snapshot_recorder.msg import ImageSnapshotAction, ImageSnapshotGoal
 
 
 def to_init_position():
@@ -52,6 +52,18 @@ def execute_cb(goal):
       server.set_aborted()
       return
 
+    if goal.record_image:
+      rospy.loginfo("Recording images of plug on base")
+      image_client = actionlib.SimpleActionClient('image_snapshot', ImageSnapshotAction)
+      if not image_client.wait_for_server(rospy.Duration(20.0)):
+        rospy.logerr("Imagesnapshot server is down.")
+      else:
+        image_goal = ImageSnapshotGoal()
+        image_goal.topic_name = 'r_forearm_cam/image_raw'
+        image_goal.num_images = 5
+        image_goal.output_file_name = '/removable/continuous_operation/stow_plug_failure_images_%s.bag'%str(rospy.Time.now())
+        image_client.send_goal_and_wait(image_goal, rospy.Duration(20.0), preempt_timeout)
+
     # call vision plug detection
     rospy.loginfo("Detecting plug...")
     detect_plug_goal = VisionPlugDetectionGoal()
@@ -70,7 +82,7 @@ def execute_cb(goal):
         return
       error = (pose_base_plug.Inverse() * fromMsg(detect_plug_goal.prior.pose))
       (r, p, y) = error.M.GetRPY()
-      if (math.fabs(r) < 0.8) and (math.fabs(p) < 0.8) and (math.fabs(y) < 0.8) and (math.fabs(error.p[0]) < 0.1) and (math.fabs(error.p[1]) < 0.1) and (math.fabs(error.p[2]) < 0.1):
+      if (math.fabs(r) < 0.8) and (math.fabs(p) < 0.8) and (math.fabs(y) < 0.8) and (math.fabs(error.p[0]) < 0.05) and (math.fabs(error.p[1]) < 0.05) and (math.fabs(error.p[2]) < 0.05):
         to_init_position()
         server.set_succeeded(DetectPlugOnBaseResult(detect_plug_client.get_result().plug_pose))      
         rospy.loginfo("Action server goal finished")  
