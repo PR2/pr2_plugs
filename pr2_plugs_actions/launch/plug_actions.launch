@@ -2,7 +2,7 @@
   <arg name="run_sim" default="1" />
 
   <!-- Application monitor -->
-  <node pkg="pr2_plugs_actions" type="recharge_application_monitor" name="recharge_application_monitor" />
+  <node pkg="pr2_plugs_actions" type="recharge_application_monitor.py" name="recharge_application_monitor" />
 
   <!-- Buffer Server -->
   <node pkg="tf2_ros" type="buffer_server" name="tf2_buffer_server_plugs" output="screen">
