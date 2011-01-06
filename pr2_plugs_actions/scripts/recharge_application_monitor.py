@@ -44,11 +44,10 @@ from pr2_plugs_msgs.msg import EmptyAction, RechargeAction, RechargeGoal, Rechar
 class Monitor():
     def __init__(self):
         self.ac = actionlib.SimpleActionClient('recharge', RechargeAction)        
-        self.ac.wait_for_server()
         self.state = State()
 
         self.app_action = actionlib.SimpleActionServer('recharge_application_monitor', EmptyAction, self.application_cb) 
-        self.app_action = actionlib.SimpleActionServer('recharge_application', RechargeAction, self.recharge_cb) 
+        self.recharge_action = actionlib.SimpleActionServer('recharge_application', RechargeAction, self.recharge_cb) 
 
 
     def recharge_cb(self, goal):
@@ -64,14 +63,16 @@ class Monitor():
         
 
     def application_cb(self, goal):
-        rospy.loginfo('Recharge application became active')
+        rospy.loginfo('Recharge application waiting for recharge nodes to start.')
+        self.ac.wait_for_server()
+        rospy.loginfo('Recharge application became active.')    
         while not rospy.is_shutdown():
             rospy.sleep(0.1)
             if self.app_action.is_preempt_requested():	
                 rospy.loginfo('Preempt requested for recharge application')
                 self.state.stop_working()
                 if self.state.get_state() == 'Plugged':
-                    rospy.loginfo('Unplugging robot to complete preemption of recharge application')
+                    rospy.loginfo('Unplugging robot to complete preemption of recharge application.')
                     unplug_goal = RechargeGoal()
                     unplug_goal.command = RechargeCommand.UNPLUG
                     self.ac.send_goal_and_wait(unplug_goal)
@@ -84,15 +85,15 @@ class State():
         self.preempting = False
         self.lock = threading.Lock()  
     
-    def set_state(state):
+    def set_state(self, state):
         with self.lock:
             self.state = state
 
-    def get_state():
+    def get_state(self):
         with self.lock:
             return self.state
 
-    def stop_working():
+    def stop_working(self):
         with self.lock:
             self.preempting = True
         while not rospy.is_shutdown():
@@ -101,7 +102,7 @@ class State():
                 if self.state != 'Working':
                     return
 
-    def start_working():
+    def start_working(self):
         with self.lock:
             if not self.preempting:
                 self.state = 'Working'
