@@ -53,6 +53,7 @@ class Monitor():
 
     def recharge_cb(self, goal):
         if self.state.start_working():
+            rospy.loginfo('Passing through recharge goal')
             ac.send_goal_and_wait(goal)
             res = ac.get_result()
             if res.state == RechargeState.UNPLUGGED:
@@ -63,11 +64,14 @@ class Monitor():
         
 
     def application_cb(self, goal):
+        rospy.loginfo('Recharge application became active')
         while not rospy.is_shutdown():
             rospy.sleep(0.1)
             if self.app_action.is_preempt_requested():	
+                rospy.loginfo('Preempt requested for recharge application')
                 self.state.stop_working()
                 if self.state.get_state() == 'Plugged':
+                    rospy.loginfo('Unplugging robot to complete preemption of recharge application')
                     unplug_goal = RechargeGoal()
                     unplug_goal.command = RechargeCommand.UNPLUG
                     self.ac.send_goal_and_wait(unplug_goal)
