@@ -88,7 +88,7 @@ def execute_cb(goal):
         rospy.loginfo("Action server goal finished")  
         return
       else:
-        rospy.loginfo('Found the plug, but it is in a different location than I expected.')
+        rospy.loginfo('Found the plug, but it is in a different location than I expected. Error: %f, %f, %f'%(math.fabs(error.p[0]), math.fabs(error.p[1]), math.fabs(error.p[2])))
 
   # Failure
   rospy.logerr("Failed to detect plug on base")      
