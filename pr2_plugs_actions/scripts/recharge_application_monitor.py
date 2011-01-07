@@ -64,15 +64,18 @@ class Monitor():
         original_state = self.state.get_state()
         if self.state.start_working():
             rospy.loginfo('Passing through recharge goal')
-            self.ac.send_goal_and_wait(goal)
-            res = self.ac.get_result()
-            if res.state == RechargeState.UNPLUGGED:
-                self.state.set_state('Unplugged')
-            elif res.state == RechargeState.PLUGGED_IN:
-                self.state.set_state('Plugged')
+            if self.ac.send_goal_and_wait(goal) == actionlib.GoalStatus.SUCCEEDED:
+                if goal.command.command == RechargeCommand.UNPLUG:
+                    rospy.logerr('New state: Unplugged')
+                    self.state.set_state('Unplugged')
+                else:
+                    rospy.logerr('New state: Plugged in')
+                    self.state.set_state('Plugged')
+                self.recharge_action.set_succeeded()
             else:
                 self.state.set_state(original_state)
-        self.recharge_action.set_succeeded()
+                rospy.logerr('Reverting to old state %s'%original_state)
+                self.recharge_action.set_aborted()
         
 
 

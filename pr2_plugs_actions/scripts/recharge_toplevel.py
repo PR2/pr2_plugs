@@ -118,7 +118,8 @@ def main():
             StateMachine.add('SAFETY_TUCK', 
                     SimpleActionState('tuck_arms', TuckArmsAction,
                         goal = TuckArmsGoal(True,True)),
-                    { 'succeeded':'GET_OUTLET_LOCATIONS' })
+                    { 'succeeded':'GET_OUTLET_LOCATIONS',
+                      'aborted':'SAFETY_TUCK'})
             StateMachine.add('GET_OUTLET_LOCATIONS',
                     ServiceState('outlet_locations', GetOutlets,
                         response_slots=['poses']),
