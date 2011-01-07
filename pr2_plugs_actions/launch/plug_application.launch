@@ -6,6 +6,6 @@
 
 
   <!-- Recharge application -->
-  <node pkg="pr2_plugs_actions" type="recharge_application_monitor.py" name="recharge_application_monitor" />
+  <node pkg="pr2_plugs_actions" type="recharge_application.py" name="recharge_application" />
 
 </launch>
