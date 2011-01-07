@@ -38,12 +38,13 @@ import rospy
 import actionlib
 import threading
 
-from pr2_plugs_msgs.msg import EmptyAction, RechargeAction, RechargeGoal, RechargeCommand
+from pr2_plugs_msgs.msg import EmptyAction, RechargeAction, RechargeGoal, RechargeCommand, RechargeState
 
 
 class Monitor():
     def __init__(self):
         self.ac = actionlib.SimpleActionClient('recharge', RechargeAction)        
+        self.ac.wait_for_server()
         self.state = State()
 
         self.app_action = actionlib.SimpleActionServer('recharge_application_monitor', EmptyAction, self.application_cb) 
@@ -52,19 +53,26 @@ class Monitor():
 
     def recharge_cb(self, goal):
         if self.state.start_working():
+            if goal.command.command == RechargeCommand.PLUG_IN and self.state.get_state() != 'Unplugged':
+                rospy.logerr('Cannot plug in when robot is not unplugged. Not passing through command.')
+                self.recharge_action.set_aborted()
+                return
+            if goal.command.command == RechargeCommand.UNPLUG and self.state.get_state() != 'Plugged':
+                rospy.logerr('Cannot unplug when robot is not plugged in. Not passing through command.')
+                self.recharge_action.set_aborted()
+                return
             rospy.loginfo('Passing through recharge goal')
-            ac.send_goal_and_wait(goal)
-            res = ac.get_result()
+            self.ac.send_goal_and_wait(goal)
+            res = self.ac.get_result()
             if res.state == RechargeState.UNPLUGGED:
                 self.state.set_state('Unplugged')
             if res.state == RechargeState.PLUGGED_IN:
                 self.state.set_state('Plugged')
-
+        self.recharge_action.set_succeeded()
         
 
+
     def application_cb(self, goal):
-        rospy.loginfo('Recharge application waiting for recharge nodes to start.')
-        self.ac.wait_for_server()
         rospy.loginfo('Recharge application became active.')    
         while not rospy.is_shutdown():
             rospy.sleep(0.1)
@@ -74,8 +82,9 @@ class Monitor():
                 if self.state.get_state() == 'Plugged':
                     rospy.loginfo('Unplugging robot to complete preemption of recharge application.')
                     unplug_goal = RechargeGoal()
-                    unplug_goal.command = RechargeCommand.UNPLUG
+                    unplug_goal.command.command = RechargeCommand.UNPLUG
                     self.ac.send_goal_and_wait(unplug_goal)
+                self.app_action.set_succeeded(self.ac.get_result())
                 return
                 
 
