@@ -1,0 +1,11 @@
+<launch>
+  <!-- Plugging in actions -->
+  <include file="$(find pr2_plugs_actions)/launch/plug_actions.launch">
+    <arg name="run_sim" value="false" />
+  </include>
+
+
+  <!-- Recharge application -->
+  <node pkg="pr2_plugs_actions" type="recharge_application_monitor.py" name="recharge_application_monitor" />
+
+</launch>
