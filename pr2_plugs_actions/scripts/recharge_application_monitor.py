@@ -52,15 +52,16 @@ class Monitor():
 
 
     def recharge_cb(self, goal):
+        if goal.command.command == RechargeCommand.PLUG_IN and self.state.get_state() != 'Unplugged':
+            rospy.logerr('Cannot plug in when robot is not unplugged. Not passing through command.')
+            self.recharge_action.set_aborted()
+            return
+        if goal.command.command == RechargeCommand.UNPLUG and self.state.get_state() != 'Plugged':
+            rospy.logerr('Cannot unplug when robot is not plugged in. Not passing through command.')
+            self.recharge_action.set_aborted()
+            return
+
         if self.state.start_working():
-            if goal.command.command == RechargeCommand.PLUG_IN and self.state.get_state() != 'Unplugged':
-                rospy.logerr('Cannot plug in when robot is not unplugged. Not passing through command.')
-                self.recharge_action.set_aborted()
-                return
-            if goal.command.command == RechargeCommand.UNPLUG and self.state.get_state() != 'Plugged':
-                rospy.logerr('Cannot unplug when robot is not plugged in. Not passing through command.')
-                self.recharge_action.set_aborted()
-                return
             rospy.loginfo('Passing through recharge goal')
             self.ac.send_goal_and_wait(goal)
             res = self.ac.get_result()
