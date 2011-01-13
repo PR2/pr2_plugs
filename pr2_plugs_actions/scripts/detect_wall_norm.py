@@ -62,7 +62,7 @@ class DetectWallNormServer:
     self.projector_client = dynamic_reconfigure.client.Client('camera_synchronizer_node')
     self.projector_on = {'narrow_stereo_trig_mode': 3}
     self.projector_off = {'narrow_stereo_trig_mode': 4}
-    self.projector_sub = rospy.Subscriber("projector_controller/rising_edge_timestamps", roslib.msg.Header, self.projector_cb)
+    self.projector_sub = rospy.Subscriber("projector_controller/rising_edge_timestamps", rospy.Header, self.projector_cb)
 
 
 
