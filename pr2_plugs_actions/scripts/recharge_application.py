@@ -36,103 +36,61 @@ roslib.load_manifest('pr2_plugs_actions')
 
 import rospy
 import actionlib
-import threading
+from random import choice
 
 from pr2_plugs_msgs.msg import EmptyAction, RechargeAction, RechargeGoal, RechargeCommand, RechargeState
+from pr2_msgs.msg import PowerState
 
-
-class Monitor():
+class Application():
     def __init__(self):
-        self.ac = actionlib.SimpleActionClient('recharge', RechargeAction)        
-        self.ac.wait_for_server()
-        self.state = State()
+        self.charging_locations = rospy.get_param("~charging_locations", ['wim', 'whiteboard', 'james'])
+        self.max_charge_level = rospy.get_param("~max_charge_level", 95)
+        self.charge_level = 0
+        self.power_sub = rospy.Subscriber('power_state', PowerState, self.power_cb)
 
-        self.app_action = actionlib.SimpleActionServer('recharge_application_monitor', EmptyAction, self.application_cb) 
-        self.recharge_action = actionlib.SimpleActionServer('recharge_application', RechargeAction, self.recharge_cb) 
+        self.recharge = actionlib.SimpleActionClient('recharge', RechargeAction)        
+        self.recharge.wait_for_server()
 
+        self.app_action = actionlib.SimpleActionServer('recharge_application_server', EmptyAction, self.application_cb) 
 
-    def recharge_cb(self, goal):
-        if goal.command.command == RechargeCommand.PLUG_IN and self.state.get_state() != 'Unplugged':
-            rospy.logerr('Cannot plug in when robot is not unplugged. Not passing through command.')
-            self.recharge_action.set_aborted()
-            return
-        if goal.command.command == RechargeCommand.UNPLUG and self.state.get_state() != 'Plugged':
-            rospy.logerr('Cannot unplug when robot is not plugged in. Not passing through command.')
-            self.recharge_action.set_aborted()
-            return
-
-        original_state = self.state.get_state()
-        if self.state.start_working():
-            rospy.loginfo('Passing through recharge goal')
-            if self.ac.send_goal_and_wait(goal) == actionlib.GoalStatus.SUCCEEDED:
-                if goal.command.command == RechargeCommand.UNPLUG:
-                    rospy.logerr('New state: Unplugged')
-                    self.state.set_state('Unplugged')
-                else:
-                    rospy.logerr('New state: Plugged in')
-                    self.state.set_state('Plugged')
-                self.recharge_action.set_succeeded()
-            else:
-                self.state.set_state(original_state)
-                rospy.logerr('Reverting to old state %s'%original_state)
-                self.recharge_action.set_aborted()
-        
+    def power_cb(self, msg):
+        self.charge_level = msg.relative_capacity
 
 
     def application_cb(self, goal):
         rospy.loginfo('Recharge application became active.')    
+        # first plug in robot
         while not rospy.is_shutdown():
             rospy.sleep(0.1)
-            if self.app_action.is_preempt_requested():	
-                rospy.loginfo('Preempt requested for recharge application')
-                self.state.stop_working()
-                rospy.loginfo('Unplugging if needed')
-                if self.state.get_state() == 'Plugged':
-                    rospy.loginfo('Unplugging robot to complete preemption of recharge application.')
-                    unplug_goal = RechargeGoal()
-                    unplug_goal.command.command = RechargeCommand.UNPLUG
-                    self.ac.send_goal_and_wait(unplug_goal)
-                self.app_action.set_succeeded(self.ac.get_result())
-                return
-                
-
-class State():
-    def __init__(self):
-        self.state = 'Unplugged'
-        self.preempting = False
-        self.lock = threading.Lock()  
-    
-    def set_state(self, state):
-        with self.lock:
-            self.state = state
-
-    def get_state(self):
-        with self.lock:
-            return self.state
-
-    def stop_working(self):
-        with self.lock:
-            self.preempting = True
+            goal = RechargeGoal()
+            goal.command.plug_id = choice(self.charging_locations)
+            goal.command.command = RechargeCommand.PLUG_IN
+            if self.recharge.send_goal_and_wait(goal) == actionlib.GoalStatus.SUCCEEDED:
+                break
+            
+        # then monitor charge level. 
+        # only if robot is fully charged preemption will be handeled
         while not rospy.is_shutdown():
             rospy.sleep(0.1)
-            with self.lock:
-                if self.state != 'Working':
-                    return
+            if self.charge_level > self.max_charge_level and self.app_action.is_preempt_requested():
+                break
 
-    def start_working(self):
-        with self.lock:
-            if not self.preempting:
-                self.state = 'Working'
-                return True
-            else:
-                return False
+        # unplug robot
+        goal = RechargeGoal()
+        goal.command.command = RechargeCommand.UNPLUG
+        if self.recharge.send_goal_and_wait(goal) == actionlib.GoalStatus.SUCCEEDED:
+            self.app_action.set_preempted()
+        else:
+            self.app_action.set_aborted()
+
+
 
 
 
 def main():
     rospy.init_node("recharge_application_monitor")
 
-    m = Monitor()
+    a = Application()
     rospy.spin()
     
 
