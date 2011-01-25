@@ -39,40 +39,34 @@ import actionlib
 from random import choice
 
 from pr2_plugs_msgs.msg import EmptyAction, RechargeAction, RechargeGoal, RechargeCommand, RechargeState
-from pr2_msgs.msg import PowerState
 
 class Application():
     def __init__(self):
         self.charging_locations = rospy.get_param("~charging_locations", ['wim', 'whiteboard', 'james'])
         self.max_charge_level = rospy.get_param("~max_charge_level", 95)
         self.charge_level = 0
-        self.power_sub = rospy.Subscriber('power_state', PowerState, self.power_cb)
 
         self.recharge = actionlib.SimpleActionClient('recharge', RechargeAction)        
         self.recharge.wait_for_server()
 
         self.app_action = actionlib.SimpleActionServer('recharge_application_server', EmptyAction, self.application_cb) 
 
-    def power_cb(self, msg):
-        self.charge_level = msg.relative_capacity
-
-
     def application_cb(self, goal):
         rospy.loginfo('Recharge application became active.')    
         # first plug in robot
-        while not rospy.is_shutdown():
+        goal = RechargeGoal()
+        goal.command.plug_id = choice(self.charging_locations)
+        goal.command.command = RechargeCommand.PLUG_IN
+        while not rospy.is_shutdown() and self.recharge.send_goal_and_wait(goal) != actionlib.GoalStatus.SUCCEEDED
             rospy.sleep(0.1)
-            goal = RechargeGoal()
-            goal.command.plug_id = choice(self.charging_locations)
-            goal.command.command = RechargeCommand.PLUG_IN
-            if self.recharge.send_goal_and_wait(goal) == actionlib.GoalStatus.SUCCEEDED:
-                break
+            if self.app_action.is_preempt_requested():
+                self.app_action.set_preempted()
+                return
             
-        # then monitor charge level. 
-        # only if robot is fully charged preemption will be handeled
+        # check for preemption while plugged in
         while not rospy.is_shutdown():
             rospy.sleep(0.1)
-            if self.charge_level > self.max_charge_level and self.app_action.is_preempt_requested():
+            if self.app_action.is_preempt_requested():
                 break
 
         # unplug robot
