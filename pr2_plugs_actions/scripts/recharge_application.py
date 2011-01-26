@@ -43,8 +43,6 @@ from pr2_plugs_msgs.msg import EmptyAction, RechargeAction, RechargeGoal, Rechar
 class Application():
     def __init__(self):
         self.charging_locations = rospy.get_param("~charging_locations", ['wim', 'whiteboard', 'james'])
-        self.max_charge_level = rospy.get_param("~max_charge_level", 95)
-        self.charge_level = 0
 
         self.recharge = actionlib.SimpleActionClient('recharge', RechargeAction)        
         self.recharge.wait_for_server()
@@ -55,9 +53,9 @@ class Application():
         rospy.loginfo('Recharge application became active.')    
         # first plug in robot
         goal = RechargeGoal()
-        goal.command.plug_id = choice(self.charging_locations)
         goal.command.command = RechargeCommand.PLUG_IN
-        while not rospy.is_shutdown() and self.recharge.send_goal_and_wait(goal) != actionlib.GoalStatus.SUCCEEDED
+        while not rospy.is_shutdown() and self.recharge.send_goal_and_wait(goal) != actionlib.GoalStatus.SUCCEEDED:
+            goal.command.plug_id = choice(self.charging_locations)
             rospy.sleep(0.1)
             if self.app_action.is_preempt_requested():
                 self.app_action.set_preempted()
