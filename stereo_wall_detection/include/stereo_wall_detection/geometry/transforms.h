@@ -86,7 +86,7 @@ namespace cloud_geometry
                                         Eigen::Matrix4d &transformation);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /** \brief Transform a 3D point using a given 4x4 rigid transformation
+    /** \brief eigen2_Transform a 3D point using a given 4x4 rigid transformation
       * \param point_in the input point
       * \param point_out the resultant transformed point
       * \param transform the 4x4 rigid transformation
@@ -100,7 +100,7 @@ namespace cloud_geometry
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /** \brief Transform a set of 3D points using a given 4x4 rigid transformation
+    /** \brief eigen2_Transform a set of 3D points using a given 4x4 rigid transformation
       * \param points_in the input points
       * \param points_out the resultant transformed points
       * \param transform the 4x4 rigid transformation

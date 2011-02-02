@@ -252,8 +252,8 @@ class PlanarFit
       resp.wall_point.point.y = centroid.y;
       resp.wall_point.point.z = centroid.z;
       // Convert to quaternion
-      Eigen::AngleAxis<float> aa (acos (coeff[0]), Eigen::Vector3f (0, -coeff[2], coeff[1]));
-      Eigen::Quaternion<float> q (aa);
+      Eigen::eigen2_AngleAxisf aa (acos (coeff[0]), Eigen::Vector3f (0, -coeff[2], coeff[1]));
+      Eigen::eigen2_Quaternion<float> q (aa);
 
       publishNormal (centroid, q, cloud_msg_local.header, 0.1);
       ROS_INFO("Found wall at %f %f %f with normal: %f %f %f in frame %s",
@@ -325,7 +325,7 @@ class PlanarFit
       * \param width the width of the normal lines
       */
     void
-      publishNormal (const geometry_msgs::Point32 &position, Eigen::Quaternion<float> orientation, const roslib::Header &header, double length)
+      publishNormal (const geometry_msgs::Point32 &position, Eigen::eigen2_Quaternion<float> orientation, const roslib::Header &header, double length)
     {
       visualization_msgs::Marker marker;
       marker.header.frame_id = header.frame_id;
