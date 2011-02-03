@@ -37,6 +37,7 @@ roslib.load_manifest('pr2_plugs_actions')
 import rospy
 import actionlib
 from random import choice
+import battery
 
 from pr2_plugs_msgs.msg import EmptyAction, RechargeAction, RechargeGoal, RechargeCommand, RechargeState
 
@@ -49,32 +50,62 @@ class Application():
 
         self.app_action = actionlib.SimpleActionServer('recharge_application_server', EmptyAction, self.application_cb) 
 
+    def plug_in(self):
+        if self.state == 'unplugged':
+            goal = RechargeGoal()
+            goal.command.command = RechargeCommand.PLUG_IN
+            goal.command.plug_id = choice(self.charging_locations)
+            res = self.recharge.send_goal_and_wait(goal) == actionlib.GoalStatus.SUCCEEDED
+            if res:
+                self.state = 'plugged_in'
+            return res
+        else:
+            rospy.logerr('Calling plug_in when robot is not unplugged')
+            return False
+
+
+    def unplug(self):
+        if self.state == 'plugged_in':
+            goal = RechargeGoal()
+            goal.command.command = RechargeCommand.UNPLUG
+            self.recharge.send_goal_and_wait(goal)
+            self.state = 'unplugged'
+        else:
+            rospy.logerr('Calling unplug when robot is not plugged in')
+
+
+
     def application_cb(self, goal):
         rospy.loginfo('Recharge application became active.')    
-        # first plug in robot
-        goal = RechargeGoal()
-        goal.command.command = RechargeCommand.PLUG_IN
-        while not rospy.is_shutdown() and self.recharge.send_goal_and_wait(goal) != actionlib.GoalStatus.SUCCEEDED:
-            goal.command.plug_id = choice(self.charging_locations)
-            rospy.sleep(0.1)
-            if self.app_action.is_preempt_requested():
-                self.app_action.set_preempted()
-                return
-            
+        plugged_in = False
+        self.state = 'unplugged'
+
+        # plug in robot
+        while rospy.is_shutdown and not plugged_in and not self.app_action.is_preempt_requested():
+            if self.plug_in():
+                if not self.app_action.is_preempt_requested():
+                    rospy.loginfo('I think I successfully plugged myself in. But need to verify this...')
+                    battery_monitor = battery.Battery()
+                    if battery_monitor.get_state() == 'charging':
+                        rospy.loginfo("Yes, we're plugged in, I can feel my batteries getting charged.") 
+                        plugged_in = True
+                    else:
+                        rospy.logerr('Plugging in failed even though the action claimed it succeeded. Will try again, but first need to unplug.') 
+                        self.unplug()
+            else:
+                rospy.logerr("Plugging reported failure. Trying again")
+
+
         # check for preemption while plugged in
         while not rospy.is_shutdown():
             rospy.sleep(0.1)
             if self.app_action.is_preempt_requested():
                 break
 
-        # unplug robot
-        goal = RechargeGoal()
-        goal.command.command = RechargeCommand.UNPLUG
-        if self.recharge.send_goal_and_wait(goal) == actionlib.GoalStatus.SUCCEEDED:
-            self.app_action.set_preempted()
-        else:
-            self.app_action.set_aborted()
-
+        # unplug robot if it is plugged in
+        if self.state == 'plugged_in':
+            self.unplug()
+        self.app_action.set_preempted()
 
 
 
