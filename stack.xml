@@ -5,7 +5,7 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/pr2_plugs</url>
   <depend stack="common" /> <!-- actionlib, bfl -->
-  <depend stack="common_msgs" /> <!-- sensor_msgs, actionlib_msgs, geometry_msgs -->
+  <depend stack="common_msgs" /> <!-- sensor_msgs, actionlib_msgs, geometry_msgs, visualization_msgs -->
   <depend stack="driver_common" /> <!-- dynamic_reconfigure -->
   <depend stack="executive_smach" /> <!-- smach_ros, smach -->
   <depend stack="geometry" /> <!-- tf, kdl, angles, tf_conversions, eigen -->
@@ -16,9 +16,9 @@
   <depend stack="pr2_common_actions" /> <!-- joint_trajectory_action_tools, joint_trajectory_generator, pr2_tuck_arms_action, pr2_common_action_msgs, pr2_arm_move_ik -->
   <depend stack="pr2_controllers" /> <!-- pr2_controllers_msgs -->
   <depend stack="pr2_mechanism" /> <!-- pr2_controller_manager -->
-  <depend stack="ros" /> <!-- std_msgs, std_srvs, rospy, roscpp -->
+  <depend stack="ros" />
+  <depend stack="ros_comm" /> <!-- dynamic_reconfigure, pr2_controller_manager, std_srvs, roscpp, costmap_2d, std_msgs, pr2_common_action_msgs, actionlib, sensor_msgs, rosbag, move_base_msgs, geometry_msgs, pr2_msgs, visualization_msgs, tf, rospy, base_local_planner, actionlib_msgs, pr2_controllers_msgs -->
   <depend stack="vision_opencv" /> <!-- opencv2, image_geometry, cv_bridge -->
-  <depend stack="visualization_common" /> <!-- visualization_msgs -->
   <depend stack="wg_pr2_apps" /> <!-- wg_pr2_2dnav -->
 
 </stack>
