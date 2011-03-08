@@ -47,7 +47,13 @@ from pr2_plugs_msgs.msg import OutletPose
 
 def serve_plug_locations(req):
   rospy.loginfo("Serving plug locations")
-  poses = rospy.get_param('outlet_approach_poses')
+  try:
+    poses = rospy.get_param('outlet_approach_poses')
+  except:
+    print 'no poses'
+    poses = {}
+  if not 'local' in poses:
+    poses['local'] = {'position':[0,0,0], 'orientation': [0,0,0,0]}
   print poses
 
   resp = GetOutletsResponse()
