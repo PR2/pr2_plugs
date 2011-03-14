@@ -32,7 +32,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import roslib
-roslib.load_manifest('pr2_plugs_executive')
+roslib.load_manifest('pr2_plugs_actions')
 
 import rospy
 from pr2_plugs_msgs.msg import *
@@ -43,21 +43,11 @@ import smach
 def main():
   rospy.init_node("plugs_app_test")
 
-
-
-  # Set initial state
-#  intro_client = smach_ros.IntrospectionClient()
-#  injected_ud = smach.UserData()
-#  init_set = intro_client.set_initial_state('/recharge','/RECHARGE',['NAVIGATE_TO_OUTLET'],injected_ud)
-#  init_set = intro_client.set_initial_state('/recharge','/RECHARGE/NAVIGATE_TO_OUTLET',['UNTUCK_AT_OUTLET'],injected_ud)
-
   # publisher for commands
   pub = rospy.Publisher('recharge', RechargeCommand)
   rospy.sleep(3)
 
   cmd = RechargeCommand()
-  #cmd.plug_id = 'phasespace'
-  #cmd.plug_id = 'whiteboard'
   cmd.plug_id = 'local'
   cmd.command = RechargeCommand.PLUG_IN
   pub.publish(cmd)
