@@ -52,7 +52,7 @@ def main():
 #  init_set = intro_client.set_initial_state('/recharge','/RECHARGE/NAVIGATE_TO_OUTLET',['UNTUCK_AT_OUTLET'],injected_ud)
 
   # publisher for commands
-  pub = rospy.Publisher('recharge_command', RechargeCommand)
+  pub = rospy.Publisher('recharge', RechargeCommand)
   rospy.sleep(3)
 
   cmd = RechargeCommand()
