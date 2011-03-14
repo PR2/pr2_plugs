@@ -32,9 +32,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import roslib
-roslib.load_manifest('pr2_plugs_executive')
-
+roslib.load_manifest('pr2_plugs_actions')
 import rospy
+import smach
 from pr2_plugs_msgs.msg import *
 
 
@@ -42,14 +42,8 @@ def main():
   rospy.init_node("plugs_app_test")
 
   # publisher for commands
-  pub = rospy.Publisher('recharge_command', RechargeCommand)
+  pub = rospy.Publisher('recharge', RechargeCommand)
   rospy.sleep(3)
-
-  import smach
-#  intro_client = smach.IntrospectionClient()
-
-  # Set initial state
-#  init_set = intro_client.set_initial_state('/recharge','/RECHARGE',['PROCESS_RECHARGE_COMMAND'],timeout = rospy.Duration(10.0))
 
   cmd = RechargeCommand()
   cmd.command = RechargeCommand.UNPLUG
