@@ -117,7 +117,7 @@ def main():
                         'false': 'SAFETY_TUCK'})
             StateMachine.add('SAFETY_TUCK', 
                     SimpleActionState('tuck_arms', TuckArmsAction,
-                        goal = TuckArmsGoal(True,True)),
+                        goal = TuckArmsGoal(False,True)),
                     { 'succeeded':'GET_OUTLET_LOCATIONS',
                       'aborted':'SAFETY_TUCK'})
             StateMachine.add('GET_OUTLET_LOCATIONS',

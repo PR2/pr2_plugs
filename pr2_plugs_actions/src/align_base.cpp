@@ -53,7 +53,9 @@ AlignBaseAction::AlignBaseAction() :
 {
   ROS_INFO("Waiting for action servers");
   wall_detector_.waitForServer();
+  ROS_INFO("Wall Detector started");
   move_base_omnidirectional_.waitForServer();
+  ROS_INFO("Move base omni started");
 };
 
 

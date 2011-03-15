@@ -47,8 +47,10 @@ class OutletSearchState(State):
         # Create action clients
         self.align_base_client = actionlib.SimpleActionClient('align_base', AlignBaseAction)
         self.align_base_client.wait_for_server()
+        rospy.loginfo("done waiting for align_base")
         self.vision_detect_outlet_client = actionlib.SimpleActionClient('vision_outlet_detection', VisionOutletDetectionAction)
         self.vision_detect_outlet_client.wait_for_server()
+        rospy.loginfo("done waiting for vision_detect_outlet")
 
     def execute(self,ud):
         """Iterate across a set of offsets to find the outlet"""
