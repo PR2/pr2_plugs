@@ -75,7 +75,7 @@ class DetectWallNormServer:
     point_head_goal.target.point.x = goal.look_point.point.x
     point_head_goal.target.point.y = goal.look_point.point.y
     point_head_goal.target.point.z = goal.look_point.point.z
-    point_head_goal.pointing_frame = 'head_pan_link'
+    point_head_goal.pointing_frame = 'head_tilt_link'
     point_head_goal.pointing_axis.x = 1
     point_head_goal.pointing_axis.y = 0
     point_head_goal.pointing_axis.z = 0
