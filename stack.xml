@@ -7,17 +7,19 @@
   <depend stack="common" /> <!-- actionlib, bfl -->
   <depend stack="common_msgs" /> <!-- sensor_msgs, actionlib_msgs, geometry_msgs, visualization_msgs -->
   <depend stack="driver_common" /> <!-- dynamic_reconfigure -->
+  <depend stack="eigen" /> <!-- eigen -->
   <depend stack="executive_smach" /> <!-- smach_ros, smach -->
-  <depend stack="geometry" /> <!-- tf, kdl, angles, tf_conversions, eigen -->
+  <depend stack="geometry" /> <!-- tf, angles, tf_conversions -->
   <depend stack="geometry_experimental" /> <!-- tf2_geometry_msgs, tf2_ros -->
   <depend stack="image_common" /> <!-- image_transport -->
   <depend stack="navigation" /> <!-- move_base_msgs, base_local_planner, costmap_2d -->
+  <depend stack="orocos_kinematics_dynamics" /> <!-- kdl -->
   <depend stack="pr2_common" /> <!-- pr2_msgs -->
   <depend stack="pr2_common_actions" /> <!-- joint_trajectory_action_tools, pr2_common_action_msgs, pr2_arm_move_ik -->
   <depend stack="pr2_controllers" /> <!-- pr2_controllers_msgs -->
   <depend stack="pr2_mechanism" /> <!-- pr2_controller_manager -->
   <depend stack="ros" />
-  <depend stack="ros_comm" /> <!-- dynamic_reconfigure, pr2_controller_manager, std_srvs, roscpp, costmap_2d, std_msgs, pr2_common_action_msgs, actionlib, sensor_msgs, rosbag, move_base_msgs, geometry_msgs, pr2_msgs, visualization_msgs, tf, rospy, base_local_planner, actionlib_msgs, pr2_controllers_msgs -->
+  <depend stack="ros_comm" /> <!-- rospy, rosbag, std_msgs, roscpp, std_srvs -->
   <depend stack="vision_opencv" /> <!-- opencv2, image_geometry, cv_bridge -->
 
 </stack>
