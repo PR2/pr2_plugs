@@ -36,6 +36,7 @@ roslib.load_manifest('pr2_plugs_actions')
 
 import rospy
 from pr2_plugs_msgs.msg import *
+import actionlib
 
 import smach_ros
 import smach
@@ -44,15 +45,19 @@ def main():
   rospy.init_node("plugs_app_test")
 
   # publisher for commands
-  pub = rospy.Publisher('recharge', RechargeCommand)
-  rospy.sleep(3)
+  client = actionlib.SimpleActionClient('recharge', RechargeAction)
+  client.wait_for_server(rospy.Duration(3.0))
 
+  goal = RechargeGoal()
   cmd = RechargeCommand()
   cmd.plug_id = 'local'
   cmd.command = RechargeCommand.PLUG_IN
-  pub.publish(cmd)
-  
-  rospy.sleep(3)
+  goal.command = cmd
+  client.send_goal(goal)
+
+  client.wait_for_result()
+
+  print client.get_result()
 
 if __name__ == "__main__":
   main()
