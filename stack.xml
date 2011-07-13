@@ -1,5 +1,5 @@
 <stack>
-  <description brief="pr2_plugs">The pr2_plugs stack provides the low level actions for autonomously plugging the PR2 into a standard wall outlet.</description>
+  <description brief="pr2_plugs">The pr2_plugs stack provides the low level actions for autonomously plugging the PR2 into a standard wall outlet.</description> 
   <author>Maintained by Wim Meeussen and Melonee Wise</author>
   <license>BSD</license>  
   <review status="unreviewed" notes=""/>
