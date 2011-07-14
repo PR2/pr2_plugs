@@ -49,7 +49,7 @@ namespace cloud_geometry
 		  Eigen::Matrix4d &transformation)
   {
 
-	  assert (pc_a_.get_points_size()==pc_b_.get_points_size());
+	  assert (pc_a_.points.size()==pc_b_.points.size());
 
 	  sensor_msgs::PointCloud pc_a = pc_a_;
 	  sensor_msgs::PointCloud pc_b = pc_b_;
@@ -61,13 +61,13 @@ namespace cloud_geometry
 	  nearest::computeCentroid(pc_a, centroid_a);
 	  nearest::computeCentroid(pc_b, centroid_b);
 
-	  for (size_t i=0;i<pc_a.get_points_size();++i) {
+	  for (size_t i=0;i<pc_a.points.size();++i) {
 		  pc_a.points[i].x -= centroid_a.x;
 		  pc_a.points[i].y -= centroid_a.y;
 		  pc_a.points[i].z -= centroid_a.z;
 	  }
 
-	  for (size_t i=0;i<pc_b.get_points_size();++i) {
+	  for (size_t i=0;i<pc_b.points.size();++i) {
 		  pc_b.points[i].x -= centroid_b.x;
 		  pc_b.points[i].y -= centroid_b.y;
 		  pc_b.points[i].z -= centroid_b.z;
@@ -77,7 +77,7 @@ namespace cloud_geometry
 	  Eigen::Matrix3d correlation;
 	  correlation.setZero();
 
-	  for (size_t i=0;i<pc_a.get_points_size();++i) {
+	  for (size_t i=0;i<pc_a.points.size();++i) {
 		  correlation(0,0) += pc_a.points[i].x * pc_b.points[i].x;
 		  correlation(0,1) += pc_a.points[i].x * pc_b.points[i].y;
 		  correlation(0,2) += pc_a.points[i].x * pc_b.points[i].z;
@@ -91,7 +91,7 @@ namespace cloud_geometry
 		  correlation(2,2) += pc_a.points[i].z * pc_b.points[i].z;
 	  }
 
-	  Eigen::SVD<Eigen::Matrix3d> svd = correlation.svd();
+	  Eigen::JacobiSVD<Eigen::Matrix3d> svd(correlation);
 
 	  Eigen::Matrix3d Ut = svd.matrixU().transpose();
 	  Eigen::Matrix3d V = svd.matrixV();
@@ -104,7 +104,7 @@ namespace cloud_geometry
 	  }
 
 	  transformation.setZero();
-	  transformation.corner<3,3>(Eigen::TopLeft) = X;
+	  transformation.topLeftCorner<3,3>() = X;
 	  transformation(3,3) = 1;
 
 	  sensor_msgs::PointCloud pc_rotated_a;
@@ -145,13 +145,13 @@ namespace cloud_geometry
 	  nearest::computeCentroid(pc_a, centroid_a);
 	  nearest::computeCentroid(pc_b, centroid_b);
 
-	  for (size_t i=0;i<pc_a.get_points_size();++i) {
+	  for (size_t i=0;i<pc_a.points.size();++i) {
 		  pc_a.points[i].x -= centroid_a.x;
 		  pc_a.points[i].y -= centroid_a.y;
 		  pc_a.points[i].z -= centroid_a.z;
 	  }
 
-	  for (size_t i=0;i<pc_b.get_points_size();++i) {
+	  for (size_t i=0;i<pc_b.points.size();++i) {
 		  pc_b.points[i].x -= centroid_b.x;
 		  pc_b.points[i].y -= centroid_b.y;
 		  pc_b.points[i].z -= centroid_b.z;
@@ -161,7 +161,7 @@ namespace cloud_geometry
 	  Eigen::Matrix3d correlation;
 	  correlation.setZero();
 
-	  for (size_t i=0;i<pc_a.get_points_size();++i) {
+	  for (size_t i=0;i<pc_a.points.size();++i) {
 		  correlation(0,0) += pc_a.points[i].x * pc_b.points[i].x;
 		  correlation(0,1) += pc_a.points[i].x * pc_b.points[i].y;
 		  correlation(0,2) += pc_a.points[i].x * pc_b.points[i].z;
@@ -175,7 +175,7 @@ namespace cloud_geometry
 		  correlation(2,2) += pc_a.points[i].z * pc_b.points[i].z;
 	  }
 
-	  Eigen::SVD<Eigen::Matrix3d> svd = correlation.svd();
+	  Eigen::JacobiSVD<Eigen::Matrix3d> svd(correlation);
 
 	  Eigen::Matrix3d Ut = svd.matrixU().transpose();
 	  Eigen::Matrix3d V = svd.matrixV();
@@ -188,7 +188,7 @@ namespace cloud_geometry
 	  }
 
 	  transformation.setZero();
-	  transformation.corner<3,3>(Eigen::TopLeft) = X;
+	  transformation.topLeftCorner<3,3>() = X;
 	  transformation(3,3) = 1;
 
 	  sensor_msgs::PointCloud pc_rotated_a;
