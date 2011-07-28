@@ -1,5 +1,5 @@
 <stack>
-  <description brief="pr2_plugs">The pr2_plugs stack provides the low level actions for autonomously plugging the PR2 into a standard wall outlet.</description> 
+  <description brief="pr2_plugs">The pr2_plugs stack provides the low level actions for autonomously plugging the PR2 into a standard wall outlet.</description>
   <author>Maintained by Wim Meeussen and Melonee Wise</author>
   <license>BSD</license>  
   <review status="unreviewed" notes=""/>
@@ -14,6 +14,7 @@
   <depend stack="image_common" /> <!-- image_transport -->
   <depend stack="navigation" /> <!-- move_base_msgs, base_local_planner, costmap_2d -->
   <depend stack="orocos_kinematics_dynamics" /> <!-- kdl -->
+  <depend stack="perception_pcl" /> <!-- pcl_ros -->
   <depend stack="pr2_common" /> <!-- pr2_msgs -->
   <depend stack="pr2_common_actions" /> <!-- joint_trajectory_action_tools, pr2_common_action_msgs, pr2_arm_move_ik -->
   <depend stack="pr2_controllers" /> <!-- pr2_controllers_msgs -->
