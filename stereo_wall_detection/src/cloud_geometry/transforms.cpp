@@ -91,7 +91,8 @@ namespace cloud_geometry
 		  correlation(2,2) += pc_a.points[i].z * pc_b.points[i].z;
 	  }
 
-	  Eigen::JacobiSVD<Eigen::Matrix3d> svd(correlation);
+	  Eigen::JacobiSVD<Eigen::Matrix3d> svd(correlation, 
+            Eigen::ComputeThinU | Eigen::ComputeThinV);
 
 	  Eigen::Matrix3d Ut = svd.matrixU().transpose();
 	  Eigen::Matrix3d V = svd.matrixV();
@@ -175,7 +176,8 @@ namespace cloud_geometry
 		  correlation(2,2) += pc_a.points[i].z * pc_b.points[i].z;
 	  }
 
-	  Eigen::JacobiSVD<Eigen::Matrix3d> svd(correlation);
+	  Eigen::JacobiSVD<Eigen::Matrix3d> svd(correlation,
+            Eigen::ComputeThinU | Eigen::ComputeThinV);
 
 	  Eigen::Matrix3d Ut = svd.matrixU().transpose();
 	  Eigen::Matrix3d V = svd.matrixV();
