@@ -52,7 +52,7 @@
 #include <pcl/features/feature.h>
 #include <pcl/point_types.h>
 
-
+#include <visualization_msgs/Marker.h>
 
 class PlanarFit
 {
@@ -60,19 +60,33 @@ public:
   PlanarFit () : nh_ ("~")
   {
     serv_ = nh_.advertiseService ("detect_wall", &PlanarFit::detect_wall, this);
+
+    // advertise selected points from wall detection algorithm
+    plane_points_ = nh_.advertise<sensor_msgs::PointCloud2>("wall_points", 10);
+    plane_marker_ = nh_.advertise<visualization_msgs::Marker>("wall_marker", 10);
   }
   
   virtual ~PlanarFit () { }
   
   bool detect_wall (stereo_wall_detection::DetectWall::Request &req, stereo_wall_detection::DetectWall::Response &resp)
   {
+    ros::Duration(10).sleep();
     // get pointcloud
-    sensor_msgs::PointCloud2ConstPtr cloud_msg = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("narrow_stereo_textured/points", nh_, ros::Duration(10.0));
+    sensor_msgs::PointCloud2ConstPtr cloud_msg = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("points2", nh_, ros::Duration(10.0));
     if (!cloud_msg){
       ROS_ERROR("Did not receive a pointcloud in 10 seconds");
       return false;
     }
     ROS_INFO("point cloud received");
+
+    double threshold;
+    nh_.param<double>("distance_threshold", threshold, 0.01);
+
+    int tmp_points;
+    // minimum number of inliers; a good detection appears to have over 
+    // 100,000 inliers
+    nh_.param<int>("minimum_points", tmp_points, 20000);
+    size_t min_points = tmp_points;
 
     // find plane in pointcloud
     pcl::PointCloud<pcl::PointXYZ> cloud;
@@ -83,26 +97,88 @@ public:
     seg.setOptimizeCoefficients (true);
     seg.setModelType (pcl::SACMODEL_PLANE);
     seg.setMethodType (pcl::SAC_RANSAC);
-    seg.setDistanceThreshold (0.01);
+    seg.setDistanceThreshold (threshold);
     seg.setInputCloud (cloud.makeShared ());
     seg.segment (*inliers, *coefficients);
     if (inliers->indices.size () == 0) {
       ROS_ERROR ("Could not estimate a planar model for the given dataset.");
       return false;
     }
-    pcl::copyPointCloud(cloud, *inliers, cloud);
+
+    // check for minimum number of inliers in plane; if we have too few, our
+    // detection is bad and we should return an error
+    if( inliers->indices.size() < min_points ) {
+       ROS_ERROR("Too few inliers in deteted plane: %zd", inliers->indices.size());
+       return false;
+    }
+
+    pcl::copyPointCloud(cloud, *inliers, cloud); // add publisher here to see resulting point cloud.
     Eigen::Vector4f centroid;
     pcl::compute3DCentroid(cloud, centroid);
 
+    // publish cloud with detected points for debugging
+    if( plane_points_.getNumSubscribers() > 0 ) {
+      sensor_msgs::PointCloud2 plane_msg;
+      pcl::toROSMsg(cloud, plane_msg); 
+      plane_points_.publish(plane_msg);
+    }
+
+    geometry_msgs::Vector3 normal;
+    normal.x = coefficients->values[0];
+    normal.y = coefficients->values[1];
+    normal.z = coefficients->values[2];
+
+    if( normal.z < 0 ) {
+      // Normal points towards camera; reverse it
+      ROS_WARN("Wall Normal points towards camera frame: %s", 
+        cloud_msg->header.frame_id.c_str());
+      normal.x = -normal.x;
+      normal.y = -normal.y;
+      normal.z = -normal.z;
+    } else {
+      ROS_WARN("Wall normal points away from camera frame: %s", 
+        cloud_msg->header.frame_id.c_str());
+    }
+
     resp.wall_norm.header = cloud_msg->header;
-    resp.wall_norm.vector.x = coefficients->values[0];
-    resp.wall_norm.vector.y = coefficients->values[1];
-    resp.wall_norm.vector.z = coefficients->values[2];
+    resp.wall_norm.vector = normal;
 
     resp.wall_point.header = cloud_msg->header;
     resp.wall_point.point.x = centroid[0];
     resp.wall_point.point.y = centroid[1];
     resp.wall_point.point.z = centroid[2];
+
+
+    // publish Marker vector of wall normal for debugging
+    if( plane_marker_.getNumSubscribers() > 0 ) {
+      visualization_msgs::Marker marker;
+
+      // set up marker
+      marker.header = cloud_msg->header;
+      marker.id = 0;
+      marker.type =   visualization_msgs::Marker::ARROW;
+      marker.action = visualization_msgs::Marker::ADD; // add/modify
+
+      // visible, red marker
+      marker.color.a = 1.0;
+      marker.color.r = 1.0;
+      marker.color.g = 0.0;
+      marker.color.b = 0.0;
+
+      geometry_msgs::Point end;   // vector end
+      end.x = resp.wall_point.point.x + resp.wall_norm.vector.x;
+      end.y = resp.wall_point.point.y + resp.wall_norm.vector.y;
+      end.z = resp.wall_point.point.z + resp.wall_norm.vector.z;
+
+      marker.points.push_back(resp.wall_point.point);
+      marker.points.push_back(end);
+
+      marker.scale.x = 0.05;
+      marker.scale.y = 0.1;
+      //marker.scale.z = 0.1;
+
+      plane_marker_.publish(marker);
+    }
 
     ROS_INFO("Found wall at %f %f %f with normal: %f %f %f in frame %s",
              resp.wall_point.point.x, resp.wall_point.point.y, resp.wall_point.point.z,
@@ -115,6 +191,8 @@ public:
 private:
   ros::NodeHandle nh_;
   ros::ServiceServer serv_;
+  ros::Publisher plane_points_;
+  ros::Publisher plane_marker_;
 };
 
 
