@@ -37,6 +37,7 @@ roslib.load_manifest('pr2_plugs_actions')
 import rospy
 
 import threading
+import copy
 
 import actionlib
 import PyKDL
@@ -48,6 +49,7 @@ from move_base_msgs.msg import *
 from geometry_msgs.msg import *
 from pr2_controllers_msgs.msg import *
 from pr2_common_action_msgs.msg import *
+from trajectory_msgs.msg import JointTrajectoryPoint, JointTrajectory
 
 from std_srvs.srv import *
 
@@ -78,6 +80,23 @@ def main():
     open_gripper_goal.command.position = 0.07
     open_gripper_goal.command.max_effort = 99999
 
+    # Clear/stow left arm
+    clear_l_arm_goal = JointTrajectoryGoal()
+    clear_l_arm_goal.trajectory.joint_names = ['l_shoulder_pan_joint', 'l_shoulder_lift_joint', 'l_upper_arm_roll_joint',
+                                               'l_elbow_flex_joint', 'l_forearm_roll_joint', 'l_wrist_flex_joint', 'l_wrist_roll_joint']
+    clear_l_arm_goal.trajectory.points.append(JointTrajectoryPoint(positions=[ 0.4,  1.0,   0.0,  -2.05,  0.0,  -0.1,  0.0],
+                                                                   time_from_start=rospy.Duration(1.0)))
+
+
+    stow_l_arm_goal = copy.deepcopy(clear_l_arm_goal)
+    stow_l_arm_goal.trajectory.points = []
+    stow_l_arm_goal.trajectory.points.append(JointTrajectoryPoint(positions=[ 0.0,  1.0,   0.0,  -2.05,  0.0,  -0.1,  0.0],
+                                                                time_from_start=rospy.Duration(1.0)))
+    stow_l_arm_goal.trajectory.points.append(JointTrajectoryPoint(positions=[ 0.06,  1.24,   1.65,  -1.68,  -1.73,  -0.1,  0.0],
+                                                                   time_from_start=rospy.Duration(2.0)))
+
+    
+
     # Construct state machine
     recharge_sm = StateMachine(
             outcomes=['plugged_in','unplugged','aborted','preempted'],
@@ -87,6 +106,11 @@ def main():
     # Set the initial state explicitly
     recharge_sm.set_initial_state(['PROCESS_RECHARGE_COMMAND'])
     recharge_sm.userdata.recharge_state = RechargeState(state=RechargeState.UNPLUGGED)
+
+    recharge_sm.userdata.base_to_outlet        = Pose(position=Point(-0.0178, -0.7474,  0.2824), orientation=Quaternion( 0.0002, -0.0002, -0.7061, 0.7081))
+    recharge_sm.userdata.gripper_to_plug_grasp = Pose(position=Point( 0.0282, -0.0050, -0.0103), orientation=Quaternion(-0.6964,  0.1228,  0.1228, 0.6964))
+    recharge_sm.userdata.base_to_plug_on_base  = Pose(position=Point( 0.0783,  0.0244,  0.2426), orientation=Quaternion( 0.4986,  0.4962,  0.4963, 0.5088))
+    recharge_sm.userdata.gripper_to_plug       = Pose(position=Point( 0.0275, -0.0046, -0.0094), orientation=Quaternion(-0.6876,  0.1293,  0.1226, 0.7039))
 
     with recharge_sm:
         ### PLUGGING IN ###
@@ -177,9 +201,15 @@ def main():
                                            goal_slots = ['base_to_outlet'],
                                            result_slots = ['gripper_to_plug'],
                                            result_cb = set_plug_in_result),
-                         { 'succeeded':'plugged_in',
+                         { 'succeeded':'STOW_LEFT_ARM',
                            'aborted':'RECOVER_STOW_PLUG'})
         
+        # Move L arm out of the way
+        StateMachine.add('STOW_LEFT_ARM',
+                         SimpleActionState('l_arm_controller/joint_trajectory_action', JointTrajectoryAction,
+                                           goal = stow_l_arm_goal),
+                         { 'succeeded':'plugged_in'})
+
         ### UNPLUGGING ###
         unplug_sm = StateMachine(
             outcomes = ['succeeded','aborted','preempted'],
@@ -195,8 +225,14 @@ def main():
                     SimpleActionState('r_gripper_controller/gripper_action', Pr2GripperCommandAction,
                         goal = close_gripper_goal),
                     { 'succeeded':'aborted',
-                        'aborted':'WIGGLE_OUT'})
+                        'aborted':'CLEAR_LEFT_ARM'})
             
+            # Move L arm out of the way
+            StateMachine.add('CLEAR_LEFT_ARM',
+                             SimpleActionState('l_arm_controller/joint_trajectory_action', JointTrajectoryAction,
+                                               goal = clear_l_arm_goal),
+                             { 'succeeded':'WIGGLE_OUT'})
+
             # Wiggle out
             def get_wiggle_out_goal(ud, goal):
                 # Set period
@@ -238,8 +274,10 @@ def main():
             StateMachine.add('STOW_PLUG', SimpleActionState('stow_plug',StowPlugAction,
                                                             goal_slots = ['gripper_to_plug_grasp','base_to_plug'],
                                                             result_cb = set_unplug_result),
-                             {'succeeded':'succeeded'},
+                             {'succeeded':'SUCCEED_TUCK'},
                              remapping = {'base_to_plug':'base_to_plug_on_base'})
+            
+            StateMachine.add('SUCCEED_TUCK', SimpleActionState('tuck_arms', TuckArmsAction, goal=TuckArmsGoal(True, True)), { 'succeeded': 'succeeded' })
 
         ### RECOVERY STATES ###
         StateMachine.add('RECOVER_STOW_PLUG', SimpleActionState('stow_plug',StowPlugAction,
@@ -269,11 +307,16 @@ def main():
                                            goal = TuckArmsGoal(False, False)),
                          {'succeeded':'FAIL_LOWER_SPINE'})
         
-        # Lower the spine on cleanup
+        # Lower the spine, tuck arms on cleanup
         StateMachine.add('FAIL_LOWER_SPINE',
                 SimpleActionState('torso_controller/position_joint_action', SingleJointPositionAction,
                                   goal = SingleJointPositionGoal(position=0.02)),
-                {'succeeded':'aborted'})
+                {'succeeded':'FAIL_TUCK_ARMS'})
+
+        StateMachine.add('FAIL_TUCK_ARMS',
+                         SimpleActionState('tuck_arms', TuckArmsAction,
+                                           goal = TuckArmsGoal(True,True)),
+                         { 'succeeded':'aborted'})
 
 
     # Run state machine introspection server
