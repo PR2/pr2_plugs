@@ -64,11 +64,19 @@ void PoseEstimator::solveImpl(const std::vector<cv::Point2f>& image_points,
               T3(0,0), T3(1,0), T3(2,0), R3(0,0), R3(1,0), R3(2,0));
   }
 
+  // First three columns of projection matrix
+  cv::Mat_<double> projection(3,3);
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      projection(i,j) = model.projectionMatrix()(i,j);
+    }
+  }
+
   // Find/refine object pose
   if (use_planar_solve_)
-    cv::solvePlanarPnP(object_points_, image_pts_cv, model.intrinsicMatrix(), D, R3, T3, have_prior);
+    cv::solvePlanarPnP(object_points_, image_pts_cv, projection, D, R3, T3, have_prior);
   else
-    cv::solvePnP(object_points_, image_pts_cv, model.intrinsicMatrix(), D, R3, T3, have_prior);
+    cv::solvePnP(object_points_, image_pts_cv, projection, D, R3, T3, have_prior);
   
   ROS_DEBUG("Refined pose: T(%.3f, %.3f, %.3f), R(%.3f, %.3f, %.3f)",
             T3(0,0), T3(1,0), T3(2,0), R3(0,0), R3(1,0), R3(2,0));
