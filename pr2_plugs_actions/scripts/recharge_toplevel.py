@@ -50,6 +50,7 @@ from geometry_msgs.msg import *
 from pr2_controllers_msgs.msg import *
 from pr2_common_action_msgs.msg import *
 from trajectory_msgs.msg import JointTrajectoryPoint, JointTrajectory
+from move_base_msgs.msg import MoveBaseAction, MoveBaseActionGoal
 
 from std_srvs.srv import *
 
@@ -277,7 +278,18 @@ def main():
                              {'succeeded':'SUCCEED_TUCK'},
                              remapping = {'base_to_plug':'base_to_plug_on_base'})
             
-            StateMachine.add('SUCCEED_TUCK', SimpleActionState('tuck_arms', TuckArmsAction, goal=TuckArmsGoal(True, True)), { 'succeeded': 'succeeded' })
+            StateMachine.add('SUCCEED_TUCK', SimpleActionState('tuck_arms', TuckArmsAction, goal=TuckArmsGoal(True, True)), { 'succeeded': 'SUCCEED_FREE_BASE' })
+            
+            # Shift base a little bit to free casters 
+            @smach.cb_interface(input_keys=[])
+            def get_free_base_goal(ud, goal):
+                goal.target_pose.pose.position.y =  -0.05
+                goal.target_pose.pose.position.x =  0.02
+                goal.target_pose.pose.orientation.w = 1.0
+                goal.target_pose.header.stamp = rospy.Time.now()
+                goal.target_pose.header.frame_id = "base_footprint"
+
+            StateMachine.add('SUCCEED_FREE_BASE', SimpleActionState('move_base_omnidirectional', MoveBaseAction, goal_cb = get_free_base_goal), { 'succeeded': 'succeeded', 'aborted': 'succeeded' })
 
         ### RECOVERY STATES ###
         StateMachine.add('RECOVER_STOW_PLUG', SimpleActionState('stow_plug',StowPlugAction,

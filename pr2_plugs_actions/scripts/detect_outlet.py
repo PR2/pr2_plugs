@@ -98,7 +98,7 @@ def construct_sm():
     # Define fixed goals
     # Declare wall norm goal
     # This is the point at which we want the head to look
-    rough_align_distance = 0.90
+    rough_align_distance = 0.88
     precise_align_distance = 0.74
     look_point = PointStamped()
     look_point.header.frame_id = 'base_link'
