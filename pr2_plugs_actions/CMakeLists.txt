@@ -28,12 +28,12 @@ rosbuild_add_executable(align_base src/align_base.cpp)
 rosbuild_add_executable(move_base_omnidirectional src/move_base_omnidirectional.cpp)
 
 #### Download outlet templates ####
-rosbuild_download_data(http://pr.willowgarage.com/data/outlet_detection/outlet_templates_20091207.tar.gz outlet_templates_20091207.tar.gz 6ac4bfc16222132cdb17181761349c72)
+rosbuild_download_data(http://pr.willowgarage.com/data/outlet_detection/outlet_templates_20091207.tar.gz build/outlet_templates_20091207.tar.gz 6ac4bfc16222132cdb17181761349c72)
 # Unpack the tarball.
 add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/outlet_templates
-                   COMMAND tar zxvf outlet_templates_20091207.tar.gz
+                   COMMAND tar zxvf build/outlet_templates_20091207.tar.gz
                    COMMAND touch -c outlet_templates
-                   DEPENDS ${PROJECT_SOURCE_DIR}/outlet_templates_20091207.tar.gz
+                   DEPENDS ${PROJECT_SOURCE_DIR}/build/outlet_templates_20091207.tar.gz
                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                    VERBATIM)
 add_custom_target(download_and_unpack_data ALL
