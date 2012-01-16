@@ -51,6 +51,9 @@ from pr2_plugs_actions.tf_util import TFUtil
 
 #server actionlib.simple_action_server.SimpleActionServer
 
+ERROR_TOL = 0.03 # Max error between current, desired plug position
+MAX_ITERS = 5    # 
+
 def execute_cb(goal):
   rospy.loginfo("Action server received goal")
   preempt_timeout = rospy.Duration(5.0)
@@ -67,7 +70,10 @@ def execute_cb(goal):
   # return plug
   error = 1.0
   free_cord = False
-  while error > 0.01 and not rospy.is_shutdown():
+  iter_idx = 0
+  while error > ERROR_TOL and not rospy.is_shutdown() and iter_idx < MAX_ITERS:
+    iter_idx += 1
+
     # appraoch in joint space when re-trying
     if free_cord:
       rospy.loginfo("Free plug cord by doing approach...")
