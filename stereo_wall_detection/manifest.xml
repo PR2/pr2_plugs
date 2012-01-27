@@ -12,7 +12,6 @@
   <depend package="geometry_msgs" />
   <depend package="sensor_msgs" />
   <depend package="angles" />
-  <depend package="eigen" />
   <depend package="visualization_msgs" />
   <depend package="pcl_ros" />
 

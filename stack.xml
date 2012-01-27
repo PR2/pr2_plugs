@@ -7,7 +7,6 @@
   <depend stack="common" /> <!-- actionlib, bfl -->
   <depend stack="common_msgs" /> <!-- geometry_msgs, actionlib_msgs, sensor_msgs, visualization_msgs -->
   <depend stack="driver_common" /> <!-- dynamic_reconfigure -->
-  <depend stack="eigen" /> <!-- eigen -->
   <depend stack="executive_smach" /> <!-- smach_ros, smach -->
   <depend stack="geometry" /> <!-- tf, angles, tf_conversions -->
   <depend stack="geometry_experimental" /> <!-- tf2_geometry_msgs, tf2_ros -->
