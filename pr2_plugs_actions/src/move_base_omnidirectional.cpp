@@ -48,7 +48,8 @@ MoveBaseOmnidirectionalAction::MoveBaseOmnidirectionalAction() :
   costmap_model_(costmap_),
   action_server_(ros::NodeHandle(), 
 		 "move_base_omnidirectional", 
-		 boost::bind(&MoveBaseOmnidirectionalAction::execute, this, _1))
+		 boost::bind(&MoveBaseOmnidirectionalAction::execute, this, _1),
+                 true)
 {
   costmap_ros_.stop();
 

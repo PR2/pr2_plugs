@@ -49,7 +49,8 @@ AlignBaseAction::AlignBaseAction() :
   move_base_omnidirectional_("move_base_omnidirectional", true),
   action_server_(ros::NodeHandle(), 
 		 "align_base", 
-		 boost::bind(&AlignBaseAction::execute, this, _1))
+		 boost::bind(&AlignBaseAction::execute, this, _1),
+                 true)
 {
   ROS_INFO("Waiting for action servers");
   wall_detector_.waitForServer();

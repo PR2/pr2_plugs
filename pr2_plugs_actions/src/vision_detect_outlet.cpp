@@ -146,10 +146,10 @@ public:
 
       // Now we tweak the orientation of the original prior to align with the wall normal.
       // First pull out a couple prior basis vectors of interest.
-      btVector3 prior_x_basis = prior_in_camera_.getBasis().getColumn(0);
-      btVector3 prior_z_basis = prior_in_camera_.getBasis().getColumn(2);
+      tf::Vector3 prior_x_basis = prior_in_camera_.getBasis().getColumn(0);
+      tf::Vector3 prior_z_basis = prior_in_camera_.getBasis().getColumn(2);
       // New forward vector is set to the wall normal.
-      btVector3 adjusted_x_basis = wall_normal_in_camera.normalized();
+      tf::Vector3 adjusted_x_basis = wall_normal_in_camera.normalized();
       // We assume normal is into the wall, so positive Z in the camera frame.
       if (adjusted_x_basis.z() < 0)
         adjusted_x_basis = -adjusted_x_basis;
@@ -165,9 +165,9 @@ public:
         return;
       }
       // New left vector calculated as cross product of the original up vector and the wall normal.
-      btVector3 adjusted_y_basis = prior_z_basis.cross(adjusted_x_basis).normalized();
+      tf::Vector3 adjusted_y_basis = prior_z_basis.cross(adjusted_x_basis).normalized();
       // New up vector calculated from the other two basis vectors.
-      btVector3 adjusted_z_basis = adjusted_x_basis.cross(adjusted_y_basis);
+      tf::Vector3 adjusted_z_basis = adjusted_x_basis.cross(adjusted_y_basis);
       // Fill in the new basis vectors as columns.
       prior_in_camera_.getBasis().setValue(adjusted_x_basis.x(), adjusted_y_basis.x(), adjusted_z_basis.x(),
                                            adjusted_x_basis.y(), adjusted_y_basis.y(), adjusted_z_basis.y(),

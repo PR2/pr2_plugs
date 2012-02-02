@@ -11,7 +11,7 @@ class DetectPlugAction
 public:
   DetectPlugAction(const std::string& name)
     : it_(nh_),
-      as_(nh_, name),
+      as_(nh_, name, true),
       name_(name)
   {
     // Load configuration

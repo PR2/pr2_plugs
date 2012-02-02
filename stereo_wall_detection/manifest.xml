@@ -14,6 +14,7 @@
   <depend package="angles" />
   <depend package="visualization_msgs" />
   <depend package="pcl_ros" />
+  <depend package="pcl" />
 
   <export>
     <cpp cflags="-I${prefix}/srv/cpp" />
