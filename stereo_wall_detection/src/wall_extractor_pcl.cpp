@@ -103,8 +103,16 @@ public:
 
       // check if this is a good pointcloud
       if (cloud_msg_->header.stamp < start_time){
-        // TODO: count number of points in cloud
-        cloud_found = true;
+        unsigned count = 0;
+        for (unsigned i=0; i<cloud_msg_->height * cloud_msg_->width; i++){
+          if (!std::isnan(cloud_msg_->data[i])){
+            count++;
+          }
+        }
+        if (count > 30000)
+          cloud_found = true;
+        else
+          ROS_INFO("Received a cloud, but it only had %d points", count);
       }
 
       // wait for another cloud
