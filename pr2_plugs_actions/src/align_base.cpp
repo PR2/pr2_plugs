@@ -76,7 +76,7 @@ void AlignBaseAction::execute(const pr2_plugs_msgs::AlignBaseGoalConstPtr& goal)
   geometry_msgs::PointStamped wall_point_msg = wall_detector_.getResult()->wall_point;
   geometry_msgs::Vector3Stamped wall_norm_msg = wall_detector_.getResult()->wall_norm;
   if (!tf_.waitForTransform(fixed_frame, wall_norm_msg.header.frame_id, wall_norm_msg.header.stamp, ros::Duration(2.0))){
-    ROS_ERROR("AlignBaseAction: failed to transform from frame %s to %s", fixed_frame.c_str(), wall_norm_msg.header.frame_id.c_str());
+    ROS_ERROR("AlignBaseAction: failed to transform from frame %s to %s at time %f", fixed_frame.c_str(), wall_norm_msg.header.frame_id.c_str(), wall_norm_msg.header.stamp.toSec());
     action_server_.setAborted();
     return;
   }

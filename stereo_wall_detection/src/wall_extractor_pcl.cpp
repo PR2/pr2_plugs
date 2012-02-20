@@ -93,6 +93,7 @@ public:
 
     // wait for new pointcloud
     boost::mutex::scoped_lock lock(cloud_mutex_);
+    cloud_condition_.wait(lock);
     bool cloud_found = false;
     while (ros::ok() && !cloud_found){
       // check for timeout
@@ -102,7 +103,7 @@ public:
       }
 
       // check if this is a good pointcloud
-      if (cloud_msg_->header.stamp < start_time){
+      if (cloud_msg_->header.stamp > start_time){
         unsigned count = 0;
         for (unsigned i=0; i<cloud_msg_->height * cloud_msg_->width; i++){
           if (!std::isnan(cloud_msg_->data[i])){
@@ -114,6 +115,8 @@ public:
         else
           ROS_INFO("Received a cloud, but it only had %d points", count);
       }
+      else
+	ROS_INFO("Received a cloud, but the cloud is still %f seconds before start time", (start_time - cloud_msg_->header.stamp).toSec());
 
       // wait for another cloud
       if (!cloud_found)     
