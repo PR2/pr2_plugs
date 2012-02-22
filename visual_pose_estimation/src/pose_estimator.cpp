@@ -55,7 +55,7 @@ void PoseEstimator::solveImpl(const std::vector<cv::Point2f>& image_points,
     T3(2,0) = pose.getOrigin().z();
     
     // Convert to Rodrigues rotation
-    btMatrix3x3 &basis = pose.getBasis();
+    tf::Matrix3x3 &basis = pose.getBasis();
     for (int i = 0; i < 3; ++i)
       for (int j = 0; j < 3; ++j)
         rot3x3(i,j) = basis[i][j];
@@ -84,9 +84,9 @@ void PoseEstimator::solveImpl(const std::vector<cv::Point2f>& image_points,
 
   // Convert from Rodrigues to rotation matrix
   cv::Rodrigues(R3, rot3x3);
-  btMatrix3x3 rot3x3_tf(rot3x3(0,0), rot3x3(0,1), rot3x3(0,2),
-                        rot3x3(1,0), rot3x3(1,1), rot3x3(1,2),
-                        rot3x3(2,0), rot3x3(2,1), rot3x3(2,2));
+  tf::Matrix3x3 rot3x3_tf(rot3x3(0,0), rot3x3(0,1), rot3x3(0,2),
+                          rot3x3(1,0), rot3x3(1,1), rot3x3(1,2),
+                          rot3x3(2,0), rot3x3(2,1), rot3x3(2,2));
   pose.setBasis(rot3x3_tf);
 }
 
