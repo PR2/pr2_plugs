@@ -33,7 +33,7 @@ class TFUtil():
         
     @staticmethod
     def wait_and_transform(frame_id, pose):
-        return TFUtil.listener.transform(pose, frame_id, rospy.Duration(2.0))
+        return TFUtil.listener.transform(pose, frame_id, rospy.Duration(5.0))
 
 
     @staticmethod
