@@ -21,6 +21,8 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #uncomment if you have defined services
 #rosbuild_gensrv()
 
+find_package(OpenCV REQUIRED)
+
 
 rosbuild_add_executable(vision_detect_plug src/vision_detect_plug.cpp)
 rosbuild_add_executable(vision_detect_outlet src/vision_detect_outlet.cpp)
@@ -45,18 +47,22 @@ add_dependencies(download_and_unpack_data download_data_outlet_templates_2009120
 rosbuild_add_executable(fetch_and_stow_plug_test EXCLUDE_FROM_ALL test/action_server_tests/fetch_and_stow_plug_test.cpp)
 rosbuild_add_gtest_build_flags(fetch_and_stow_plug_test)
 rosbuild_add_rostest(test/action_server_tests/fetch_and_stow_plug_test.launch)
+target_link_libraries(fetch_and_stow_plug_test ${OpenCV_LIBS})
 
 rosbuild_add_executable(detect_plug_test EXCLUDE_FROM_ALL test/action_server_tests/detect_plug_test.cpp)
 rosbuild_add_gtest_build_flags(detect_plug_test)
 rosbuild_add_rostest(test/action_server_tests/detect_plug_test.launch)
+target_link_libraries(detect_plug_test ${OpenCV_LIBS})
 
 rosbuild_add_executable(detect_wall_norm_test EXCLUDE_FROM_ALL test/action_server_tests/detect_wall_norm_test.cpp)
 rosbuild_add_gtest_build_flags(detect_wall_norm_test)
 rosbuild_add_rostest(test/action_server_tests/detect_wall_norm_test.launch)
+target_link_libraries(detect_wall_norm_test ${OpenCV_LIBS})
 
 rosbuild_add_executable(wiggle_plug_test EXCLUDE_FROM_ALL test/action_server_tests/wiggle_plug_test.cpp)
 rosbuild_add_gtest_build_flags(wiggle_plug_test)
 rosbuild_add_rostest(test/action_server_tests/wiggle_plug_test.launch)
+target_link_libraries(wiggle_plug_test ${OpenCV_LIBS})
 
 #rosbuild_add_executable(vision_detect_outlet_and_plug_test EXCLUDE_FROM_ALL test/action_server_tests/vision_detect_outlet_and_plug_test.cpp)
 #rosbuild_add_gtest_build_flags(vision_detect_outlet_and_plug_test)

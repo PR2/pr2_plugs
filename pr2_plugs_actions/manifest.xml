@@ -39,5 +39,9 @@
   <depend package="pr2_image_snapshot_recorder"/>
   <depend package="smach"/>
   <depend package="smach_ros"/>
+  <depend package="cv_bridge" />
+
+  <rosdep name="opencv2.3"/>
+
 
 </package>
