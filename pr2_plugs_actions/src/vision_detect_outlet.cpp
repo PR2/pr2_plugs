@@ -45,7 +45,7 @@ class DetectOutletAction
 public:
   DetectOutletAction(const std::string& name)
     : it_(nh_),
-      as_(nh_, name),
+      as_(nh_, name, false),
       action_name_(name),
       update_transformed_prior_(true)
   {
@@ -63,6 +63,8 @@ public:
     // Register the goal and preempt callbacks
     as_.registerGoalCallback(boost::bind(&DetectOutletAction::goalCb, this));
     as_.registerPreemptCallback(boost::bind(&DetectOutletAction::preemptCb, this));
+
+    as_.start();
   }
 
   void timeoutCb(const ros::TimerEvent& e)

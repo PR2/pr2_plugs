@@ -59,8 +59,10 @@ void plug_execute(const pr2_plugs_msgs::VisionPlugDetectionGoalConstPtr& goal, a
 TEST(ActionServerTest, detect_plug)
 {
   ros::NodeHandle n;
-  actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> arm_server(n, "r_arm_controller/joint_trajectory_generator", boost::bind(&arm_execute, _1, &arm_server));
-  actionlib::SimpleActionServer<pr2_plugs_msgs::VisionPlugDetectionAction> plug_server(n, "vision_plug_detection", boost::bind(&plug_execute, _1, &plug_server));
+  actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> arm_server(n, "r_arm_controller/joint_trajectory_generator", boost::bind(&arm_execute, _1, &arm_server), false);
+  actionlib::SimpleActionServer<pr2_plugs_msgs::VisionPlugDetectionAction> plug_server(n, "vision_plug_detection", boost::bind(&plug_execute, _1, &plug_server), false);
+  arm_server.start();
+  plug_server.start();
 
   actionlib::SimpleActionClient<pr2_plugs_msgs::DetectPlugInGripperAction> ac("detect_plug"); 
 

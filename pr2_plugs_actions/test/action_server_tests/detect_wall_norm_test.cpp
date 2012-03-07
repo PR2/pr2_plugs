@@ -68,7 +68,8 @@ TEST(ActionServerTest, detect_wall_norm)
   
   ros::ServiceServer wall_serv = n.advertiseService ("stereo_wall_detection/detect_wall", detect_wall);
   ros::ServiceServer param_serv = n.advertiseService ("camera_synchronizer_node/set_parameters", set_param);
-  actionlib::SimpleActionServer<pr2_controllers_msgs::PointHeadAction> head_server(n, "head_traj_controller/point_head_action", boost::bind(&head_execute, _1, &head_server));
+  actionlib::SimpleActionServer<pr2_controllers_msgs::PointHeadAction> head_server(n, "head_traj_controller/point_head_action", boost::bind(&head_execute, _1, &head_server), false);
+  head_server.start();
 
   actionlib::SimpleActionClient<pr2_plugs_msgs::DetectWallNormAction> ac("detect_wall_norm"); 
 

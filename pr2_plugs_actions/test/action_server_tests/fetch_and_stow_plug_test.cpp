@@ -79,11 +79,16 @@ TEST(ActionServerTest, fetch_plug)
 {
   ros::NodeHandle n;
   boost::thread spin_thread(&spinThread);
-  actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> arm_server(n, "r_arm_controller/joint_trajectory_generator", boost::bind(&arm_execute, _1, &arm_server));
-  actionlib::SimpleActionServer<pr2_common_action_msgs::ArmMoveIKAction> ik_server(n, "r_arm_ik", boost::bind(&ik_execute, _1, &ik_server));
-  actionlib::SimpleActionServer<pr2_plugs_msgs::DetectPlugOnBaseAction> plug_server(n, "detect_plug_on_base", boost::bind(&plug_execute, _1, &plug_server));
-  actionlib::SimpleActionServer<pr2_controllers_msgs::Pr2GripperCommandAction> gripper_server(n, "r_gripper_controller/gripper_action", boost::bind(&gripper_execute, _1, &gripper_server));
-  actionlib::SimpleActionServer<pr2_controllers_msgs::SingleJointPositionAction> spine_server(n, "torso_controller/position_joint_action", boost::bind(&spine_execute, _1, &spine_server));
+  actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> arm_server(n, "r_arm_controller/joint_trajectory_generator", boost::bind(&arm_execute, _1, &arm_server), false);
+  actionlib::SimpleActionServer<pr2_common_action_msgs::ArmMoveIKAction> ik_server(n, "r_arm_ik", boost::bind(&ik_execute, _1, &ik_server), false);
+  actionlib::SimpleActionServer<pr2_plugs_msgs::DetectPlugOnBaseAction> plug_server(n, "detect_plug_on_base", boost::bind(&plug_execute, _1, &plug_server), false);
+  actionlib::SimpleActionServer<pr2_controllers_msgs::Pr2GripperCommandAction> gripper_server(n, "r_gripper_controller/gripper_action", boost::bind(&gripper_execute, _1, &gripper_server), false);
+  actionlib::SimpleActionServer<pr2_controllers_msgs::SingleJointPositionAction> spine_server(n, "torso_controller/position_joint_action", boost::bind(&spine_execute, _1, &spine_server), false);
+  arm_server.start();
+  ik_server.start();
+  plug_server.start();
+  gripper_server.start();
+  spine_server.start();
 
 
   actionlib::SimpleActionClient<pr2_plugs_msgs::FetchPlugAction> ac("fetch_plug");
@@ -99,11 +104,16 @@ TEST(ActionServerTest, stow_plug)
 {
   ros::NodeHandle n;
   boost::thread spin_thread(&spinThread);
-  actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> arm_server(n, "r_arm_controller/joint_trajectory_generator", boost::bind(&arm_execute, _1, &arm_server));
-  actionlib::SimpleActionServer<pr2_common_action_msgs::ArmMoveIKAction> ik_server(n, "r_arm_ik", boost::bind(&ik_execute, _1, &ik_server));
-  actionlib::SimpleActionServer<pr2_plugs_msgs::DetectPlugOnBaseAction> plug_server(n, "detect_plug_on_base", boost::bind(&plug_execute, _1, &plug_server));
-  actionlib::SimpleActionServer<pr2_controllers_msgs::Pr2GripperCommandAction> gripper_server(n, "r_gripper_controller/gripper_action", boost::bind(&gripper_execute, _1, &gripper_server));
-  actionlib::SimpleActionServer<pr2_controllers_msgs::SingleJointPositionAction> spine_server(n, "torso_controller/position_joint_action", boost::bind(&spine_execute, _1, &spine_server));
+  actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction> arm_server(n, "r_arm_controller/joint_trajectory_generator", boost::bind(&arm_execute, _1, &arm_server), false);
+  actionlib::SimpleActionServer<pr2_common_action_msgs::ArmMoveIKAction> ik_server(n, "r_arm_ik", boost::bind(&ik_execute, _1, &ik_server), false);
+  actionlib::SimpleActionServer<pr2_plugs_msgs::DetectPlugOnBaseAction> plug_server(n, "detect_plug_on_base", boost::bind(&plug_execute, _1, &plug_server), false);
+  actionlib::SimpleActionServer<pr2_controllers_msgs::Pr2GripperCommandAction> gripper_server(n, "r_gripper_controller/gripper_action", boost::bind(&gripper_execute, _1, &gripper_server), false);
+  actionlib::SimpleActionServer<pr2_controllers_msgs::SingleJointPositionAction> spine_server(n, "torso_controller/position_joint_action", boost::bind(&spine_execute, _1, &spine_server), false);
+  arm_server.start();
+  ik_server.start();
+  plug_server.start();
+  gripper_server.start();
+  spine_server.start();
 
   actionlib::SimpleActionClient<pr2_plugs_msgs::StowPlugAction> ac("stow_plug");
 

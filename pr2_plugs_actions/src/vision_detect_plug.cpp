@@ -11,7 +11,7 @@ class DetectPlugAction
 public:
   DetectPlugAction(const std::string& name)
     : it_(nh_),
-      as_(nh_, name, true),
+      as_(nh_, name, false),
       name_(name)
   {
     // Load configuration
@@ -24,6 +24,7 @@ public:
     // Register the goal and preempt callbacks
     as_.registerGoalCallback(boost::bind(&DetectPlugAction::goalCb, this));
     as_.registerPreemptCallback(boost::bind(&DetectPlugAction::preemptCb, this));
+    as_.start();
     
     ROS_INFO("Finished registering callbacks");
   }
