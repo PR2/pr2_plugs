@@ -56,7 +56,8 @@ TEST(ActionServerTest, wiggle_plug)
   ros::NodeHandle n;
   boost::thread spin_thread(&spinThread);
 
-  actionlib::SimpleActionServer<pr2_common_action_msgs::ArmMoveIKAction> ik_server(n, "r_arm_ik", boost::bind(&ik_execute, _1, &ik_server));
+  actionlib::SimpleActionServer<pr2_common_action_msgs::ArmMoveIKAction> ik_server(n, "r_arm_ik", boost::bind(&ik_execute, _1, &ik_server), false);
+  ik_server.start();
 
   actionlib::SimpleActionClient<pr2_plugs_msgs::WigglePlugAction> ac("wiggle_plug"); 
 

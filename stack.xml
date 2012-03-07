@@ -19,6 +19,6 @@
   <depend stack="pr2_controllers" /> <!-- pr2_controllers_msgs -->
   <depend stack="pr2_mechanism" /> <!-- pr2_controller_manager -->
   <depend stack="ros" /> <!--  -->
-  <depend stack="vision_opencv" /> <!-- opencv2, image_geometry, cv_bridge -->
+  <depend stack="vision_opencv" /> <!-- image_geometry, cv_bridge -->
 
 </stack>
