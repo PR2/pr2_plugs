@@ -54,7 +54,7 @@ def serve_plug_locations(req):
     poses = {}
   if not 'local' in poses:
     poses['local'] = {'position':[0,0,0], 'orientation': [0,0,0,0]}
-  print poses
+  #print poses
 
   resp = GetOutletsResponse()
   for pose in poses:
@@ -62,7 +62,7 @@ def serve_plug_locations(req):
     op.name = pose
     roslib.message.fill_message_args(op.approach_pose, poses[pose])
     resp.poses.append(op)
-  print resp
+  #print resp
 
   return resp
 
