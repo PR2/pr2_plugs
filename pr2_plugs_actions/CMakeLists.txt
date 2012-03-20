@@ -25,7 +25,10 @@ find_package(OpenCV REQUIRED)
 
 
 rosbuild_add_executable(vision_detect_plug src/vision_detect_plug.cpp)
+target_link_libraries(vision_detect_plug ${OpenCV_LIBRARIES})
 rosbuild_add_executable(vision_detect_outlet src/vision_detect_outlet.cpp)
+target_link_libraries(vision_detect_outlet ${OpenCV_LIBRARIES})
+
 rosbuild_add_executable(align_base src/align_base.cpp)
 rosbuild_add_executable(move_base_omnidirectional src/move_base_omnidirectional.cpp)
 
