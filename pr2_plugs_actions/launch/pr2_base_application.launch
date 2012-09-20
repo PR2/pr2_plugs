@@ -18,6 +18,8 @@
 
   <include file="$(find wg_pr2_2dnav)/pr2_2dnav.launch" />
 
+
+<!-- commented this out for now, since it depends on old code. -jbinney
   <param name="move_base_node/oscillation_timeout" value="300.0" />
   <param name="move_base_node/oscillation_distance" value="0.5" />
 
@@ -25,7 +27,7 @@
   <param name="move_base_node/sbpl_recovery/sbpl_lattice_planner/primitive_filename" value="$(find sbpl)/matlab/mprim/pr2.mprim" />
   <rosparam file="$(find pr2_base_application)/config/recovery_behaviors.yaml" command="load" ns="move_base_node" />
   <rosparam file="$(find pr2_base_application)/config/costmap_config.yaml" command="load" ns="move_base_node" />
-  <rosparam file="$(find pr2_base_application)/config/dwa_local_planner.yaml" command="load" ns="move_base_node/DWAPlannerROS" />
+  <rosparam file="$(find pr2_base_application)/config/dwa_local_planner.yaml" command="load" ns="move_base_node/DWAPlannerROS" /> -->
 
   
   <!-- recording -->
