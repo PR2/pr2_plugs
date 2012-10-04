@@ -1,5 +1,5 @@
 <launch>
-  <arg name="run_sim" default="1" />
+  <arg name="run_sim" default="0" />
 
   <!-- Buffer Server -->
   <node pkg="tf2_ros" type="buffer_server" name="tf2_buffer_server_plugs" output="screen">
