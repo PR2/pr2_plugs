@@ -2,7 +2,7 @@
 #include <actionlib/server/simple_action_server.h>
 #include <pr2_plugs_msgs/VisionOutletDetectionAction.h>
 
-#include <cv_bridge/CvBridge.h>
+#include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
 #include <image_geometry/pinhole_camera_model.h>
 #include <tf/transform_listener.h>
@@ -114,11 +114,7 @@ public:
 
     // Convert image message
     /// @todo Try mono8 instead
-    if (!img_bridge_.fromImage(*image_msg, "bgr8")) {
-      ROS_ERROR("%s: Failed to convert image from %s -> bgr8", action_name_.c_str(), image_msg->encoding.c_str());
-      return;
-    }
-    cv::Mat image(img_bridge_.toIpl());
+    cv::Mat image = cv_bridge::toCvShare(image_msg, "bg8")->image;
 
     // Detect the outlet
     std::vector<cv::Point2f> image_points;
@@ -207,10 +203,8 @@ public:
   {
     if (display_pub_.getNumSubscribers() == 0) return;
     detector_.getDisplayImage(source, image_points, success, display_img_cv_);
-    IplImage ipl = (IplImage)display_img_cv_;
-    sensor_msgs::CvBridge::fromIpltoRosImage(&ipl, display_img_);
-    display_img_.encoding = "bgr8";
-    display_pub_.publish(display_img_);
+    cv_bridge::CvImage cv_image(std_msgs::Header(), "bgr8", display_img_cv_);
+    display_pub_.publish(*(cv_image.toImageMsg()));
   }
 
 protected:
@@ -235,7 +229,6 @@ protected:
   tf::TransformBroadcaster tf_broadcaster_;
 
   // Message processing
-  sensor_msgs::CvBridge img_bridge_;
   image_geometry::PinholeCameraModel cam_model_;
   outlet_pose_estimation::Detector detector_;
   visual_pose_estimation::PoseEstimator pose_estimator_;

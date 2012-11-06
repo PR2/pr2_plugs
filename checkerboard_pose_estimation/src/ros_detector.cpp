@@ -1,3 +1,4 @@
+#include <cv_bridge/cv_bridge.h>
 #include "checkerboard_pose_estimation/ros_detector.h"
 
 namespace checkerboard_pose_estimation {
@@ -79,11 +80,8 @@ bool RosDetector::detectObject(const sensor_msgs::ImageConstPtr& image_msg,
                                tf::Stamped<tf::Pose>& target_pose)
 {
   // Convert image message
-  if (!img_bridge_.fromImage(*image_msg, "mono8")) {
-    ROS_ERROR("%s: Failed to convert image from %s -> mono8", name_.c_str(), image_msg->encoding.c_str());
-    return false;
-  }
-  cv::Mat image(img_bridge_.toIpl());
+  cv_bridge::CvImageConstPtr cv_image = cv_bridge::toCvShare(image_msg, "mono8");
+  cv::Mat image = cv_image->image;
 
   // Detect the checkerboard
   std::vector<cv::Point2f> corners;
@@ -128,10 +126,8 @@ void RosDetector::publishDisplayImage(const cv::Mat& source, const std::vector<c
 {
   if (display_pub_.getNumSubscribers() == 0) return;
   detector_.getDisplayImage(source, corners, success, display_img_cv_);
-  IplImage ipl = (IplImage)display_img_cv_;
-  sensor_msgs::CvBridge::fromIpltoRosImage(&ipl, display_img_);
-  display_img_.encoding = "bgr8";
-  display_pub_.publish(display_img_);
+  cv_bridge::CvImage cv_image(std_msgs::Header(), "bgr8", display_img_cv_);
+  display_pub_.publish(*(cv_image.toImageMsg()));
 }
 
 } //namespace checkerboard_pose_estimation

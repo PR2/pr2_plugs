@@ -3,7 +3,6 @@
 
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
-#include <cv_bridge/CvBridge.h>
 #include <tf/tf.h>
 #include <tf/transform_broadcaster.h>
 #include <checkerboard_pose_estimation/detector.h>
@@ -44,7 +43,6 @@ protected:
   ros::Publisher marker_pub_;
 
   // Message processing
-  sensor_msgs::CvBridge img_bridge_;
   image_geometry::PinholeCameraModel cam_model_;
   Detector detector_;
   visual_pose_estimation::PoseEstimator pose_estimator_;
