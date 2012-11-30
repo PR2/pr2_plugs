@@ -114,7 +114,7 @@ public:
 
     // Convert image message
     /// @todo Try mono8 instead
-    cv::Mat image = cv_bridge::toCvShare(image_msg, "bg8")->image;
+    cv::Mat image = cv_bridge::toCvShare(image_msg, "bgr8")->image;
 
     // Detect the outlet
     std::vector<cv::Point2f> image_points;
