@@ -3,6 +3,7 @@ import roslib; roslib.load_manifest('pr2_plugs_actions')
 
 import rospy 
 import tf
+import tf2
 import tf2_ros
 import tf2_geometry_msgs
 from geometry_msgs.msg import PoseStamped
@@ -33,8 +34,12 @@ class TFUtil():
         
     @staticmethod
     def wait_and_transform(frame_id, pose):
-        return TFUtil.listener.transform(pose, frame_id, rospy.Duration(5.0))
-
+        try:
+            result = TFUtil.listener.transform(pose, frame_id, rospy.Duration(5.0))
+        except (tf2.LookupException, tf2.ConnectivityException, tf2.TimeoutException, tf2.ExtrapolationException, tf2.TransformException) as e:
+            rospy.logerr("tf2_ros BufferClient threw an exception: %s, trying again"%str(e))
+            result = TFUtil.listener.transform(pose, frame_id, rospy.Duration(5.0))
+        return result
 
     @staticmethod
     def wait_and_lookup(parent_frame_id, child_frame_id, time=None):
@@ -51,8 +56,12 @@ class TFUtil():
         ps.pose.orientation.y = 0.0
         ps.pose.orientation.z = 0.0
         ps.pose.orientation.w = 1.0
-        return TFUtil.listener.transform(ps, parent_frame_id, rospy.Duration(2.0))
-
+        try:
+            result = TFUtil.listener.transform(ps, parent_frame_id, rospy.Duration(2.0))
+        except (tf2.LookupException, tf2.ConnectivityException, tf2.TimeoutException, tf2.ExtrapolationException, tf2.TransformException) as e:
+            rospy.logerr("tf2_ros BufferClient threw an exception: %s, trying again"%str(e))
+            result = TFUtil.listener.transform(ps, parent_frame_id, rospy.Duration(2.0))
+        return result 
 
     @staticmethod
     def broadcast_transform(frame_id, pose,time = None, period = rospy.Duration(0.1)):
