@@ -84,9 +84,10 @@ def construct_sm():
         @smach.cb_interface(output_keys=['gripper_to_plug'])
         def store_detect_plug_result(ud, result_state, result):
             if result_state == GoalStatus.SUCCEEDED:
-                ud.gripper_to_plug = TFUtil.wait_and_transform('r_gripper_tool_frame',result.plug_pose).pose
+                gripper_to_plug = TFUtil.wait_and_transform('r_gripper_tool_frame',result.plug_pose).pose
+                ud.gripper_to_plug = gripper_to_plug
                 print 'gripper_to_plug'
-                print ud.gripper_to_plug
+                print gripper_to_plug
 
         StateMachine.add('DETECT_PLUG_IN_GRIPPER',
                 SimpleActionState('detect_plug',
