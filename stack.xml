@@ -1,6 +1,6 @@
 <stack>
   <description brief="pr2_plugs">The pr2_plugs stack provides the low level actions for autonomously plugging the PR2 into a standard wall outlet.</description>
-  <author>Wim Meeussen, Melonee Wise, Jon Bohren, Eitan Marder-Eppstein, Patrick Michelich</author>
+  <author>Wim Meeussen, Melonee Wise, Jon Bohren, Eitan Marder-Eppstein, Patrick Michelich Maintainer=Devon Ash</author>
   <license>BSD</license>  
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/pr2_plugs</url>
