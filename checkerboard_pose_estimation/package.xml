@@ -1,0 +1,46 @@
+<package>
+  <name>checkerboard_pose_estimation</name>
+  <version>1.0.0</version>
+  <description>checkerboard_pose_estimation</description>
+  <maintainer email="">Patrick Mihelich</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://ros.org/wiki/checkerboard_pose_estimation</url>
+  <!-- <url type="bugtracker"></url> -->
+
+  <author>Patrick Mihelich</author>
+
+  <!-- Dependencies which this package needs to build itself. -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Dependencies needed to compile this package. -->
+  <build_depend>roscpp</build_depend>
+  <build_depend>opencv2</build_depend>
+  <build_depend>cv_bridge</build_depend>
+  <build_depend>image_transport</build_depend>
+  <build_depend>visual_pose_estimation</build_depend>
+  <build_depend>outlet_pose_estimation</build_depend>
+
+  <!-- Dependencies needed after this package is compiled. -->
+  <run_depend>roscpp</run_depend>
+  <run_depend>opencv2</run_depend>
+  <run_depend>cv_bridge</run_depend>
+  <run_depend>image_transport</run_depend>
+  <run_depend>visual_pose_estimation</run_depend>
+  <run_depend>outlet_pose_estimation</run_depend>
+
+  <!-- Dependencies needed only for running tests. -->
+  <!-- <test_depend>roscpp</test_depend> -->
+  <!-- <test_depend>opencv2</test_depend> -->
+  <!-- <test_depend>cv_bridge</test_depend> -->
+  <!-- <test_depend>image_transport</test_depend> -->
+  <!-- <test_depend>visual_pose_estimation</test_depend> -->
+  <!-- <test_depend>outlet_pose_estimation</test_depend> -->
+
+<export>
+    <cpp lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lcheckerboard_pose_estimation" cflags="-I${prefix}/include"/>
+</export>
+
+</package>
+
