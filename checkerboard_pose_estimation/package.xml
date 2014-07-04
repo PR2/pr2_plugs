@@ -2,7 +2,7 @@
   <name>checkerboard_pose_estimation</name>
   <version>1.0.0</version>
   <description>checkerboard_pose_estimation</description>
-  <maintainer email="">Patrick Mihelich</maintainer>
+  <maintainer email="dash@clearpathrobotics.com">Devon Ash</maintainer>
 
   <license>BSD</license>
 
