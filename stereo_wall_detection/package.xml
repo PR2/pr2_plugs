@@ -1,0 +1,46 @@
+<package>
+  <name>stereo_wall_detection</name>
+  <version>1.0.0</version>
+  <description>Detects planar structures (e.g., walls) from stereo cameras point clouds (usually generated using a texture projector).</description>
+  <maintainer email="">Radu Bogdan Rusu</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://pr.willowgarage.com</url>
+  <!-- <url type="bugtracker"></url> -->
+
+  <author>Radu Bogdan Rusu</author>
+
+  <!-- Dependencies which this package needs to build itself. -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Dependencies needed to compile this package. -->
+  <build_depend>roscpp</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>angles</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+  <build_depend>pcl_ros</build_depend>
+
+  <!-- Dependencies needed after this package is compiled. -->
+  <run_depend>roscpp</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>angles</run_depend>
+  <run_depend>visualization_msgs</run_depend>
+  <run_depend>pcl_ros</run_depend>
+
+  <!-- Dependencies needed only for running tests. -->
+  <!-- <test_depend>roscpp</test_depend> -->
+  <!-- <test_depend>geometry_msgs</test_depend> -->
+  <!-- <test_depend>sensor_msgs</test_depend> -->
+  <!-- <test_depend>angles</test_depend> -->
+  <!-- <test_depend>visualization_msgs</test_depend> -->
+  <!-- <test_depend>pcl_ros</test_depend> -->
+
+<export>
+    <cpp cflags="-I${prefix}/srv/cpp"/>
+</export>
+
+</package>
+
