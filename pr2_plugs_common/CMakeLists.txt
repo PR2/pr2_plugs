@@ -6,7 +6,7 @@
 project(pr2_plugs_common)
 # Load catkin and all dependencies required for this package
 # TODO: remove all from COMPONENTS that are not catkin packages.
-find_package(catkin REQUIRED COMPONENTS roscpp tf bfl kdl std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs)
+find_package(catkin REQUIRED COMPONENTS roscpp tf std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs)
 
 # include_directories(include ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
 # CATKIN_MIGRATION: removed during catkin migration
@@ -51,7 +51,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #  rosbuild_add_boost_directories()
 #find_package(Boost REQUIRED COMPONENTS thread)
 include_directories(${Boost_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
+#target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 
 add_executable(pose_to_tf src/pose_to_tf.cpp)
 add_executable(detector_stub src/detector_stub.cpp)
@@ -64,11 +64,11 @@ add_executable(joint_space_move_test EXCLUDE_FROM_ALL test/joint_space_move_test
 #
 # CATKIN_MIGRATION: removed during catkin migration
 #  rosbuild_add_gtest_build_flags(joint_space_move_test)
-add_rostest(test/joint_space_move_test.launch)
+#add_rostest(test/joint_space_move_test.launch)
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-    #TODO DEPENDENCIES geometry_msgs std_msgs
-)
+#generate_messages(
+#    #TODO DEPENDENCIES geometry_msgs std_msgs
+#)
 
 # catkin_package parameters: http://ros.org/doc/groovy/api/catkin/html/dev_guide/generated_cmake_api.html#catkin-package
 # TODO: fill in what other packages will need to use this package
@@ -80,16 +80,3 @@ catkin_package(
 )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-    #TODO DEPENDENCIES geometry_msgs std_msgs
-)
-
-# catkin_package parameters: http://ros.org/doc/groovy/api/catkin/html/dev_guide/generated_cmake_api.html#catkin-package
-# TODO: fill in what other packages will need to use this package
-catkin_package(
-    DEPENDS roscpp tf bfl kdl std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs
-    CATKIN_DEPENDS # TODO
-    INCLUDE_DIRS # TODO include
-    LIBRARIES # TODO
-)
-
