@@ -2,7 +2,7 @@
   <name>stereo_wall_detection</name>
   <version>1.0.0</version>
   <description>Detects planar structures (e.g., walls) from stereo cameras point clouds (usually generated using a texture projector).</description>
-  <maintainer email="">Radu Bogdan Rusu</maintainer>
+  <maintainer email="dash@clearpathrobotics.com">Devon Ash</maintainer>
 
   <license>BSD</license>
 
