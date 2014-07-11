@@ -54,8 +54,14 @@ include_directories(${Boost_INCLUDE_DIRS})
 #target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 
 add_executable(pose_to_tf src/pose_to_tf.cpp)
+target_link_libraries(pose_to_tf ${catkin_LIBRARIES})
+
 add_executable(detector_stub src/detector_stub.cpp)
+target_link_libraries(detector_stub ${catkin_LIBRARIES})
+
 add_executable(detector_filter src/detector_filter.cpp)
+target_link_libraries(detector_filter ${catkin_LIBRARIES})
+
 add_executable(covariance_inserter src/covariance_inserter.cpp)
 target_link_libraries(covariance_inserter ${catkin_LIBRARIES})
 
