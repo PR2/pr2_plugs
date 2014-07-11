@@ -57,6 +57,7 @@ add_executable(pose_to_tf src/pose_to_tf.cpp)
 add_executable(detector_stub src/detector_stub.cpp)
 add_executable(detector_filter src/detector_filter.cpp)
 add_executable(covariance_inserter src/covariance_inserter.cpp)
+target_link_libraries(covariance_inserter ${catkin_LIBRARIES})
 
 add_executable(joint_space_move_test EXCLUDE_FROM_ALL test/joint_space_move_test.cpp include/pr2_plugs_common/joint_space_move.h)
 
