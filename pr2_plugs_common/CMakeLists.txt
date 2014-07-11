@@ -6,7 +6,7 @@
 project(pr2_plugs_common)
 # Load catkin and all dependencies required for this package
 # TODO: remove all from COMPONENTS that are not catkin packages.
-find_package(catkin REQUIRED COMPONENTS roscpp tf std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs)
+find_package(catkin REQUIRED COMPONENTS roscpp tf std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs kdl)
 
 # include_directories(include ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
 # CATKIN_MIGRATION: removed during catkin migration
@@ -82,7 +82,7 @@ add_executable(joint_space_move_test EXCLUDE_FROM_ALL test/joint_space_move_test
 catkin_package(
     DEPENDS roscpp tf bfl kdl std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs
     CATKIN_DEPENDS # TODO
-    INCLUDE_DIRS # TODO include
+    INCLUDE_DIRS include # TODO include
     LIBRARIES # TODO
 )
 
