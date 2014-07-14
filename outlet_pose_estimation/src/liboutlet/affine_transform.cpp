@@ -7,8 +7,8 @@
  *
  */
 
-#include "outlet_pose_estimation/detail/affine_transform.h"
-#include "outlet_pose_estimation/detail/one_way_descriptor_base.h"
+#include "outlet_pose_estimation/affine_transform.h"
+#include "outlet_pose_estimation/one_way_descriptor_base.h"
 
 using namespace std;
 
