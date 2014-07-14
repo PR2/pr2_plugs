@@ -62,7 +62,7 @@ generate_messages(
 catkin_package(
     DEPENDS roscpp opencv2 visual_pose_estimation
     CATKIN_DEPENDS # TODO
-    INCLUDE_DIRS # TODO include
+    INCLUDE_DIRS include # TODO include
     LIBRARIES # TODO
 )
 
