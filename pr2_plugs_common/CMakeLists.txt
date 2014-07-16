@@ -7,6 +7,7 @@ project(pr2_plugs_common)
 # Load catkin and all dependencies required for this package
 # TODO: remove all from COMPONENTS that are not catkin packages.
 find_package(catkin REQUIRED COMPONENTS roscpp tf std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs orocos_kdl tf2_geometry_msgs)
+find_package(Eigen REQUIRED)
 
 # include_directories(include ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
 # CATKIN_MIGRATION: removed during catkin migration
@@ -50,26 +51,24 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 # CATKIN_MIGRATION: removed during catkin migration
 #  rosbuild_add_boost_directories()
 #find_package(Boost REQUIRED COMPONENTS thread)
-include_directories(${Boost_INCLUDE_DIRS})
-include_directories(${catkin_INCLUDE_DIRS})
-include_directories(${PROJECT_NAME} include filter)
+include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS} ${bfl_INCLUDE_DIRS} filter include/${PROJECT_NAME}/filter ${Eigen_INCLUDE_DIRS})
 
 #target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 
 add_executable(pose_to_tf src/pose_to_tf.cpp)
-target_link_libraries(pose_to_tf ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
+target_link_libraries(pose_to_tf ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES} ${BFL_LIBS})
 add_dependencies(pose_to_tf ${PROJECT_NAME})
 
 add_executable(detector_stub src/detector_stub.cpp)
-target_link_libraries(detector_stub ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
+target_link_libraries(detector_stub ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES} ${BFL_LIBS})
 add_dependencies(detector_stub ${PROJECT_NAME})
 
 add_executable(detector_filter src/detector_filter.cpp)
 add_dependencies(detector_filter ${PROJECT_NAME})
-target_link_libraries(detector_filter ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
+target_link_libraries(detector_filter ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES} ${BFL_LIBS})
 
 add_executable(covariance_inserter src/covariance_inserter.cpp)
-target_link_libraries(covariance_inserter ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
+target_link_libraries(covariance_inserter ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES} ${BFL_LIBS})
 add_dependencies(covariance_inserter ${PROJECT_NAME})
 
 add_executable(joint_space_move_test EXCLUDE_FROM_ALL test/joint_space_move_test.cpp include/pr2_plugs_common/joint_space_move.h)

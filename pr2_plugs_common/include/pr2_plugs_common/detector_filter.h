@@ -41,7 +41,8 @@
 #include <tf/transform_listener.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <boost/thread/mutex.hpp>
-#include <filter/extendedkalmanfilter.h>
+
+#include <extendedkalmanfilter.h>
 #include <model/linearanalyticsystemmodel_gaussianuncertainty.h>
 #include <model/linearanalyticmeasurementmodel_gaussianuncertainty.h>
 #include <pdf/linearanalyticconditionalgaussian.h>
