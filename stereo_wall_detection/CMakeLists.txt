@@ -56,7 +56,7 @@ generate_messages(
 catkin_package(
     DEPENDS roscpp geometry_msgs sensor_msgs angles visualization_msgs pcl_ros
     CATKIN_DEPENDS # TODO
-    INCLUDE_DIRS # TODO include
+    INCLUDE_DIRS include # TODO include
     LIBRARIES # TODO
 )
 
