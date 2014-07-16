@@ -38,17 +38,40 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 add_message_files(
   FILES
   # TODO: List your msg files here
+  OutletPoseArray.msg  
+  OutletPose.msg  
+  RechargeCommand.msg  
+  RechargeState.msg
 )
 #uncomment if you have defined services
 add_service_files(
   FILES
   # TODO: List your msg files here
+  GetOutlets.srv  
+  RechargeRequest.srv
 )
 
+add_action_files(
+  FILES
+  AlignBase.action   
+  Empty.action    
+  VisionOutletDetection.action
+  DetectOutlet.action         
+  FetchPlug.action  
+  VisionPlugDetection.action
+  DetectPlugInGripper.action  
+  PlugIn.action    
+  WigglePlug.action
+  DetectPlugOnBase.action     
+  Recharge.action
+  DetectWallNorm.action      
+  StowPlug.action
+)
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
     #TODO DEPENDENCIES geometry_msgs std_msgs
+    DEPENDENCIES std_msgs geometry_msgs actionlib_msgs
 )
 
 # catkin_package parameters: http://ros.org/doc/groovy/api/catkin/html/dev_guide/generated_cmake_api.html#catkin-package
