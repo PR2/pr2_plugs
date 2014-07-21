@@ -62,6 +62,6 @@ catkin_package(
     DEPENDS roscpp opencv2 visual_pose_estimation
     CATKIN_DEPENDS # TODO
     INCLUDE_DIRS include #TODO include
-    LIBRARIES outlet_detection# TODO
+    LIBRARIES outlet_detection ${PROJECT_NAME}# TODO
 )
 
