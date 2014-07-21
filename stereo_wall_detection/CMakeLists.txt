@@ -4,13 +4,18 @@ cmake_minimum_required(VERSION 2.8.3)
 project(stereo_wall_detection)
 # Load catkin and all dependencies required for this package
 # TODO: remove all from COMPONENTS that are not catkin packages.
-find_package(catkin REQUIRED COMPONENTS roscpp geometry_msgs sensor_msgs angles visualization_msgs pcl_ros)
+find_package(catkin REQUIRED COMPONENTS roscpp geometry_msgs sensor_msgs angles visualization_msgs pcl_ros pcl_conversions pcl_msgs)
+find_package(PCL REQUIRED)
+find_package(Eigen REQUIRED)
+
 
 # include_directories(include ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
 # CATKIN_MIGRATION: removed during catkin migration
 # cmake_minimum_required (VERSION 2.4.6)
-include_directories(include)
+include_directories(include ${Boost_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
 
+
+link_directories(${Boost_LIBRARY_DIRS} ${PCL_LIBRARY_DIRS} ${Eigen_LIBRARY_DIRS})
 # CATKIN_MIGRATION: removed during catkin migration
 # include ($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 set (ROS_BUILD_TYPE RelWithDebInfo)
@@ -38,13 +43,16 @@ add_service_files(
 
 add_executable (wall_extractor src/wall_extractor_pcl.cpp)
 target_link_libraries(wall_extractor ${catkin_LIBRARIES})
+add_dependencies(wall_extractor pcl_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 add_executable (service_trigger src/service_trigger.cpp)
 target_link_libraries(service_trigger ${catkin_LIBRARIES})
+add_dependencies(service_trigger pcl_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
-find_package(Boost REQUIRED COMPONENTS thread)
-include_directories(${Boost_INCLUDE_DIRS})
-target_link_libraries(wall_extractor ${Boost_LIBRARIES})
+#find_package(Boost REQUIRED COMPONENTS thread)
+#include_directories(${Boost_INCLUDE_DIRS})
+
+
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
     #TODO DEPENDENCIES geometry_msgs std_msgs
@@ -54,9 +62,9 @@ generate_messages(
 # catkin_package parameters: http://ros.org/doc/groovy/api/catkin/html/dev_guide/generated_cmake_api.html#catkin-package
 # TODO: fill in what other packages will need to use this package
 catkin_package(
-    DEPENDS roscpp geometry_msgs sensor_msgs angles visualization_msgs pcl_ros
+    DEPENDS Boost Eigen PCL roscpp geometry_msgs sensor_msgs angles visualization_msgs pcl_ros
     CATKIN_DEPENDS # TODO
-    INCLUDE_DIRS include # TODO include
+    INCLUDE_DIRS # TODO include
     LIBRARIES # TODO
 )
 
