@@ -57,6 +57,6 @@ catkin_package(
     DEPENDS roscpp opencv2 cv_bridge image_transport visual_pose_estimation outlet_pose_estimation
     CATKIN_DEPENDS # TODO
     INCLUDE_DIRS include # TODO include
-    LIBRARIES # TODO
+    LIBRARIES ${PROJECT_NAME}# TODO
 )
 
