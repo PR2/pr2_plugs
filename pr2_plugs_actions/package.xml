@@ -19,6 +19,7 @@
 
   <!-- Dependencies needed to compile this package. -->
   <build_depend>actionlib</build_depend>
+  <build_depend>roscpp_serialization</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>rostest</build_depend>
@@ -64,6 +65,7 @@
   <run_depend>sensor_msgs</run_depend>
   <run_depend>tf</run_depend>
   <run_depend>kdl</run_depend>
+  <run_depend>roscpp_serialization</run_depend>
   <run_depend>tf_conversions</run_depend>
   <run_depend>tf2_ros</run_depend>
   <run_depend>tf2_geometry_msgs</run_depend>
