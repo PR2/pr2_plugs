@@ -54,7 +54,7 @@
 //#include <pcl/features/feature.h>
 //#include <pcl/point_types.h>
 
-#include <pcl_ros/ModelCoefficients.h>
+#include <pcl_msgs/ModelCoefficients.h>
 #include <pcl_ros/io/pcd_io.h>
 #include <pcl_ros/point_types.h>
 #include <pcl_ros/sample_consensus/method_types.h>
