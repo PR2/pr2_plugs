@@ -41,11 +41,14 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 # rosbuild_add_boost_directories()
 #find_package(Boost REQUIRED COMPONENTS thread)
 include_directories(${Boost_INCLUDE_DIRS})
+include_directories(include)
+
 #target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 #add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 
 add_library(${PROJECT_NAME} src/pose_estimator.cpp src/planar.cpp)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBS})
 ## Generate added messages and services with any dependencies listed here
 
 # catkin_package parameters: http://ros.org/doc/groovy/api/catkin/html/dev_guide/generated_cmake_api.html#catkin-package
@@ -53,7 +56,7 @@ add_library(${PROJECT_NAME} src/pose_estimator.cpp src/planar.cpp)
 catkin_package(
     DEPENDS roscpp opencv2 image_geometry tf
     CATKIN_DEPENDS # TODO
-    INCLUDE_DIRS # TODO include
-    LIBRARIES # TODO
+    INCLUDE_DIRS include # TODO include
+    LIBRARIES ${PROJECT_NAME}# TODO
 )
 
