@@ -42,28 +42,10 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <stereo_wall_detection/DetectWall.h>
 
-//#include <pcl/ModelCoefficients.h>
-//#include <pcl/io/pcd_io.h>
-//#include <pcl/point_types.h>
-//#include <pcl/sample_consensus/method_types.h>
-//#include <pcl/sample_consensus/model_types.h>
-//#include <pcl/segmentation/sac_segmentation.h>
-//#include <pcl/ros/conversions.h>
-
-//#include <pcl/io/io.h>
-//#include <pcl/features/feature.h>
-//#include <pcl/point_types.h>
-
 #include <pcl_msgs/ModelCoefficients.h>
 #include <pcl_ros/io/pcd_io.h>
-#include <pcl_ros/point_types.h>
-#include <pcl_ros/sample_consensus/method_types.h>
-#include <pcl_ros/sample_consensus/model_types.h>
+#include <pcl/common/centroid.h>
 #include <pcl_ros/segmentation/sac_segmentation.h>
-
-#include <pcl_ros/io/io.h>
-#include <pcl_ros/features/feature.h>
-#include <pcl_ros/point_types.h>
 
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition.hpp>
