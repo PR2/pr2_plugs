@@ -1,17 +1,21 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(pr2_plugs_actions)
 
-find_package(catkin REQUIRED COMPONENTS actionlib roscpp rospy  actionlib_msgs geometry_msgs pr2_controllers_msgs pr2_controller_manager sensor_msgs tf tf_conversions tf2_ros tf2_geometry_msgs pr2_msgs std_srvs move_base_msgs dynamic_reconfigure pr2_common_action_msgs pr2_plugs_common pr2_plugs_msgs stereo_wall_detection checkerboard_pose_estimation outlet_pose_estimation image_transport joint_trajectory_action_tools pr2_arm_move_ik costmap_2d base_local_planner pr2_image_snapshot_recorder smach smach_ros cv_bridge rostest roscpp_serialization)
+find_package(catkin REQUIRED COMPONENTS roscpp_serialization actionlib roscpp rospy  actionlib_msgs geometry_msgs pr2_controllers_msgs pr2_controller_manager sensor_msgs tf tf_conversions tf2_ros tf2_geometry_msgs pr2_msgs std_srvs move_base_msgs dynamic_reconfigure pr2_common_action_msgs pr2_plugs_common pr2_plugs_msgs stereo_wall_detection checkerboard_pose_estimation outlet_pose_estimation image_transport joint_trajectory_action_tools pr2_arm_move_ik costmap_2d base_local_planner pr2_image_snapshot_recorder smach smach_ros cv_bridge rostest)
+
+find_package(OpenCV)
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS} ${pcl_INCLUDE_DIRS})
 
 add_executable(vision_detect_plug src/vision_detect_plug.cpp)
-target_link_libraries(vision_detect_plug ${catkin_LIBARIES} ${OpenCV_LIBRARIES})
+target_link_libraries(vision_detect_plug ${catkin_LIBARIES} ${OpenCV_LIBRARIES} ${roscpp_serialization_LIBRARIES} ${roscpp_LIBRARIES} ${actionlib_LIBRARIES} ${image_transport_LIBRARIES} ${tf_LIBRARIES} ${checkerboard_pose_estimation_LIBRARIES})
+add_dependencies(vision_detect_plug roscpp_serialization checkerboard_pose_estimation)
 
 
 add_executable(vision_detect_outlet src/vision_detect_outlet.cpp)
-target_link_libraries(vision_detect_outlet ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-add_dependencies(vision_detect_outlet outlet_pose_estimation)
+target_link_libraries(vision_detect_outlet ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${outlet_pose_estimation_LIBRARIES} ${visual_pose_estimation})
+add_dependencies(vision_detect_outlet outlet_pose_estimation visual_pose_estimation)
 
 
 add_executable(align_base src/align_base.cpp)
