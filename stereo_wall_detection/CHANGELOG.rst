@@ -4,6 +4,33 @@ Changelog for package stereo_wall_detection
 
 Forthcoming
 -----------
+* Added install targets
+* Generate changelogs
+* Now compiles in hydro
+* Fixed detector include
+* Fixed export targets
+* Added include export
+* Fixing linking
+* Catkinization and hydro compilation
+* Packagexml
+* catkinize
+* Update plugs launch files; fix error in pcl wall extractor
+* count points in cloud
+* stay subscribed to cloud messages
+* update stack dependencies
+* working with fuerte
+* eigen port
+* Fix indeterminate wall normal and add debugging output.
+* Fix use of Eigen3 in transforms.
+* port to pcl
+* port to eigen3
+* patching for Eigen3 compatability
+* Do not kill app when one of the nodes dies. This allows apps to take advantage of the respawn function in roslaunch to be more robust.
+* another attempt to fix the segfaults
+* Hopefully, fixing the stero wall plane detector once and for all, we'll see how it goes
+* copy branch into trunk
+* Contributors: Austin Hendrix, Bhaskara Marthi, Ken Conley, TheDash, Wim Meeussen, eitan, tfoote, wim
+
 * Now compiles in hydro
 * Fixed detector include
 * Fixed export targets
