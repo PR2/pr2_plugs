@@ -49,3 +49,9 @@ catkin_package(
     LIBRARIES # TODO
 )
 
+
+install(PROGRAMS scripts/battery.py scripts/detect_plug.py scripts/outlet_server.py scripts/recharge_toplevel.py scripts/tf_publish.py scripts/wiggle_plug.py scripts/detect_outlet.py scripts/detect_wall_norm.py scripts/plug_in.py scripts/recharge_web_adaptor.py scripts/vision_detect_outlet.py scripts/detect_plug_on_base.py scripts/fetch_plug.py scripts/recharge_application.py scripts/stow_plug.py scripts/vision_detect_plug.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+install(DIRECTORY config/ launch/ test/ DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+install(DIRECTORY include/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
