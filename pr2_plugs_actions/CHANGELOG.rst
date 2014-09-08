@@ -2,8 +2,8 @@
 Changelog for package pr2_plugs_actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.2 (2014-09-08)
+------------------
 * Removed kdl dependency
 * Contributors: TheDash
 
