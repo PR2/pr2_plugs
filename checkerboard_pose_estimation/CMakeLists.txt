@@ -47,9 +47,6 @@ include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
 
 add_library(${PROJECT_NAME} src/cvcalibinit_lowres.cpp src/detector.cpp src/estimator.cpp src/ros_detector.cpp)
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-    #TODO DEPENDENCIES geometry_msgs std_msgs
-)
 
 # catkin_package parameters: http://ros.org/doc/groovy/api/catkin/html/dev_guide/generated_cmake_api.html#catkin-package
 # TODO: fill in what other packages will need to use this package

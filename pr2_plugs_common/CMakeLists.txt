@@ -6,8 +6,9 @@
 project(pr2_plugs_common)
 # Load catkin and all dependencies required for this package
 # TODO: remove all from COMPONENTS that are not catkin packages.
-find_package(catkin REQUIRED COMPONENTS roscpp tf std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs orocos_kdl tf2_geometry_msgs)
-
+find_package(catkin REQUIRED COMPONENTS roscpp tf std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs tf2_geometry_msgs)
+find_package(orocos_kdl REQUIRED)
+find_library(orocos_kdl_LIBRARY NAMES ${orocos_kdl_LIBRARIES} PATHS)
 
 find_package(PkgConfig)
 pkg_check_modules(BFL REQUIRED bfl)
