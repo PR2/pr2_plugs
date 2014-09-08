@@ -2,8 +2,8 @@
 Changelog for package pr2_plugs_common
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.3 (2014-09-08)
+------------------
 * removed kdl
 * Contributors: TheDash
 
