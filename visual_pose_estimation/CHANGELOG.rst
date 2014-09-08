@@ -2,6 +2,9 @@
 Changelog for package visual_pose_estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.0.2 (2014-09-08)
 ------------------
 
