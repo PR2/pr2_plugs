@@ -1,6 +1,6 @@
 <package>
   <name>pr2_plugs_msgs</name>
-  <version>1.0.4</version>
+  <version>1.0.5</version>
   <description>pr2_plugs_msgs provides the msgs and action definitions required for plugging in.</description>
 
   <maintainer email="dash@clearpathrobotics.com">Devon Ash</maintainer>
