@@ -2,8 +2,8 @@
 Changelog for package stereo_wall_detection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.1 (2014-09-08)
+------------------
 * Added install targets
 * Generate changelogs
 * Now compiles in hydro

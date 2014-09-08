@@ -2,8 +2,8 @@
 Changelog for package outlet_pose_estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.1 (2014-09-08)
+------------------
 * ADded install targets
 * Generate changelogs
 * Exported libraries

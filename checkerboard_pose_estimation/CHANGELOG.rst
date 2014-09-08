@@ -2,8 +2,8 @@
 Changelog for package checkerboard_pose_estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.1 (2014-09-08)
+------------------
 * Added install targets
 * Generate changelogs
 * Exported libraries

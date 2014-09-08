@@ -2,8 +2,8 @@
 Changelog for package pr2_plugs_common
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.1 (2014-09-08)
+------------------
 * Added install targets
 * Generate changelogs
 * now compiles in hydro
