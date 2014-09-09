@@ -42,7 +42,9 @@ add_executable (service_trigger src/service_trigger.cpp)
 target_link_libraries(service_trigger ${catkin_LIBRARIES})
 add_dependencies(service_trigger pcl_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS} stereo_wall_detection_gencpp)
 
-
+install(TARGETS wall_extractor service_trigger 
+    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(FILES wall_extractor.launch CHANGELOG.rst DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
