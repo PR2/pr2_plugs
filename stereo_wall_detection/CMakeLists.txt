@@ -29,7 +29,7 @@ generate_messages(
 catkin_package(
     DEPENDS Eigen PCL 
     CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs angles visualization_msgs pcl_ros pcl_msgs message_runtime geometry_msgs # TODO
-    INCLUDE_DIRS # TODO include
+    INCLUDE_DIRS include # TODO include
     LIBRARIES # TODO
 )
 
@@ -41,6 +41,7 @@ add_dependencies(wall_extractor pcl_ros_generate_messages_cpp ${catkin_EXPORTED_
 add_executable (service_trigger src/service_trigger.cpp)
 target_link_libraries(service_trigger ${catkin_LIBRARIES})
 add_dependencies(service_trigger pcl_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS} stereo_wall_detection_gencpp)
+
 
 install(TARGETS wall_extractor service_trigger 
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

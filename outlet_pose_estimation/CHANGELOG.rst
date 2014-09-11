@@ -2,6 +2,11 @@
 Changelog for package outlet_pose_estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Added cleaner CMakeLists for stereo_wall_detection and fixed bugs inside of it found using catkin_lint
+* Contributors: TheDash
+
 1.0.5 (2014-09-08)
 ------------------
 

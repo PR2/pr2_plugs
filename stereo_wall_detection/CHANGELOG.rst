@@ -2,6 +2,12 @@
 Changelog for package stereo_wall_detection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Added install targets
+* Added cleaner CMakeLists for stereo_wall_detection and fixed bugs inside of it found using catkin_lint
+* Contributors: TheDash
+
 1.0.5 (2014-09-08)
 ------------------
 
