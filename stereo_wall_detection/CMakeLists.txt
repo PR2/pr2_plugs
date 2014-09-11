@@ -29,7 +29,7 @@ generate_messages(
 catkin_package(
     DEPENDS Eigen PCL 
     CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs angles visualization_msgs pcl_ros pcl_msgs message_runtime geometry_msgs # TODO
-    INCLUDE_DIRS include # TODO include
+    INCLUDE_DIRS# TODO include
     LIBRARIES # TODO
 )
 
