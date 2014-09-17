@@ -2,6 +2,9 @@
 Changelog for package pr2_image_snapshot_recorder
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.0.8 (2014-09-11)
 ------------------
 
