@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 2.8.3)
 project(pr2_plugs_common)
 find_package(catkin REQUIRED COMPONENTS roscpp tf std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs tf2 geometry_msgs)
 find_package(orocos_kdl REQUIRED)
