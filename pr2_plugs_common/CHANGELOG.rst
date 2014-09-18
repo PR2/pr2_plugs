@@ -2,6 +2,12 @@
 Changelog for package pr2_plugs_common
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* ADded cmake version tag
+* Fixed misname in CMake
+* Contributors: TheDash
+
 1.0.9 (2014-09-17)
 ------------------
 
