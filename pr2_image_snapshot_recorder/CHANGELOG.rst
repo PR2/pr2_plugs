@@ -4,6 +4,9 @@ Changelog for package pr2_image_snapshot_recorder
 
 Forthcoming
 -----------
+* Updated maintainership
+* pr2_plugs is now in unstable, compiles
+* Contributors: TheDash, dash
 
 1.0.9 (2014-09-17)
 ------------------

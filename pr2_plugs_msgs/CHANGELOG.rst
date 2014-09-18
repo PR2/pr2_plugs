@@ -4,6 +4,8 @@ Changelog for package pr2_plugs_msgs
 
 Forthcoming
 -----------
+* pr2_plugs is now in unstable, compiles
+* Contributors: dash
 
 1.0.9 (2014-09-17)
 ------------------

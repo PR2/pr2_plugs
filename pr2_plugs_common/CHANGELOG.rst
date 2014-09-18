@@ -4,6 +4,11 @@ Changelog for package pr2_plugs_common
 
 Forthcoming
 -----------
+* pr2_plugs is now in unstable, compiles
+* ADded cmake version tag
+* Fixed misname in CMake
+* Contributors: TheDash, dash
+
 * ADded cmake version tag
 * Fixed misname in CMake
 * Contributors: TheDash

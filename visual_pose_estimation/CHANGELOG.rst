@@ -4,6 +4,9 @@ Changelog for package visual_pose_estimation
 
 Forthcoming
 -----------
+* Added install targets for libraries in visual_pose
+* pr2_plugs is now in unstable, compiles
+* Contributors: TheDash, dash
 
 1.0.9 (2014-09-17)
 ------------------

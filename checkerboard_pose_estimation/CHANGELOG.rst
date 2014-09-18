@@ -4,6 +4,8 @@ Changelog for package checkerboard_pose_estimation
 
 Forthcoming
 -----------
+* pr2_plugs is now in unstable, compiles
+* Contributors: dash
 
 1.0.9 (2014-09-17)
 ------------------

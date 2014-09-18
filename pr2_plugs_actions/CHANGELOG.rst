@@ -4,6 +4,9 @@ Changelog for package pr2_plugs_actions
 
 Forthcoming
 -----------
+* Added install targets for executables in pr2_plugs_actions
+* pr2_plugs is now in unstable, compiles
+* Contributors: dash
 
 1.0.9 (2014-09-17)
 ------------------
