@@ -2,7 +2,6 @@
   <name>pr2_image_snapshot_recorder</name>
   <version>1.0.9</version>
   <description>pr2_image_snapshot_recorder</description>
-  <maintainer email="dash@clearpathrobotics.com">Devon Ash</maintainer>
 
   <license>BSD</license>
 
