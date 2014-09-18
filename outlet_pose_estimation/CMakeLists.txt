@@ -12,9 +12,11 @@ add_library(outlet_detection src/liboutlet/affine_transform.cpp src/liboutlet/co
 add_definitions(-D_OUTLET_HR -D_TUNING -D_USE_OUTLET_TUPLE -D_GHT -D_KDTREE -D_GHASH)
 find_package(OpenCV REQUIRED)
 target_link_libraries(outlet_detection ${OpenCV_LIBRARIES})
+add_dependencies(outlet_detection visual_pose_estimation_gencpp ${catkin_EXPORTED_TARGETS})
 
 add_library(${PROJECT_NAME} src/detector.cpp src/estimator.cpp)
 target_link_libraries(${PROJECT_NAME} outlet_detection)
+add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS} visual_pose_estimation_gencpp)
 
 catkin_package(
     DEPENDS roscpp opencv2 visual_pose_estimation
@@ -22,7 +24,6 @@ catkin_package(
     INCLUDE_DIRS include #TODO include
     LIBRARIES outlet_detection ${PROJECT_NAME}# TODO
 )
-
 
 install(DIRECTORY include/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
