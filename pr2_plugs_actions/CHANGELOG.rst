@@ -2,8 +2,8 @@
 Changelog for package pr2_plugs_actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.10 (2014-09-18)
+-------------------
 * Added install targets for executables in pr2_plugs_actions
 * pr2_plugs is now in unstable, compiles
 * Contributors: dash

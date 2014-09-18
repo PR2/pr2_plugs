@@ -2,8 +2,8 @@
 Changelog for package stereo_wall_detection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.10 (2014-09-18)
+-------------------
 * pr2_plugs is now in unstable, compiles
 * Contributors: dash
 

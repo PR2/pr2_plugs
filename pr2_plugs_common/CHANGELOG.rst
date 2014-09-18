@@ -2,8 +2,8 @@
 Changelog for package pr2_plugs_common
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.10 (2014-09-18)
+-------------------
 * pr2_plugs is now in unstable, compiles
 * ADded cmake version tag
 * Fixed misname in CMake
