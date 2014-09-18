@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(outlet_pose_estimation)
-find_package(catkin REQUIRED COMPONENTS roscpp  visual_pose_estimation)
+find_package(catkin REQUIRED COMPONENTS roscpp visual_pose_estimation)
 
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
@@ -27,4 +27,8 @@ catkin_package(
 
 install(DIRECTORY include/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
+install(TARGETS ${PROJECT_NAME} outlet_detection 
+ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 
