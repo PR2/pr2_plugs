@@ -30,16 +30,19 @@ target_link_libraries(fetch_and_stow_plug_test ${catkin_LIBRARIES} ${OpenCV_LIBS
 add_executable(detect_plug_test EXCLUDE_FROM_ALL test/action_server_tests/detect_plug_test.cpp)
 target_link_libraries(detect_plug_test ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
+# This guy broken
 add_executable(detect_wall_norm_test EXCLUDE_FROM_ALL test/action_server_tests/detect_wall_norm_test.cpp)
 target_link_libraries(detect_wall_norm_test ${catkin_LIBRARIES})
 
-
+# this guy broken
 add_rostest(test/action_server_tests/detect_wall_norm_test.launch)
 target_link_libraries(detect_wall_norm_test ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
+# This guy broken.
 add_executable(wiggle_plug_test EXCLUDE_FROM_ALL test/action_server_tests/wiggle_plug_test.cpp)
 target_link_libraries(wiggle_plug_test ${catkin_LIBRARIES})
 
+# this guy broken
 add_rostest(test/action_server_tests/wiggle_plug_test.launch)
 target_link_libraries(wiggle_plug_test ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
