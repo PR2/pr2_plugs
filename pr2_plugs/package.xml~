@@ -1,0 +1,30 @@
+<package>
+  <name>pr2_plugs</name>
+  <version>1.0.9</version>
+  <description>pr2_plugs metapackage. The pr2_plugs metapackage groups all of the functionality needed for the pr2 to plug itself into the wall</description>
+
+  <maintainer email="dash@clearpathrobotics.com">Devon Ash</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://ros.org/wiki/pr2_plugs</url>
+  <!-- <url type="bugtracker"></url> -->
+  <url type="bugtracker">https://github.com/PR2/pr2_plugs/issues</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>checkerboard_pose_estimation</run_depend>
+  <run_depend>outlet_pose_estimation</run_depend>
+  <run_depend>pr2_image_snapshot_recorder</run_depend>
+  <run_depend>pr2_plugs_actions</run_depend>
+  <run_depend>pr2_plugs_common</run_depend>
+  <run_depend>pr2_plugs_msgs</run_depend>
+  <run_depend>stereo_wall_detection</run_depend>
+  <run_depend>visual_pose_estimation</run_depend>
+
+<export>
+    <metapackage/>
+</export>
+
+</package>
+
