@@ -29,7 +29,7 @@ add_rostest_gtest(fetch_and_stow_plug_test test/action_server_tests/fetch_and_st
 target_link_libraries(fetch_and_stow_plug_test ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
 #Tests
-add_rostest_gtest(detect_plug_test test/action_server_tests
+add_rostest_gtest(detect_plug_test test/action_server_tests/detect_plug_test.launch test/action_server_tests/detect_plug_test.cpp)
 add_executable(detect_plug_test EXCLUDE_FROM_ALL test/action_server_tests/detect_plug_test.cpp)
 target_link_libraries(detect_plug_test ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
