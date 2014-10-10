@@ -2,8 +2,8 @@
 Changelog for package pr2_plugs_actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.11 (2014-10-10)
+-------------------
 * More bugs
 * Fixed cmake bracket bug
 * Added pr2_plugs gtests
