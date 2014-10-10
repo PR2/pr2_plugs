@@ -2,6 +2,9 @@
 Changelog for package visual_pose_estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.0.10 (2014-09-18)
 -------------------
 * Added install targets for libraries in visual_pose

@@ -2,6 +2,16 @@
 Changelog for package pr2_plugs_actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* More bugs
+* Fixed cmake bracket bug
+* Added pr2_plugs gtests
+* Removed exclude from all.. no wonder it couldn't find the unbuilt node -.-
+* test fixes
+* Found bugs.. haven't fixed them (related to failing tests)
+* Contributors: TheDash
+
 1.0.10 (2014-09-18)
 -------------------
 * Added install targets for executables in pr2_plugs_actions

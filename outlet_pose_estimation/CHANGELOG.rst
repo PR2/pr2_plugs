@@ -2,6 +2,11 @@
 Changelog for package outlet_pose_estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Added library install for outlet_pose_estimation
+* Contributors: TheDash
+
 1.0.10 (2014-09-18)
 -------------------
 * Fixed up CMakeLists in outlet_pose
