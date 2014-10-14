@@ -2,6 +2,11 @@
 Changelog for package outlet_pose_estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* |Compiles now
+* Contributors: TheDash
+
 1.0.12 (2014-10-10)
 -------------------
 
