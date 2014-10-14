@@ -46,7 +46,7 @@ catkin_package(
     LIBRARIES # TODO
 )
 
-install(TARGETS fetch_and_stow_plug_test detect_plug_test detect_wall_norm_test vision_detect_plug vision_detect_outlet align_base move_base_omnidirectional 
+install(TARGETS  vision_detect_plug vision_detect_outlet align_base move_base_omnidirectional 
 ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
