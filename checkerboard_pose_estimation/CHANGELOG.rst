@@ -2,8 +2,8 @@
 Changelog for package checkerboard_pose_estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.13 (2014-10-14)
+-------------------
 * Removed mainpage.dox
 * Contributors: TheDash
 

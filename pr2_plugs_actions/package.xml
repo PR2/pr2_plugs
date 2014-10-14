@@ -1,6 +1,6 @@
 <package>
   <name>pr2_plugs_actions</name>
-  <version>1.0.12</version>
+  <version>1.0.13</version>
   <description>pr2_plugs_actions contains actions specific to plugging in the PR2 robot.</description>
   <maintainer email="dash@clearpathrobotics.com">Devon Ash</maintainer>
 
