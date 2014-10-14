@@ -50,5 +50,5 @@ catkin_package(
 )
 
 
-install(FILES rosdoc.yaml mainpage.dox CHANGELOG.rst DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+install(FILES rosdoc.yaml DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
