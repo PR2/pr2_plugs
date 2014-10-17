@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 2.8.3)
 project(visual_pose_estimation)
 find_package(catkin REQUIRED COMPONENTS roscpp image_geometry tf)
 
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(include)
 
@@ -21,7 +18,6 @@ catkin_package(
 
 install(DIRECTORY include/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
-install(FILES CHANGELOG.rst DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 install(TARGETS ${PROJECT_NAME} 
 ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
