@@ -2,6 +2,12 @@
 Changelog for package pr2_plugs_common
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixing orocos bug
+* fixed orocos-kdl
+* Contributors: TheDash
+
 1.0.13 (2014-10-14)
 -------------------
 * Removed mainpage.dox

@@ -2,6 +2,9 @@
 Changelog for package stereo_wall_detection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.0.13 (2014-10-14)
 -------------------
 
