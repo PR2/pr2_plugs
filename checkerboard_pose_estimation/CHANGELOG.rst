@@ -2,6 +2,9 @@
 Changelog for package checkerboard_pose_estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.0.15 (2014-10-20)
 -------------------
 
