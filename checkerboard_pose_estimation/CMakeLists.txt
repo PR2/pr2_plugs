@@ -2,12 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(checkerboard_pose_estimation)
 find_package(catkin REQUIRED COMPONENTS roscpp cv_bridge image_transport visual_pose_estimation outlet_pose_estimation)
 
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-
 include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
-
-add_library(${PROJECT_NAME} src/cvcalibinit_lowres.cpp src/detector.cpp src/estimator.cpp src/ros_detector.cpp)
 
 catkin_package(
     DEPENDS roscpp opencv2 cv_bridge image_transport visual_pose_estimation outlet_pose_estimation
@@ -17,5 +12,14 @@ catkin_package(
 )
 
 
+add_library(${PROJECT_NAME} src/cvcalibinit_lowres.cpp src/detector.cpp src/estimator.cpp src/ros_detector.cpp)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBARIES})
+add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS} visual_pose_estimation_gencpp visual_pose_estimation_EXPORTED_TARGETS)
+
 install(DIRECTORY include/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
+
+install(TARGETS ${PROJECT_NAME} 
+ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

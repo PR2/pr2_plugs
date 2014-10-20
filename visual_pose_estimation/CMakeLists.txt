@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(visual_pose_estimation)
-find_package(catkin REQUIRED COMPONENTS roscpp image_geometry tf)
+find_package(catkin REQUIRED COMPONENTS roscpp image_geometry tf )
 
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(include)
