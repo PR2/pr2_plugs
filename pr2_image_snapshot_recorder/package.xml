@@ -1,6 +1,6 @@
 <package>
   <name>pr2_image_snapshot_recorder</name>
-  <version>1.0.16</version>
+  <version>1.0.17</version>
   <description>pr2_image_snapshot_recorder</description>
 
   <license>BSD</license>

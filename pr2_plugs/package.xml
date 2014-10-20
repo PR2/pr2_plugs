@@ -1,6 +1,6 @@
 <package>
   <name>pr2_plugs</name>
-  <version>1.0.16</version>
+  <version>1.0.17</version>
   <description>pr2_plugs metapackage. The pr2_plugs metapackage groups all of the functionality needed for the pr2 to plug itself into the wall</description>
 
   <maintainer email="dash@clearpathrobotics.com">Devon Ash</maintainer>
