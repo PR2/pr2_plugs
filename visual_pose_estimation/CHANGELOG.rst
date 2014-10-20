@@ -2,6 +2,11 @@
 Changelog for package visual_pose_estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixed visual pose estimation finding of object_detector.h
+* Contributors: TheDash
+
 1.0.14 (2014-10-17)
 -------------------
 * Fixing orocos bug
