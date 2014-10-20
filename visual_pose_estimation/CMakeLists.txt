@@ -2,11 +2,11 @@ cmake_minimum_required(VERSION 2.8.3)
 project(visual_pose_estimation)
 find_package(catkin REQUIRED COMPONENTS roscpp image_geometry tf )
 
-include_directories(${Boost_INCLUDE_DIRS})
-include_directories(include)
+include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 add_library(${PROJECT_NAME} src/pose_estimator.cpp src/planar.cpp)
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBS})
+add_dependencies(${catkin_EXPORTED_TARGETS})
 
 catkin_package(
     DEPENDS roscpp opencv2 image_geometry tf
