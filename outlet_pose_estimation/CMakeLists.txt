@@ -15,7 +15,7 @@ target_link_libraries(outlet_detection ${OpenCV_LIBRARIES})
 add_dependencies(outlet_detection visual_pose_estimation_gencpp ${catkin_EXPORTED_TARGETS} visual_pose_estimation_EXPORTED_TARGETS)
 
 add_library(${PROJECT_NAME} src/detector.cpp src/estimator.cpp)
-target_link_libraries(${PROJECT_NAME} outlet_detection)
+target_link_libraries(${PROJECT_NAME} outlet_detection ${catkin_LIBRARIES})
 add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS} visual_pose_estimation_gencpp visual_pose_estimation_EXPORTED_TARGETS)
 
 catkin_package(
