@@ -2,8 +2,8 @@
 Changelog for package visual_pose_estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.15 (2014-10-20)
+-------------------
 * Fixed visual pose estimation finding of object_detector.h
 * Contributors: TheDash
 
