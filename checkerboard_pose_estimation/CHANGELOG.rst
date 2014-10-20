@@ -2,6 +2,12 @@
 Changelog for package checkerboard_pose_estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixed the linking bug in checkerboard_pose_est
+* Removed set executable output paths
+* Contributors: TheDash
+
 1.0.16 (2014-10-20)
 -------------------
 
