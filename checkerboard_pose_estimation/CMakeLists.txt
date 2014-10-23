@@ -13,8 +13,8 @@ catkin_package(
 
 
 add_library(${PROJECT_NAME} src/cvcalibinit_lowres.cpp src/detector.cpp src/estimator.cpp src/ros_detector.cpp)
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBARIES} visual_pose_estimation)
-add_dependencies(${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBARIES})
+add_dependencies(${PROJECT_NAME} visual_pose_estimation_EXPORTED_TARGETS)
 
 install(DIRECTORY include/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
