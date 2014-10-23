@@ -2,8 +2,8 @@
 Changelog for package outlet_pose_estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.18 (2014-10-23)
+-------------------
 * Fixed orocos_kdl missing in pr2_plugs_common
 * Contributors: TheDash
 
