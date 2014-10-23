@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(outlet_pose_estimation)
 find_package(catkin REQUIRED COMPONENTS roscpp visual_pose_estimation)
+#outlet_pose_estimation doesn't have access to the visual_pose_estimation header files
 
-
-include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} visual_pose_estimation_INCLUDE_DIRS)
 
 
 
@@ -25,7 +25,7 @@ catkin_package(
     LIBRARIES outlet_detection ${PROJECT_NAME}# TODO
 )
 
-install(DIRECTORY include/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
 install(TARGETS ${PROJECT_NAME} outlet_detection 
 ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

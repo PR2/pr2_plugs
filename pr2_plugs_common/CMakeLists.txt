@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(pr2_plugs_common)
-find_package(catkin REQUIRED COMPONENTS roscpp tf std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs tf2 geometry_msgs)
+find_package(catkin REQUIRED COMPONENTS roscpp tf std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs tf2 geometry_msgs orocos_kdl)
 #find_package(orocos_kdl REQUIRED)
 #find_library(orocos_kdl LIBRARY NAMES ${orocos_kdl_LIBRARIES} PATHS)
+#find_package(orocos_kdl REQUIRED)
+#find_library(orocos_kdl_LIBRARY NAMES ${orocos_kdl_LIBRARIES} PATHS ${orocos_kdl_LIBRARY_DIRS} NO_DEFAULT_PATH)
+#set(orocos_kdl_LIBRARIES ${orocos_kdl_LIBRARY})
 
-find_package(orocos_kdl REQUIRED)
-find_library(OROCOS_KDL orocos-kdl)
-set(orocos_kdl_LIBRARIES ${OROCOS_KDL})
 
 find_package(PkgConfig)
 pkg_check_modules(BFL REQUIRED bfl)
@@ -15,13 +15,8 @@ message("BFL include dirs:" ${BFL_INCLUDE_DIRS})
 message("BFL library dirs:" ${BFL_LIBRARY_DIRS})
 link_directories(${BFL_LIBRARY_DIRS})
 
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-
 include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS} ${BFL_INCLUDE_DIRS})
 link_directories(${BFL_LINK_DIRS})
-
-
 
 add_executable(pose_to_tf src/pose_to_tf.cpp)
 target_link_libraries(pose_to_tf ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES} ${BFL_LIBRARIES})
@@ -42,7 +37,7 @@ add_dependencies(covariance_inserter ${PROJECT_NAME} bfl_generate_messages_cpp $
 add_executable(joint_space_move_test EXCLUDE_FROM_ALL test/joint_space_move_test.cpp include/pr2_plugs_common/joint_space_move.h)
 
 catkin_package(
-    DEPENDS roscpp tf bfl std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs BFL
+    DEPENDS roscpp tf bfl std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs BFL orocos_kdl
     CATKIN_DEPENDS # TODO
     INCLUDE_DIRS include# TODO include
     LIBRARIES # TODO
