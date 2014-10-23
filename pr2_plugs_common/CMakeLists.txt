@@ -6,11 +6,10 @@ find_package(catkin REQUIRED COMPONENTS roscpp tf std_msgs geometry_msgs actionl
 #find_package(orocos_kdl REQUIRED)
 #find_library(orocos_kdl_LIBRARY NAMES ${orocos_kdl_LIBRARIES} PATHS ${orocos_kdl_LIBRARY_DIRS} NO_DEFAULT_PATH)
 #set(orocos_kdl_LIBRARIES ${orocos_kdl_LIBRARY})
-
-
+find_package(orocos_kdl REQUIRED)
 find_package(PkgConfig)
 pkg_check_modules(BFL REQUIRED bfl)
-include_directories(${BFL_INCLUDE_DIRS})
+include_directories(${BFL_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS})
 message("BFL include dirs:" ${BFL_INCLUDE_DIRS})
 message("BFL library dirs:" ${BFL_LIBRARY_DIRS})
 link_directories(${BFL_LIBRARY_DIRS})

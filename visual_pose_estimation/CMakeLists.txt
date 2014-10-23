@@ -4,19 +4,17 @@ find_package(catkin REQUIRED COMPONENTS roscpp image_geometry tf )
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
-add_library(${PROJECT_NAME} src/pose_estimator.cpp src/planar.cpp)
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBS})
-add_dependencies(${catkin_EXPORTED_TARGETS})
 
 catkin_package(
     DEPENDS roscpp opencv2 image_geometry tf
     CATKIN_DEPENDS # TODO
     INCLUDE_DIRS include # TODO include
-    LIBRARIES ${PROJECT_NAME}# TODO
+    LIBRARIES ${PROJECT_NAME} # TODO
 )
 
-
-install(DIRECTORY include/${PROJECT_NAME} DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+add_library(${PROJECT_NAME} src/pose_estimator.cpp src/planar.cpp)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBS})
+install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
 
 install(TARGETS ${PROJECT_NAME} 
