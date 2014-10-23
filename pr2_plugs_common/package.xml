@@ -26,7 +26,7 @@
   <build_depend>orocos_kdl</build_depend>
 
   <!-- Dependencies needed after this package is compiled. -->
-  <run-depend>orocos_kdl</run_depend>
+  <run_depend>orocos_kdl</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>tf</run_depend>
   <run_depend>bfl</run_depend>

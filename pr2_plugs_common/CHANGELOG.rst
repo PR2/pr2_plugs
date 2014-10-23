@@ -2,6 +2,11 @@
 Changelog for package pr2_plugs_common
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixed orocos_kdl missing in pr2_plugs_common
+* Contributors: TheDash
+
 1.0.17 (2014-10-20)
 -------------------
 
