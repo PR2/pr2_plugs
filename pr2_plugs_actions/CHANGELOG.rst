@@ -2,6 +2,11 @@
 Changelog for package pr2_plugs_actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Added install dependency from checkerboard_pose to find ros_detect.h
+* Contributors: TheDash
+
 1.0.20 (2014-10-24)
 -------------------
 

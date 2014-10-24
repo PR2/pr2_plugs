@@ -2,6 +2,11 @@
 Changelog for package pr2_plugs_common
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Added install dependency from checkerboard_pose to find ros_detect.h
+* Contributors: TheDash
+
 1.0.20 (2014-10-24)
 -------------------
 * Moved set(orocos_include_dir to before find_package() so that it actually can find the package
