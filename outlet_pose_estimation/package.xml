@@ -1,6 +1,6 @@
 <package>
   <name>outlet_pose_estimation</name>
-  <version>1.0.20</version>
+  <version>1.0.21</version>
   <description>outlet_pose_estimation</description>
   <maintainer email="dash@clearpathrobotics.com">Devon Ash</maintainer>
 
