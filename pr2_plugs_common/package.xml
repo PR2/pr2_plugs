@@ -1,6 +1,6 @@
 <package>
   <name>pr2_plugs_common</name>
-  <version>1.0.19</version>
+  <version>1.0.20</version>
   <description>pr2_plugs_common contains common utilies for plugging in the PR2 robot.</description>
   <maintainer email="dash@clearpathrobotics.com">Devon Ash</maintainer>
 
