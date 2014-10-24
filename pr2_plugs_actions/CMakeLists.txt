@@ -10,19 +10,21 @@ include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS} ${pcl_I
 
 add_executable(vision_detect_plug src/vision_detect_plug.cpp)
 target_link_libraries(vision_detect_plug ${catkin_LIBARIES} ${OpenCV_LIBRARIES} ${roscpp_serialization_LIBRARIES} ${roscpp_LIBRARIES} ${actionlib_LIBRARIES} ${image_transport_LIBRARIES} ${tf_LIBRARIES} ${checkerboard_pose_estimation_LIBRARIES})
-add_dependencies(vision_detect_plug roscpp_serialization checkerboard_pose_estimation)
+add_dependencies(vision_detect_plug roscpp_serialization checkerboard_pose_estimation_gencpp ${catkin_EXPORTED_TARGETS})
 
 
 add_executable(vision_detect_outlet src/vision_detect_outlet.cpp)
 target_link_libraries(vision_detect_outlet ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${outlet_pose_estimation_LIBRARIES} ${visual_pose_estimation})
-add_dependencies(vision_detect_outlet outlet_pose_estimation visual_pose_estimation)
+add_dependencies(vision_detect_outlet outlet_pose_estimation visual_pose_estimation checkerboard_pose_estimation_gencpp)
 
 
 add_executable(align_base src/align_base.cpp)
 target_link_libraries(align_base ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(align_base ${catkin_EXPORTED_TARGETS} checkerboard_pose_estimation_gencpp)
 
 add_executable(move_base_omnidirectional src/move_base_omnidirectional.cpp)
 target_link_libraries(move_base_omnidirectional ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(move_base_omnidirectional ${catkin_EXPORTED_TARGETS} checkerboard_pose_estimation_gencpp)
 
 #Tests
 add_rostest_gtest(fetch_and_stow_plug_test test/action_server_tests/fetch_and_stow_plug_test.launch test/action_server_tests/fetch_and_stow_plug_test.cpp)

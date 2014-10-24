@@ -16,7 +16,7 @@ add_library(${PROJECT_NAME} src/cvcalibinit_lowres.cpp src/detector.cpp src/esti
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBARIES} ${visual_pose_estimation_LIBRARIES})
 add_dependencies(${PROJECT_NAME} visual_pose_estimation_EXPORTED_TARGETS visual_pose_estimation_gencpp)
 
-install(DIRECTORY include/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
 
 install(TARGETS ${PROJECT_NAME} 
