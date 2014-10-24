@@ -2,6 +2,11 @@
 Changelog for package pr2_plugs_common
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Moved set(orocos_include_dir to before find_package() so that it actually can find the package
+* Contributors: TheDash
+
 1.0.19 (2014-10-24)
 -------------------
 * Added set(orocos_kdl_DIR) to get around the fail orocos_kdl package, will not work if orocos is being installed from src since it looks in /opt/ros/hydro/share/orocos_kdl

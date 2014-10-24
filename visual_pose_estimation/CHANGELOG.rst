@@ -2,6 +2,9 @@
 Changelog for package visual_pose_estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.0.19 (2014-10-24)
 -------------------
 * FIxed orocos_kdl and visual_pose not found by putting them after catkin_package()
