@@ -7,7 +7,7 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 
 catkin_package(
-    DEPENDS roscpp opencv2
+    DEPENDS roscpp
     CATKIN_DEPENDS visual_pose_estimation# TODO
     INCLUDE_DIRS include #TODO include
     LIBRARIES outlet_detection ${PROJECT_NAME}# TODO
