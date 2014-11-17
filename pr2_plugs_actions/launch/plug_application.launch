@@ -8,5 +8,5 @@
   <node pkg="pr2_plugs_actions" type="recharge_application.py" name="recharge_application" />
 
   <!-- outlet locations in wg -->
-  <rosparam file="$(find pr2_plugs_actions)/config/outlet_approach_poses.yaml"/>
+  <rosparam file="$(find pr2_recharge_application)/outlet_approach_poses.yaml"/>
 </launch>
