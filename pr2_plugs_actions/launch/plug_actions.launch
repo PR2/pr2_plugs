@@ -1,5 +1,6 @@
 <launch>
   <arg name="run_sim" default="0" />
+  <arg name="use_move_base" default="false" />
 
   <!-- Buffer Server -->
   <node pkg="tf2_ros" type="buffer_server" name="tf2_buffer_server_plugs" output="screen">
@@ -15,12 +16,12 @@
   <node pkg="pr2_plugs_actions" type="detect_wall_norm.py" name="detect_wall_norm" output="screen"/>
 
   <!-- vision detect outlet action -->
-  <node pkg="pr2_plugs_actions" type="vision_detect_outlet" name="vision_outlet_detection" output="screen">
+  <node pkg="pr2_plugs_actions" type="vision_detect_outlet.py" name="vision_outlet_detection" output="screen">
     <param name="outlet_template" type="str" value="$(find pr2_plugs_actions)/outlet_templates/configs/green_2x1white"/>
   </node>
 
   <!-- vision detect plug action -->
-  <node pkg="pr2_plugs_actions" type="vision_detect_plug" name="vision_plug_detection" output="screen">
+  <node pkg="pr2_plugs_actions" type="vision_detect_plug.py" name="vision_plug_detection" output="screen">
     <param name="subpixel_corners" type="bool" value="true"/>		
     <rosparam file="$(find pr2_plugs_actions)/config/plug_description.yaml" />
   </node>
@@ -32,7 +33,9 @@
   <node pkg="pr2_plugs_actions" type="detect_plug_on_base.py" name="detect_plug_on_base" output="screen"/>
 
   <!-- align base action -->
-  <node pkg="pr2_plugs_actions" type="align_base" name="align_base" output="screen"/>
+  <node pkg="pr2_plugs_actions" type="align_base" name="align_base" output="screen">
+    <remap from="move_base_omnidirectional" to="move_base" unless="$(arg use_move_base)"/>
+  </node>
 
   <!-- rechare toplevel action -->
   <node pkg="pr2_plugs_actions" type="recharge_toplevel.py" name="recharge_toplevel" output="screen" />
@@ -61,13 +64,15 @@
   <node pkg="pr2_plugs_actions" type="outlet_server.py" name="outlet_server" output="screen"/>
 
   <!-- move base omnidirectional action -->
-  <node pkg="pr2_plugs_actions" type="move_base_omnidirectional" name="move_base_omnidirectional" output="screen">\
+  <node pkg="pr2_plugs_actions" type="move_base_omnidirectional" name="move_base_omnidirectional"
+	output="screen"
+	if="$(arg use_move_base)">
     <param name="k_trans" value="5.0" />
     <param name="k_rot" value="5.0" />
     <param name="tolerance_trans" value="0.02" />
     <param name="tolerance_rot" value="0.03" />
   </node>
-  <group ns="move_base_omnidirectional/costmap_move_base" >
+  <group ns="move_base_omnidirectional/costmap_move_base" if="$(arg use_move_base)">
     <rosparam file="$(find pr2_plugs_actions)/launch/footprint.yaml" command="load" />
     <!-- Start Costmap Parameters -->
     <param name="global_frame" value="odom_combined" />

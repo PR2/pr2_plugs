@@ -1,9 +1,15 @@
 
-import roslib; roslib.load_manifest('pr2_plugs_actions')
+try:
+    import roslib; roslib.load_manifest('pr2_plugs_actions')
+except:
+    pass
 
 import rospy 
 import tf
-import tf2
+try:
+    import tf2 # groovy
+except:
+    import tf2_py as tf2
 import tf2_ros
 import tf2_geometry_msgs
 from geometry_msgs.msg import PoseStamped
