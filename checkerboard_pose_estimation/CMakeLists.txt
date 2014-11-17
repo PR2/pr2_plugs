@@ -5,7 +5,7 @@ find_package(catkin REQUIRED COMPONENTS roscpp cv_bridge image_transport outlet_
 include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
 
 catkin_package(
-    DEPENDS roscpp cv_bridge image_transport visual_pose_estimation outlet_pose_estimation
+    DEPENDS roscpp opencv2 cv_bridge image_transport visual_pose_estimation outlet_pose_estimation
     CATKIN_DEPENDS visual_pose_estimation# TODO
     INCLUDE_DIRS include # TODO include
     LIBRARIES ${PROJECT_NAME}# TODO

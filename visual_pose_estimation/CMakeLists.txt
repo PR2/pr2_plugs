@@ -6,7 +6,7 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 
 catkin_package(
-    DEPENDS roscpp image_geometry tf
+    DEPENDS roscpp opencv2 image_geometry tf
     CATKIN_DEPENDS # TODO
     INCLUDE_DIRS include # TODO include
     LIBRARIES ${PROJECT_NAME} # TODO

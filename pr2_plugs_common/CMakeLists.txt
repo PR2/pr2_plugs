@@ -10,7 +10,7 @@ find_package(catkin REQUIRED COMPONENTS roscpp tf std_msgs geometry_msgs actionl
 
 find_package(orocos_kdl REQUIRED)
 find_package(PkgConfig)
-#pkg_check_modules(BFL REQUIRED bfl)
+pkg_check_modules(BFL REQUIRED bfl)
 include_directories(${BFL_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS})
 message("BFL include dirs:" ${BFL_INCLUDE_DIRS})
 message("BFL library dirs:" ${BFL_LIBRARY_DIRS})
@@ -38,7 +38,7 @@ add_dependencies(covariance_inserter ${PROJECT_NAME} bfl_generate_messages_cpp $
 add_executable(joint_space_move_test EXCLUDE_FROM_ALL test/joint_space_move_test.cpp include/pr2_plugs_common/joint_space_move.h)
 
 catkin_package(
-    DEPENDS roscpp tf std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs orocos_kdl
+    DEPENDS roscpp tf bfl std_msgs geometry_msgs actionlib pr2_controllers_msgs std_srvs BFL orocos_kdl
     CATKIN_DEPENDS # TODO
     INCLUDE_DIRS include# TODO include
     LIBRARIES # TODO
