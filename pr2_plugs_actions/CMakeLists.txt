@@ -41,6 +41,8 @@ target_link_libraries(detect_wall_norm_test ${catkin_LIBRARIES} ${OpenCV_LIBS})
 add_rostest_gtest(wiggle_plug_test test/action_server_tests/wiggle_plug_test.launch test/action_server_tests/wiggle_plug_test.cpp)
 target_link_libraries(wiggle_plug_test ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
+catkin_python_setup()
+
 catkin_package(
     DEPENDS actionlib roscpp rospy actionlib_msgs geometry_msgs pr2_controllers_msgs pr2_controller_manager sensor_msgs tf kdl tf_conversions tf2_ros tf2_geometry_msgs pr2_msgs std_srvs move_base_msgs dynamic_reconfigure pr2_common_action_msgs pr2_plugs_common pr2_plugs_msgs stereo_wall_detection checkerboard_pose_estimation outlet_pose_estimation image_transport joint_trajectory_action_tools pr2_arm_move_ik costmap_2d base_local_planner pr2_image_snapshot_recorder smach smach_ros cv_bridge
     CATKIN_DEPENDS # TODO
