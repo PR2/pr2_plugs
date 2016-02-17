@@ -16,7 +16,6 @@
 
   <!-- Dependencies needed to compile this package. -->
   <build_depend>roscpp</build_depend>
-  <build_depend>opencv2</build_depend>
   <build_depend>cv_bridge</build_depend>
   <build_depend>image_transport</build_depend>
   <build_depend>visual_pose_estimation</build_depend>
@@ -24,7 +23,6 @@
 
   <!-- Dependencies needed after this package is compiled. -->
   <run_depend>roscpp</run_depend>
-  <run_depend>opencv2</run_depend>
   <run_depend>cv_bridge</run_depend>
   <run_depend>image_transport</run_depend>
   <run_depend>visual_pose_estimation</run_depend>
