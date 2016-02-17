@@ -7,13 +7,14 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 
 catkin_package(
-    DEPENDS roscpp opencv2
+    DEPENDS roscpp image_geometry tf sensor_msgs cv_bridge std_msgs image_transport
     CATKIN_DEPENDS visual_pose_estimation# TODO
     INCLUDE_DIRS include #TODO include
     LIBRARIES outlet_detection ${PROJECT_NAME}# TODO
 )
 add_library(outlet_detection src/liboutlet/affine_transform.cpp src/liboutlet/constellation.cpp src/liboutlet/features.cpp src/liboutlet/geometric_hash.cpp src/liboutlet/generalized_hough.cpp src/liboutlet/gh_outlets.cpp src/liboutlet/learning.cpp src/liboutlet/one_way_descriptor_base.cpp src/liboutlet/one_way_descriptor.cpp src/liboutlet/one_way_outlets.cpp src/liboutlet/outlet_detector.cpp src/liboutlet/outlet_model.cpp src/liboutlet/outlet_tuple.cpp src/liboutlet/pca_features.cpp src/liboutlet/planar.cpp)
 
+include_directories(${OpenCV_INCLUDE_DIRS})
 add_definitions(-D_OUTLET_HR -D_TUNING -D_USE_OUTLET_TUPLE -D_GHT -D_KDTREE -D_GHASH)
 find_package(OpenCV REQUIRED)
 target_link_libraries(outlet_detection ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
@@ -25,7 +26,7 @@ add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS} visual_pose_estimati
 
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
-install(TARGETS ${PROJECT_NAME} outlet_detection 
+install(TARGETS ${PROJECT_NAME} outlet_detection
 ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
